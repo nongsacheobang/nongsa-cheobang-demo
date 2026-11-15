@@ -5,9 +5,12 @@
 //   양·단위(숫자+L/mL/kg/g/포대/병/봉지/톤, "두 병", "천배" 같은 한글 숫자), 희석배수, 대상 병해충, 처리 면적
 // 한계는 README "규칙 추출 한계" 참고. 추측으로 채운 값은 guessed 목록에 넣어 확인 카드에 "확인 필요"로 표시한다.
 //
+// v0.3 (손해평가사 관점 평가 v1 반영): 재해 의도(강풍·우박·냉해 등) -> ext.disaster, 수확 개시/종료, 종묘(모종) 구입,
+//   정식 품종·주수, 온도 값("최저 5도")·출하량·출하처 메모 보존, 약 안 친 병해충 문장은 농약 자재를 만들지 않음
+//
 // 브라우저 콘솔 테스트: (홈 화면에서) await ncAgentTests()  또는  import('./js/agent/extract-rules.js').then(m => m.runExtractTests())
 
-import { STAGES, PESTICIDE_TYPES, FERTILIZER_TYPES, tasksFor } from '../constants.js';
+import { STAGES, PESTICIDE_TYPES, FERTILIZER_TYPES, SEED, PERILS, FACILITY_DAMAGES, CROP_SYMPTOMS, tasksFor, typesFor } from '../constants.js';
 
 // ---------- 숫자 정규화 ----------
 const NATIVE = { 열한: 11, 열두: 12, 다섯: 5, 여섯: 6, 일곱: 7, 여덟: 8, 아홉: 9, 하나: 1, 스무: 20, 스물: 20, 서른: 30, 마흔: 40, 한: 1, 두: 2, 둘: 2, 세: 3, 셋: 3, 석: 3, 네: 4, 넷: 4, 넉: 4, 열: 10, 쉰: 50, 반: 0.5 };
@@ -138,6 +141,11 @@ const TASK_RULES = [
   { re: /출하|공판장|납품|경매|택배\s*보냈/, t: '출하', s: '출하' },
   { re: /철거|폐기물|줄기\s*(정리|제거)|뽑았|작물\s*정리/, t: '작물 철거·폐기물 처리', s: '작물 철거' },
 ];
+// v0.3: 수확 개시 / 수확 종료 (경과비율 산식의 기준일, 손해평가사 평가 P0) -> 일반 "수확" 규칙보다 먼저
+TASK_RULES.splice(TASK_RULES.findIndex((r) => r.t === '수확'), 0,
+  { re: /수확\s*(을|를|이)?\s*(시작|개시)|첫\s*수확|수확\s*첫날/, t: '수확 개시', s: '수확 개시' },
+  { re: /수확\s*(을|를|이|은)?\s*(끝|종료|마무리|마쳤|마감)|마지막\s*수확/, t: '수확 종료', s: '수확 종료' },
+);
 
 export function stageOfTask(task, crop) {
   if (!task) return '';
@@ -174,7 +182,7 @@ export function parsePest(text) {
 }
 
 // ---------- 양·단위, 희석배수 ----------
-const UNIT_RE = /(\d+(?:\.\d+)?)\s*(밀리리터|미리리터|밀리|미리|ml|mL|ML|㎖|cc|CC|시시|리터|ℓ|L|l|킬로그램|킬로|키로|kg|KG|Kg|그램|g|G|포대|포(?!기|도)|봉지|봉|병|톤)(?![A-Za-z])/g;
+const UNIT_RE = /(\d+(?:\.\d+)?)\s*(밀리리터|미리리터|밀리|미리|ml|mL|ML|㎖|cc|CC|시시|리터|ℓ|L|l|킬로그램|킬로|키로|kg|KG|Kg|그램|g|G|포대|포(?!기|도)|봉지|봉|병|톤|박스|상자)(?![A-Za-z])/g;
 
 export function normUnit(u) {
   const s = String(u || '').trim();
@@ -186,7 +194,87 @@ export function normUnit(u) {
   if (/^(봉지|봉)$/.test(s)) return '봉지';
   if (s === '병') return '병';
   if (s === '톤') return '톤';
+  if (/^(박스|상자)$/.test(s)) return '박스';
+  if (/^(주|포기|판)$/.test(s)) return s;
   return '';
+}
+
+// ---------- 주수·품종·금액·온도·출하처 (v0.3) ----------
+const PLANT_RE = /(\d+(?:\.\d+)?)\s*(주|포기|판)(?=$|[\s,.!?]|를|을|씩|정도|째|심|사|샀|구입|이|가|요)/;
+export function parsePlants(t) {
+  const m = t.match(PLANT_RE);
+  return m ? { qty: m[1], unit: m[2] } : null;
+}
+
+const KNOWN_VARIETIES = ['슈퍼도태랑', '킹스베리', '하이베리', '메리퀸', '데프니스', '대프니스', '베타티니', '마이로크', '도태랑', '미니찰', '티티찰', '아리향', '설향', '금실', '매향', '죽향', '장희'];
+export function parseVariety(t) {
+  const k = KNOWN_VARIETIES.find((v) => t.includes(v));
+  if (k) return k;
+  let m = t.match(/품종\s*(?:은|는|이|:)?\s*([가-힣A-Za-z0-9]{2,8})/);
+  if (!m) m = t.match(/([가-힣A-Za-z0-9]{2,8})\s*(?:품종|모종|묘)(?![가-힣])/);
+  if (!m) return '';
+  const w = m[1].replace(/(을|를|이|가|은|는|도)$/, '');
+  if (STOP.has(w) || parseCrop(w) || /동$/.test(w) || /^\d/.test(w) || /^(오늘|어제|그제|접목|새|튼튼한)$/.test(w)) return '';
+  return w;
+}
+
+const PRICE_RE = /(\d+(?:\.\d+)?)\s*(만\s*원|천\s*원|원)(?![가-힣])/;
+const TEMP_RE = /(?:(?:최저|최고|야간|주간|밤|낮|실내|내부|하우스\s*안)\s*(?:온도|기온)?\s*(?:는|은|가|이)?\s*)?(?:영하\s*)?-?\d+(?:\.\d+)?\s*(?:℃|도(?=$|[\s,.!?]|까지|정도|쯤|였|이었|에서|로|를|가|이|예요|입니다))/g;
+const SHIP_TO_RE = /([가-힣A-Za-z]{0,6}(?:공판장|도매시장|경매장|농협|로컬푸드|직매장|마트|가락시장|직거래|택배))/;
+
+// ---------- 재해 (v0.3) ----------
+const PERIL_RULES = [
+  ['강풍·태풍', /강풍|태풍|돌풍|회오리|바람\s*(에|때문|이\s*세|이\s*많이)/],
+  ['우박', /우박/],
+  ['냉해·동상해', /냉해|(?<!\d\s?)동해|동상해|서리\s*(피해|맞|내려)|한파|얼어|얼었/],
+  ['호우', /호우|폭우|큰\s*비|장맛비|침수|물에\s*잠/],
+  ['폭설', /폭설|대설|설해|눈\s*(이)?\s*(많이|무게|쌓여)|눈\s*때문/],
+  ['폭염', /폭염|고온\s*피해|열\s*피해/],
+  ['짐승·새', /짐승|멧돼지|고라니|노루|조수해|까치|까마귀|새\s*(떼|피해)|새가\s*(쪼|먹)/],
+  ['화재', /화재|불이\s*(났|붙)|불\s*났|불타|전소/],
+];
+const DAMAGE_CUE = /피해|찢|뜯|파손|부서|무너|주저앉|휘었|휘어|휘다|휨|꺾|쓰러|넘어|상처|상했|얼어|얼었|시들|죽었|죽어|고사|냉해|(?<!\d\s?)동해|동상해|입었|맞았|났|침수|잠겼|날아|탔|구멍|깨졌|떨어졌|낙과|전소|쪼아/;
+const NOT_DISASTER = /대비|예방|막으려|방지|대책|오기\s*전|올\s*까|온대|온다|예보|대요\?|나요\?/;
+const FACILITY_RULES = [
+  ['비닐 찢어짐', /(비닐|피복|필름)\s*(이|가|은|는|을|도)?\s*[가-힣\s]{0,6}?(찢|뜯|날아|벗겨|구멍|터졌|째졌)/],
+  ['골조 휨·파손', /골조|파이프|기둥|서까래|아치|하우스\s*(가|이|는|도)?\s*(무너|주저앉|휘|부서|파손|쓰러)/],
+  ['보온커튼·난방기 등 설비', /(커튼|난방기|보일러|온풍기|환풍기|모터|개폐기|설비)\s*(이|가|도|는)?\s*[가-힣\s]{0,6}?(고장|망가|부서|파손|탔|끊|멈)/],
+  ['시설 피해 없음', /(시설|하우스|비닐)\s*(은|는|도)?\s*(피해\s*)?(는|은)?\s*(없|괜찮|멀쩡|이상\s*없)/],
+];
+const CROP_RULES = [
+  ['잎·줄기 상함', /(잎|줄기)\s*(이|가|은|는|도)?\s*[가-힣\s]{0,4}?(상했|상함|상처|찢|탔|말랐|피해|멍)/],
+  ['열매 상처', /(열매|과실|과일|토마토|딸기)\s*(에|가|이|는|도)?\s*[가-힣\s]{0,4}?(상처|멍|터졌|깨졌|갈라|떨어)|낙과/],
+  ['얼어서 시듦', /얼어|얼었|시들|냉해|(?<!\d\s?)동해|동상해/],
+  ['쓰러짐·꺾임', /(작물|포기|줄기|대|모|토마토|딸기)\s*(이|가|는|도)?\s*[가-힣\s]{0,3}?(쓰러|꺾|넘어)|도복/],
+  ['죽음', /죽었|죽어|고사|전멸/],
+];
+const hits = (rules, t) => rules.filter(([, re]) => re.test(t)).map(([v]) => v);
+
+export function parsePerils(t) {
+  return hits(PERIL_RULES, t);
+}
+
+// 재해 문장 판단 + 칸 추출. 사고일은 말한 날짜만 (없으면 빈칸 -> 되묻기)
+export function parseDisaster(t, today) {
+  const perils = parsePerils(t);
+  const hit = perils.length > 0 && DAMAGE_CUE.test(t) && !NOT_DISASTER.test(t);
+  const guessed = [];
+  const fac = hits(FACILITY_RULES, t);
+  const crop = hits(CROP_RULES, t);
+  // "냉해 입었어요"처럼 증상 말 없이 재해 이름만 있으면 추측 표시
+  if (crop.includes('얼어서 시듦') && !/얼어|얼었|시들/.test(t)) guessed.push('crop_symptom');
+  if (fac.includes('시설 피해 없음') && fac.length > 1) fac.splice(fac.indexOf('시설 피해 없음'), 1);
+  const said = parseDate(t, today);
+  return {
+    hit,
+    accident_date: said || '',
+    continuing: /며칠째|계속\s*(돼|되|이어)/.test(t),
+    peril: perils.join(', '),
+    facility_damage: fac.join(', '),
+    crop_symptom: crop.join(', '),
+    photo: /사진/.test(t),
+    guessed,
+  };
 }
 
 export function parseQtys(t) {
@@ -291,6 +379,7 @@ const GREET = /^(안녕|하이|hi|hello|반가|여보세요)|고마워|고맙|�
 export function classifyIntent(text, ext) {
   const t = String(text || '');
   if (OFFTOPIC.test(t)) return 'offtopic';
+  if (ext && ext.disaster && ext.disaster.hit) return 'disaster';
   const strong = !!(ext && (ext.task || ext.stage || ext.materials.length || ext.pest));
   if (strong) return 'record';
   if (WEATHER_Q.test(t) && (QUESTIONISH.test(t) || t.length < 15)) return 'weather';
@@ -347,16 +436,28 @@ export function extractRules(text, ctx = {}) {
   let rule = matchTaskRule(tNoName, buy);
   if (!rule && pestHit && !buy) rule = TASK_RULES.find((r) => r.t === '병해충 방제');
 
-  // 수확·출하 양은 자재가 아니라 메모로
-  const harvest = rule && (rule.t === '수확' || rule.t === '출하');
+  // 수확·출하 양은 자재가 아니라 메모로 (v0.3: 출하량·출하처·마지막 출하 보존)
+  const harvest = rule && ['수확', '출하', '수확 개시', '수확 종료'].includes(rule.t);
+  const shipping = /출하|보냈|납품|공판장|경매|택배/.test(t);
   let nonWater = qtys.filter((q) => !q.water);
   let water = qtys.find((q) => q.water);
-  if (harvest && nonWater.length) {
-    memo.push(`${rule.t === '수확' ? '수확량' : '출하량'} ${nonWater.map((q) => q.qty + q.unit).join(', ')}`);
+  if (harvest) {
+    if (nonWater.length) memo.push(`${shipping ? '출하량' : '수확량'} ${nonWater.map((q) => q.qty + q.unit).join(', ')}`);
+    const to = shipping ? t.match(SHIP_TO_RE) : null;
+    if (to) memo.push(`출하처 ${to[1]}`);
+    if (/마지막\s*출하/.test(t)) memo.push('마지막 출하');
+    else if (/첫\s*출하/.test(t)) memo.push('첫 출하');
     nonWater = [];
   }
 
-  const pestStrong = !!pestHit || PEST_STRONG.test(tNoName) || (nm && /수화제|유제|액제|입제|분제|미탁제|훈연제/.test(nm.name));
+  // 약을 치지 않은 작업(병든 잎 따기 등)에 병해충 이름만 있으면 농약 자재를 만들지 않는다 (허위 자재 기록 방지)
+  const nonSprayTask = !!rule && !rule.kind && rule.t !== '병해충 방제';
+  const pestStrong = (!!pestHit && !nonSprayTask) || PEST_STRONG.test(tNoName) || (nm && /수화제|유제|액제|입제|분제|미탁제|훈연제/.test(nm.name));
+  // 종묘(모종) 구입 (재배 일정 증빙서류)
+  const seedBuy = buy && /모종|종묘|종자|씨앗|묘목|육묘/.test(t);
+  const plants = parsePlants(t);
+  const planting = rule && rule.t === '정식';
+  const variety = seedBuy || planting ? parseVariety(t) : '';
   const fertSig = FERT_SIG.test(t);
   // 희석배수 + "20리터 뿌렸어" 처럼 L 하나만 있으면 살포 물량으로 본다
   if (!water && dilution && nonWater.length === 1 && nonWater[0].unit === 'L' && Number(nonWater[0].qty) >= 5 && SPRAY.test(t)) {
@@ -365,7 +466,7 @@ export function extractRules(text, ctx = {}) {
   }
 
   const materials = [];
-  const hasMat = !harvest && (pestStrong || fertSig || nonWater.length > 0 || !!nm || (buy && !rule));
+  const hasMat = !harvest && !seedBuy && (pestStrong || fertSig || nonWater.length > 0 || !!nm || (buy && !rule));
   if (hasMat) {
     let kind = '';
     if (pestStrong && !fertSig) kind = '농약';
@@ -414,6 +515,20 @@ export function extractRules(text, ctx = {}) {
   } else if (water) {
     memo.push(`물 ${water.qty}${water.unit}`);
   }
+  if (seedBuy) {
+    materials.push({
+      kind: SEED, action: '구입', type: /종자|씨앗/.test(t) ? '종자' : /접목/.test(t) ? '접목묘' : '모종',
+      name: variety, qty: plants ? plants.qty : '', unit: plants ? plants.unit : '', dilution: '', pest: '',
+    });
+  }
+
+  // v0.3 메모 보존: 금액, 온도 값(온도관리 소홀 면책 반박 자료), 약 안 친 병해충 발생, 사진
+  const price = t.match(PRICE_RE);
+  if (price) memo.push(`금액 ${price[1]}${price[2].replace(/\s/g, '')}`);
+  const temps = [...t.matchAll(TEMP_RE)].map((x) => x[0].trim());
+  if (temps.length) memo.push(temps.join(', '));
+  if (pestHit && !materials.length && !harvest) memo.push(`${pestHit.pest === '기타' ? pestHit.said : pestHit.pest} 발생`);
+  if (/사진/.test(t)) memo.push('사진 찍어 둠');
 
   // 작업단계 결정 (작목이 정해진 뒤)
   let { stage, task } = resolveTask(rule, crop);
@@ -431,6 +546,8 @@ export function extractRules(text, ctx = {}) {
   const ext = {
     workDate, dateSaid: !!said, houseIds, crop, stage, task, materials, area,
     pest: pestHit ? pestHit.pest : '', memo: memo.join(', '), guessed, warnings, text: raw,
+    variety: planting ? variety : '', plant_count: planting && plants ? plants.qty : '',
+    disaster: parseDisaster(t, today),
   };
   ext.intent = classifyIntent(raw, ext);
   return ext;
@@ -454,6 +571,41 @@ export function parseAnswer(key, text, ctx = {}, draft = {}) {
     const c = parseCrop(t);
     return c ? { ok: true, value: c } : { ok: false };
   }
+  // 재해 카드 되묻기 (v0.3)
+  if (key === 'accident_date') {
+    const d = parseDate(t, ctx.today || ymd(new Date()));
+    if (d) return { ok: true, value: { date: d } };
+    if (/며칠째|계속/.test(t)) return { ok: true, value: { continuing: true } };
+    return { ok: false };
+  }
+  if (key === 'peril') {
+    const exact = PERILS.find((x) => raw === x);
+    if (exact) return { ok: true, value: exact };
+    const p = parsePerils(t);
+    if (p.length) return { ok: true, value: p.join(', ') };
+    if (/기타|그\s*외/.test(t)) return { ok: true, value: '기타' };
+    return { ok: false };
+  }
+  if (key === 'facility_damage') {
+    const exact = FACILITY_DAMAGES.find((x) => raw === x);
+    if (exact) return { ok: true, value: exact };
+    const f = hits(FACILITY_RULES, t);
+    if (f.length) return { ok: true, value: f.join(', ') };
+    if (/비닐|피복/.test(t)) return { ok: true, value: '비닐 찢어짐' };
+    if (/골조|파이프|기둥|무너|휘/.test(t)) return { ok: true, value: '골조 휨·파손' };
+    if (/커튼|난방|보일러|설비/.test(t)) return { ok: true, value: '보온커튼·난방기 등 설비' };
+    if (/^(아니|없|괜찮|멀쩡|안\s*부서)/.test(t)) return { ok: true, value: '시설 피해 없음' };
+    return { ok: false };
+  }
+  if (key === 'crop_symptom') {
+    const exact = CROP_SYMPTOMS.find((x) => raw === x);
+    if (exact) return { ok: true, value: exact };
+    const c = hits(CROP_RULES, t);
+    if (c.length) return { ok: true, value: c.join(', ') };
+    // 선택지에 없는 증상은 말한 그대로 (선택+원문)
+    if (raw.length >= 2 && raw.length <= 40) return { ok: true, value: raw };
+    return { ok: false };
+  }
   if (key === 'stage') {
     const st = STAGES.find((s) => flat.includes(s.replace(/·/g, '')) || flat === s.replace(/·/g, ''));
     const rule = matchTaskRule(t, false);
@@ -470,14 +622,16 @@ export function parseAnswer(key, text, ctx = {}, draft = {}) {
   const f = mk[2];
   const m = (draft.materials || [])[Number(mk[1])] || {};
   if (f === 'kind') {
+    if (/모종|종묘|종자|씨앗|묘목/.test(t)) return { ok: true, value: SEED };
     if (/비료|거름|퇴비|양액/.test(t)) return { ok: true, value: '비료' };
     if (/농약|약|살균|살충/.test(t)) return { ok: true, value: '농약' };
     return { ok: false };
   }
   if (f === 'type') {
-    const list = m.kind === '비료' ? FERTILIZER_TYPES : PESTICIDE_TYPES;
+    const list = typesFor(m.kind);
     const exact = list.find((x) => flat === x.replace(/[\s·]/g, '') || raw === x);
     if (exact) return { ok: true, value: exact };
+    if (m.kind === SEED) return /종자|씨/.test(t) ? { ok: true, value: '종자' } : /접목/.test(t) ? { ok: true, value: '접목묘' } : /모종|묘/.test(t) ? { ok: true, value: '모종' } : { ok: false };
     const v = m.kind === '비료' ? fertilizerTypeOf(t) : pesticideTypeOf(t);
     if (v) return { ok: true, value: v };
     if (/기타|그\s*외/.test(t)) return { ok: true, value: '기타' };
@@ -494,6 +648,8 @@ export function parseAnswer(key, text, ctx = {}, draft = {}) {
     return { ok: false };
   }
   if (f === 'qty') {
+    const pl = parsePlants(t);
+    if (pl) return { ok: true, value: pl };
     const q = parseQtys(t).filter((x) => !x.water);
     if (q.length) return { ok: true, value: { qty: q[0].qty, unit: q[0].unit } };
     const n = t.match(/^(\d+(?:\.\d+)?)\s*(개|정도|쯤)?\s*(이요|요)?\.?$/);
@@ -541,12 +697,22 @@ export const TEST_CASES = [
   { text: '주식 추천해줘', expect: { intent: 'offtopic' } },
   { text: '1동 토마토 흰가루병 살균제 가상곰팡이 액상 물 20리터에 20ml', expect: { 'm0.type': '살균제', 'm0.name': '가상곰팡이 액상', 'm0.qty': '20', 'm0.unit': 'mL', 'm0.dilution': '1000', 'm0.pest': '흰가루병' } },
   { text: '3일 전에 3동 딸기 진딧물 살충제 가상충 유제 20ml 2000배', expect: { workDate: '2026-11-12', 'm0.type': '살충제', 'm0.pest': '진딧물', 'm0.dilution': '2000', 'm0.qty': '20' } },
+  // v0.3 손해평가사 관점 평가 v1 테스트 문장 8개 (농사처방_시연앱_손해평가사관점_평가_v1.md Part 2)
+  { text: '3동 딸기 정식했어요. 설향 모종 3000주 심었어요', expect: { intent: 'record', houses: ['3동'], crop: '딸기', stage: '육묘·정식', task: '정식', mats: 0, variety: '설향', plant_count: '3000' } },
+  { text: '1동 토마토 수확 시작했어요. 오늘 첫 출하 20박스 공판장으로 보냈어요', expect: { intent: 'record', workDate: '2026-11-15', houses: ['1동'], crop: '토마토', stage: '수확·출하', task: '수확 개시', mats: 0, memoHas: ['출하량 20박스', '출하처 공판장'] } },
+  { text: '어제 강풍 때문에 3동 비닐이 찢어지고 딸기가 냉해 입었어요', expect: { intent: 'disaster', houses: ['3동'], crop: '딸기', 'd.accident_date': '2026-11-14', 'd.peril': '강풍·태풍, 냉해·동상해', 'd.facility_damage': '비닐 찢어짐', 'd.crop_symptom': '얼어서 시듦' } },
+  { text: '딸기 모종 3000주 구입했어요. 45만원', expect: { intent: 'record', houses: ['3동'], stage: '', mats: 1, 'm0.kind': '종묘(모종)', 'm0.action': '구입', 'm0.type': '모종', 'm0.qty': '3000', 'm0.unit': '주', memoHas: '금액 45만원' } },
+  { text: '2동 방울토마토 수확 끝났어요. 마지막 출하했어요', expect: { intent: 'record', houses: ['2동'], crop: '방울토마토', stage: '수확·출하', task: '수확 종료', mats: 0, memoHas: '마지막 출하' } },
+  { text: '1동 보온커튼 닫고 난방기 돌렸어요. 최저 5도', expect: { intent: 'record', houses: ['1동'], crop: '토마토', stage: '작물관리', task: '환기·온도관리', mats: 0, memoHas: '최저 5도' } },
+  { text: '3동 딸기 잿빛곰팡이 생겨서 병든 잎 따고 사진 찍어뒀어요', expect: { intent: 'record', houses: ['3동'], crop: '딸기', task: '적엽·런너 제거', mats: 0, memoHas: '잿빛곰팡이병 발생' } },
+  { text: '우박 와서 1동 토마토 열매 상처 났어요. 사진 찍었어요', expect: { intent: 'disaster', houses: ['1동'], crop: '토마토', 'd.accident_date': '', 'd.peril': '우박', 'd.facility_damage': '', 'd.crop_symptom': '열매 상처' } },
 ];
 
 function getVal(ext, key) {
   if (key === 'houses') return ext.houseIds.map((id) => TEST_PROFILE.houses.find((h) => h.id === id)?.name);
   if (key === 'mats') return ext.materials.length;
   if (key === 'memoHas') return ext.memo;
+  if (key.startsWith('d.')) return ext.disaster ? ext.disaster[key.slice(2)] : undefined;
   if (key.startsWith('m0.')) return ext.materials[0] ? ext.materials[0][key.slice(3)] : undefined;
   return ext[key];
 }
@@ -558,7 +724,7 @@ export function runExtractTests({ quiet = false } = {}) {
     const fails = [];
     for (const [k, want] of Object.entries(c.expect)) {
       const got = getVal(ext, k);
-      const ok = k === 'memoHas' ? String(got || '').includes(want) : JSON.stringify(got ?? '') === JSON.stringify(want);
+      const ok = k === 'memoHas' ? [].concat(want).every((w) => String(got || '').includes(w)) : JSON.stringify(got ?? '') === JSON.stringify(want);
       if (!ok) fails.push(`${k}: 기대 ${JSON.stringify(want)} / 실제 ${JSON.stringify(got)}`);
     }
     return { text: c.text, pass: !fails.length, fails: fails.join(' | ') };

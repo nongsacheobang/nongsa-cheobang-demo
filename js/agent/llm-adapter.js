@@ -31,12 +31,12 @@ export const SAVE_FARM_LOG_DECL = {
         items: {
           type: 'OBJECT',
           properties: {
-            kind: { type: 'STRING', enum: ['농약', '비료'] },
+            kind: { type: 'STRING', enum: ['농약', '비료', '종묘(모종)'] },
             action: { type: 'STRING', enum: ['구입', '사용'] },
             type: { type: 'STRING', description: '농약: 살충제/살균제/살균살충제/제초제/생장조정제/기타, 비료: 유기질(퇴비·유박)/화학(복합·단비)/양액 비료/엽면시비·미량요소/토양개량제/기타' },
             name: { type: 'STRING', description: '제품명. 농민이 말한 그대로' },
             qty: { type: 'NUMBER' },
-            unit: { type: 'STRING', enum: ['mL', 'L', 'g', 'kg', '병', '봉지', '포대', '톤'] },
+            unit: { type: 'STRING', enum: ['mL', 'L', 'g', 'kg', '병', '봉지', '포대', '톤', '주', '포기', '판'] },
             dilution: { type: 'NUMBER', description: '희석배수 (예: 1000)' },
             pest: { type: 'STRING', description: '대상 병해충' },
           },
@@ -78,7 +78,7 @@ export function fromFunctionArgs(args, ctx, text) {
   const crop = parseCrop(args.crop || '') || (houseIds.length ? hs.find((h) => h.id === houseIds[0])?.crop : '') || '';
   const task = args.task || '';
   const materials = (args.materials || []).map((m) => ({
-    kind: m.kind === '비료' ? '비료' : m.kind === '농약' ? '농약' : '',
+    kind: ['농약', '비료', '종묘(모종)'].includes(m.kind) ? m.kind : '',
     action: m.action === '구입' ? '구입' : '사용',
     type: m.type || '',
     name: m.name || '',

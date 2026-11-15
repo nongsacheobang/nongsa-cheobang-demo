@@ -4,8 +4,10 @@
 //                                  --인식 실패 2회 연속--> 직접 입력 화면으로 넘김 (알아낸 값은 미리 채움)
 // 규칙: 한 번에 1개 질문 + 선택지 버튼, 같은 항목은 최대 2번, "모르겠어요"는 건너뛰고 "미완성"으로 저장 허용,
 //       작업일은 오늘·동이 1개면 자동, 추측한 값은 "확인 필요" 표시, 농민이 [저장]을 눌러야만 저장.
+// v0.3 (손해평가사 관점 평가 v1): 의도 "재해" -> 재해 초안(draft.type = 'disaster'). 필수 빈칸(사고일·재해 종류·피해 동·시설 피해·작물 피해)은
+//       평가 문서 3장의 질문 문구로 되묻고, 작업 일지와 별도 기록(type: 'disaster')으로 저장. 사진은 안내 문구만.
 
-import { CROPS, STAGES, PESTICIDE_TYPES, FERTILIZER_TYPES, UNITS_PESTICIDE, UNITS_FERTILIZER, tasksFor } from '../constants.js';
+import { CROPS, STAGES, SEED, MATERIAL_KINDS, PERILS, FACILITY_DAMAGES, CROP_SYMPTOMS, PHOTO_NOTICE, tasksFor, typesFor, unitsFor, defaultUnit } from '../constants.js';
 import { todayStr, missingFields, recentNames, autoText, houseNames } from '../records.js';
 import { getStore } from '../storage/index.js';
 import { getWeather, weatherText, missingWeather } from '../weather.js';
@@ -13,7 +15,9 @@ import { extractRules, parseAnswer } from './extract-rules.js';
 import { understand } from './llm-adapter.js';
 
 export const AGENT_TEXT = {
-  hello: '오늘 하신 작업을 말이나 글로 남겨 주세요. 영농일지 항목으로 정리해 확인 카드로 보여 드릴게요.',
+  hello: '오늘 하신 작업이나 재해 피해를 말이나 글로 남겨 주세요. 영농일지 항목으로 정리해 확인 카드로 보여 드릴게요.',
+  disasterStart: `재해 기록으로 정리할게요. ${PHOTO_NOTICE}.`,
+  disasterConfirm: '이대로 재해 기록을 저장할까요? 틀린 칸은 눌러서 고칠 수 있어요.',
   refuse: '저는 영농일지 기록과 농사 정보 안내만 도와드려요. 오늘 하신 작업을 말씀해 주시면 바로 기록할게요.',
   weather: (w) => `날씨 질문은 아직 대화로 답하지 못해요. 홈 위 날씨 카드에서 확인해 주세요${w ? ` (오늘 ${w})` : ''}.`,
   greet: '안녕하세요. 오늘 하신 작업을 말씀해 주시면 일지로 정리해 드릴게요.',
@@ -84,6 +88,9 @@ export function createAgent(deps) {
     st.asked = {};
     st.skipped = [];
     st.draft = {
+      type: 'work',
+      variety: ext.variety || '',
+      plant_count: ext.plant_count || '',
       workDate: ext.workDate,
       houseIds: [...ext.houseIds],
       crop: ext.crop,
@@ -101,10 +108,37 @@ export function createAgent(deps) {
     loadWeather();
   }
 
+  // 재해 초안: 사고일(accident_date)은 말한 날짜만. 없으면 빈칸으로 두고 되묻는다
+  function newDisasterDraft(ext, method) {
+    st.asked = {};
+    st.skipped = [];
+    const x = ext.disaster || {};
+    st.draft = {
+      type: 'disaster',
+      accident_date: x.accident_date || '',
+      workDate: x.accident_date || '',
+      continuing: !!x.continuing,
+      houseIds: [...ext.houseIds],
+      crop: ext.crop,
+      peril: x.peril || '',
+      facility_damage: x.facility_damage || '',
+      crop_symptom: x.crop_symptom || '',
+      memo: ext.memo || '',
+      weather: null,
+      sourceTexts: [ext.text],
+      method,
+      guessed: [...(x.guessed || []), ...ext.guessed.filter((g) => g === 'houseIds')],
+      warnings: [],
+      materials: [],
+    };
+    loadWeather();
+  }
+
   async function loadWeather() {
     const d = st.draft;
     if (!d) return;
-    const date = d.workDate;
+    const date = d.type === 'disaster' ? d.accident_date : d.workDate;
+    if (!date) return;
     const w = await getWeather(date, deps.getProfile());
     if (st.draft === d && d.workDate === date) {
       d.weather = w;
@@ -116,6 +150,13 @@ export function createAgent(deps) {
   function mergeEmpty(ext) {
     const d = st.draft;
     let n = 0;
+    if (d.type === 'disaster') {
+      const x = ext.disaster || {};
+      if (!d.houseIds.length && ext.houseIds.length) { d.houseIds = [...ext.houseIds]; if (!d.crop) d.crop = ext.crop; n++; }
+      if (!d.accident_date && x.accident_date) { setAccidentDate(x.accident_date); n++; }
+      for (const k of ['peril', 'facility_damage', 'crop_symptom']) if (!d[k] && x[k]) { d[k] = x[k]; n++; }
+      return n;
+    }
     if (!d.houseIds.length && ext.houseIds.length) { d.houseIds = [...ext.houseIds]; n++; }
     if (!d.crop && ext.crop) { d.crop = ext.crop; n++; }
     if (!d.stage && ext.stage) { d.stage = ext.stage; d.task = ext.task; n++; }
@@ -129,9 +170,24 @@ export function createAgent(deps) {
   }
 
   // 확인 카드에서 새 문장으로 고칠 때: 말한 값으로 덮어쓴다
+  function setAccidentDate(date) {
+    const d = st.draft;
+    d.accident_date = date;
+    d.workDate = date;
+    d.weather = null;
+    loadWeather();
+  }
+
   function mergeOverride(ext) {
     const d = st.draft;
     let n = 0;
+    if (d.type === 'disaster') {
+      const x = ext.disaster || {};
+      if (x.accident_date && x.accident_date !== d.accident_date) { setAccidentDate(x.accident_date); n++; }
+      if (ext.houseIds.length) { d.houseIds = [...ext.houseIds]; if (ext.crop) d.crop = ext.crop; n++; }
+      for (const k of ['peril', 'facility_damage', 'crop_symptom']) if (x[k]) { d[k] = x[k]; n++; }
+      return n;
+    }
     if (ext.dateSaid && ext.workDate !== d.workDate) { d.workDate = ext.workDate; d.weather = null; loadWeather(); n++; }
     if (ext.houseIds.length) { d.houseIds = [...ext.houseIds]; n++; }
     if (ext.crop) { d.crop = ext.crop; n++; }
@@ -146,6 +202,7 @@ export function createAgent(deps) {
 
   // ---------- 되묻기 ----------
   function requiredKeys(d) {
+    if (d.type === 'disaster') return ['accident_date', 'peril', 'houseIds', 'facility_damage', 'crop_symptom'];
     const keys = ['houseIds', 'crop'];
     const buyOnly = d.materials.length && d.materials.every((m) => m.action === '구입');
     if (!buyOnly) keys.push('stage'); // 구입만 한 기록은 작업단계를 묻지 않음 (미완성으로 표시)
@@ -155,6 +212,7 @@ export function createAgent(deps) {
   function isEmpty(d, key) {
     if (key === 'houseIds') return !d.houseIds.length;
     if (key === 'crop' || key === 'stage') return !d[key];
+    if (['accident_date', 'peril', 'facility_damage', 'crop_symptom'].includes(key)) return !d[key];
     const [, i, f] = key.match(/^m(\d+)\.(\w+)$/);
     const m = d.materials[Number(i)];
     return !m || m[f] === '' || m[f] == null;
@@ -168,23 +226,35 @@ export function createAgent(deps) {
     const d = st.draft;
     const p = deps.getProfile();
     const skip = { l: '모르겠어요', v: '__skip' };
+    const dis = d.type === 'disaster';
+    // 재해 카드 되묻기 문구: 손해평가사 관점 평가 v1 3장 그대로
+    if (key === 'accident_date') {
+      if (d.continuing) return { text: '언제부터였어요? 시작한 날을 알려 주세요. 예: 11월 12일', quick: [{ l: '어제', v: '어제' }, { l: '그제', v: '그제' }, skip] };
+      return { text: '피해는 언제 생겼어요?', quick: [{ l: '오늘', v: '오늘' }, { l: '어제', v: '어제' }, { l: '그제', v: '그제' }, { l: '며칠째 계속돼요', v: '며칠째 계속돼요' }, skip] };
+    }
+    if (key === 'peril') return { text: '어떤 피해예요?', quick: [...PERILS.map((x) => ({ l: x, v: x })), skip] };
+    if (key === 'facility_damage') return { text: '하우스 자체도 부서졌나요?', quick: [...FACILITY_DAMAGES.map((x) => ({ l: x, v: x })), skip] };
+    if (key === 'crop_symptom') return { text: '작물은 어떻게 됐어요?', quick: [...CROP_SYMPTOMS.map((x) => ({ l: x, v: x })), skip] };
+    if (key === 'houseIds' && dis) return { text: '몇 동이 피해를 입었어요?', quick: [...p.houses.map((h) => ({ l: h.name, v: h.name })), skip] };
     if (key === 'houseIds') return { text: '몇 동에서 하셨어요?', quick: [...p.houses.map((h) => ({ l: h.name, v: h.name })), skip] };
     if (key === 'crop') return { text: '어떤 작목이에요?', quick: [...CROPS.map((c) => ({ l: c, v: c })), skip] };
     if (key === 'stage') return { text: '어떤 작업을 하셨어요?', quick: [...STAGES.map((s) => ({ l: s, v: s })), skip] };
     const [, i, f] = key.match(/^m(\d+)\.(\w+)$/);
     const m = d.materials[Number(i)];
     const K = m.kind || '자재';
-    if (f === 'kind') return { text: '농약인가요, 비료인가요?', quick: [{ l: '농약', v: '농약' }, { l: '비료', v: '비료' }, skip] };
-    if (f === 'type') return { text: `${K} 종류를 골라 주세요.`, quick: [...(m.kind === '비료' ? FERTILIZER_TYPES : PESTICIDE_TYPES).map((x) => ({ l: x, v: x })), skip] };
+    const seed = m.kind === SEED;
+    if (f === 'kind') return { text: '농약인가요, 비료인가요, 모종인가요?', quick: [...MATERIAL_KINDS.map((x) => ({ l: x, v: x })), skip] };
+    if (f === 'type') return { text: `${K} 종류를 골라 주세요.`, quick: [...typesFor(m.kind).map((x) => ({ l: x, v: x })), skip] };
     if (f === 'name') {
       const names = recentNames(deps.getRecords() || [], m.kind).slice(0, 4);
-      return { text: `${K} 제품명이 뭐예요? 예: OO 수화제`, quick: [...names.map((n) => ({ l: n, v: n })), skip] };
+      return { text: seed ? '모종 품종이 뭐예요? 예: 설향' : `${K} 제품명이 뭐예요? 예: OO 수화제`, quick: [...names.map((n) => ({ l: n, v: n })), skip] };
     }
     if (f === 'qty') {
+      if (seed) return { text: `모종은 몇 주 ${m.action === '구입' ? '사셨어요' : '쓰셨어요'}? 예: 3000주`, quick: [...['1000주', '3000주', '10판'].map((x) => ({ l: x, v: x })), skip] };
       const ex = m.kind === '비료' ? ['10kg', '1포대', '20L'] : ['100mL', '1L', '1병'];
       return { text: `${K} 양은 얼마나 ${m.action === '구입' ? '사셨어요' : '쓰셨어요'}? 예: 100g, 1L`, quick: [...ex.map((x) => ({ l: x, v: x })), skip] };
     }
-    if (f === 'unit') return { text: `단위를 골라 주세요. (${m.qty})`, quick: [...(m.kind === '비료' ? UNITS_FERTILIZER : UNITS_PESTICIDE).map((x) => ({ l: x, v: x })), skip] };
+    if (f === 'unit') return { text: `단위를 골라 주세요. (${m.qty})`, quick: [...unitsFor(m.kind).map((x) => ({ l: x, v: x })), skip] };
     return { text: AGENT_TEXT.retry, quick: [skip] };
   }
 
@@ -198,7 +268,11 @@ export function createAgent(deps) {
 
   function applyAnswer(key, v) {
     const d = st.draft;
-    if (key === 'houseIds') {
+    if (key === 'accident_date') {
+      if (v.date) setAccidentDate(v.date);
+      else if (v.continuing) { d.continuing = true; if (!/연속 재해/.test(d.memo)) d.memo = [d.memo, '연속 재해(며칠째 계속)'].filter(Boolean).join(', '); }
+    } else if (['peril', 'facility_damage', 'crop_symptom'].includes(key)) d[key] = v;
+    else if (key === 'houseIds') {
       d.houseIds = v;
       const c = deps.getProfile().houses.find((h) => h.id === v[0])?.crop;
       if (c && !d.crop) d.crop = c;
@@ -225,7 +299,7 @@ export function createAgent(deps) {
     st.askKey = '';
     const warn = st.draft.warnings.length ? st.draft.warnings.join(', ') + '. ' : '';
     st.messages.forEach((m) => { if (m.card && !m.snap) m.stale = true; });
-    say(warn + AGENT_TEXT.confirm, { card: true });
+    say(warn + (st.draft.type === 'disaster' ? AGENT_TEXT.disasterConfirm : AGENT_TEXT.confirm), { card: true });
   }
 
   // ---------- 바깥으로 넘기기 ----------
@@ -235,7 +309,8 @@ export function createAgent(deps) {
     return [houseNames(deps.getProfile(), d.houseIds), d.crop, d.task || d.stage].filter(Boolean).join(', ');
   }
   function toForm(mode) {
-    const d = st.draft;
+    // 재해 초안은 작업 일지 양식으로 넘기지 않는다 (사실과 다른 작업 기록 방지)
+    const d = st.draft && st.draft.type !== 'disaster' ? st.draft : null;
     const p = deps.getProfile();
     const first = p?.houses?.[0];
     const base = d || { workDate: todayStr(), houseIds: first && p.houses.length === 1 ? [first.id] : [], crop: '', stage: '', task: '', materials: [], area: { value: '', unit: '㎡' }, memo: '', weather: null, sourceTexts: [], method: '규칙' };
@@ -249,7 +324,9 @@ export function createAgent(deps) {
       weather: base.weather,
       stage: base.stage,
       task: base.task,
-      materials: base.materials.map((m) => ({ ...m, kind: m.kind || '농약', unit: m.unit || (m.kind === '비료' ? 'kg' : 'mL') })),
+      variety: base.variety || '',
+      plant_count: base.plant_count || '',
+      materials: base.materials.map((m) => ({ ...m, kind: m.kind || '농약', unit: m.unit || defaultUnit(m.kind || '농약') })),
       area: { ...base.area },
       detail: '',
       detailEdited: false,
@@ -270,6 +347,13 @@ export function createAgent(deps) {
 
   function fail(prefixQuestionKey) {
     st.fails++;
+    // 재해 기록은 직접 입력(작업 일지) 화면으로 넘기지 않고, 못 알아들은 칸은 건너뛴다
+    if (st.draft?.type === 'disaster') {
+      if (prefixQuestionKey && (st.asked[prefixQuestionKey] || 0) < 2) { ask(prefixQuestionKey, AGENT_TEXT.retry + ' '); return null; }
+      if (prefixQuestionKey) { st.skipped.push(prefixQuestionKey); proceed(); return null; }
+      say(AGENT_TEXT.confirm);
+      return null;
+    }
     if (st.fails >= 2) return handoff();
     if (prefixQuestionKey) {
       if ((st.asked[prefixQuestionKey] || 0) >= 2) { st.skipped.push(prefixQuestionKey); proceed(); return null; }
@@ -296,8 +380,58 @@ export function createAgent(deps) {
   }
 
   // ---------- 저장 ----------
+  async function saveDisaster() {
+    const d = st.draft;
+    const p = deps.getProfile();
+    const s = deps.getSession();
+    const store = await getStore();
+    const rec = {
+      id: null,
+      type: 'disaster',
+      accident_date: d.accident_date,
+      workDate: d.accident_date || todayStr(), // 목록 정렬용. 사고일을 모르면 작성일로 두고 "미완성"
+      continuing: !!d.continuing,
+      houseIds: [...d.houseIds],
+      crop: d.crop || (p.houses.find((h) => h.id === d.houseIds[0])?.crop || ''),
+      peril: d.peril,
+      facility_damage: d.facility_damage,
+      crop_symptom: d.crop_symptom,
+      weather: d.weather || (d.accident_date ? await getWeather(d.accident_date, p) : null) || missingWeather('미수집'),
+      stage: '',
+      task: '',
+      materials: [],
+      area: { value: '', unit: '㎡' },
+      detail: '',
+      detailEdited: false,
+      memo: d.memo,
+      author: p.name,
+      authorEmail: s.email,
+      location: p.location,
+      demo: false,
+      source_text: d.sourceTexts.join(' / '),
+      chat_answers: (d.answers || []).join(' / '),
+      extract_method: d.method,
+      input_mode: 'chat',
+      agent_guessed: [...d.guessed],
+    };
+    rec.detail = autoText(p, rec);
+    rec.missing = missingFields(rec);
+    const saved = await store.saveRecord(s.uid, rec);
+    const snap = JSON.parse(JSON.stringify(d));
+    const lastCard = [...st.messages].reverse().find((m) => m.card && !m.stale);
+    if (lastCard) lastCard.snap = snap;
+    st.draft = null;
+    st.phase = 'saved';
+    st.fails = 0;
+    const mis = rec.missing.length ? ` 빈칸 ${rec.missing.join(', ')}은(는) "미완성"으로 표시했어요.` : '';
+    say(`${houseNames(p, rec.houseIds) || '동 미입력'} ${rec.peril || '재해'} 피해를 재해 기록으로 저장했어요.${mis} ${PHOTO_NOTICE}.`, { savedId: saved.id });
+    say(AGENT_TEXT.more, { quick: [{ l: '네, 더 있어요', v: '__more' }, { l: '아니요', v: '__done' }, { l: '일지 목록 보기', v: '__list' }] });
+    return { action: 'saved', id: saved.id };
+  }
+
   async function save() {
     const d = st.draft;
+    if (d.type === 'disaster') return saveDisaster();
     const p = deps.getProfile();
     const s = deps.getSession();
     const store = await getStore();
@@ -310,6 +444,8 @@ export function createAgent(deps) {
       weather: d.weather || (await getWeather(d.workDate, p)) || missingWeather('미수집'),
       stage: d.stage,
       task: d.task,
+      variety: d.task === '정식' ? String(d.variety || '').trim() : '',
+      plant_count: d.task === '정식' ? String(d.plant_count || '').trim() : '',
       materials: d.materials.map((m) => ({ ...m, qty: String(m.qty ?? '').trim() })),
       area: { ...d.area },
       detail: '',
@@ -320,6 +456,7 @@ export function createAgent(deps) {
       location: p.location,
       demo: false,
       source_text: d.sourceTexts.join(' / '),
+      chat_answers: (d.answers || []).join(' / '),
       extract_method: d.method, // '규칙' | 'AI'
       input_mode: 'chat',
       agent_guessed: [...d.guessed],
@@ -370,8 +507,21 @@ export function createAgent(deps) {
       if (NO.test(text)) { st.draft = null; st.phase = 'idle'; say(AGENT_TEXT.cancel); return null; }
       const ext = extractRules(text, c);
       if (ext.intent === 'offtopic') return refuse();
+      // 확인 카드가 떠 있는데 완전히 다른 기록(재해 또는 다른 작업)을 말하면 고치기로 섞지 않고 새 초안으로 (원문·세부내용 오기입 방지)
+      const d0 = st.draft;
+      const isNew = ext.intent === 'disaster'
+        ? d0.type !== 'disaster'
+        : ext.intent === 'record' && !!ext.task && (ext.houseIds.length > 0 || !!ext.crop) && (d0.type === 'disaster' || ext.task !== d0.task);
+      if (isNew) {
+        say('앞의 초안은 저장하지 않고 새 기록으로 정리할게요.');
+        st.messages.forEach((m) => { if (m.card && !m.snap) m.stale = true; });
+        st.fails = 0;
+        if (ext.intent === 'disaster') { newDisasterDraft(ext, '규칙'); say(AGENT_TEXT.disasterStart); } else newDraft(ext, '규칙');
+        proceed();
+        return null;
+      }
       if (mergeOverride(ext)) {
-        st.draft.sourceTexts.push(text);
+        (st.draft.answers = st.draft.answers || []).push(text); // 원문(첫 발화)과 되묻기 답을 섞지 않는다
         st.fails = 0;
         proceed();
         return null;
@@ -390,7 +540,7 @@ export function createAgent(deps) {
       if (a.ok) { applyAnswer(key, a.value); got++; }
       got += mergeEmpty(ext);
       if (got) {
-        st.draft.sourceTexts.push(text);
+        (st.draft.answers = st.draft.answers || []).push(text); // 원문(첫 발화)과 되묻기 답을 섞지 않는다
         st.fails = 0;
         proceed();
         return null;
@@ -410,6 +560,13 @@ export function createAgent(deps) {
     if (u.intent === 'export') { say(AGENT_TEXT.export); return { action: 'go', to: 'excel' }; }
     if (u.intent === 'list') { say(AGENT_TEXT.list, { quick: [{ l: '일지 목록 보기', v: '__list' }] }); return null; }
     if (u.intent === 'greet') { say(AGENT_TEXT.greet, { quick: CAPABILITY_QUICK }); return null; }
+    if (u.intent === 'disaster') {
+      st.fails = 0;
+      newDisasterDraft(u.ext, u.method);
+      say(AGENT_TEXT.disasterStart);
+      proceed();
+      return null;
+    }
     if (u.intent !== 'record') return fail();
     st.fails = 0;
     newDraft(u.ext, u.method);
@@ -423,7 +580,21 @@ export function createAgent(deps) {
   function setField(key, value, raw = false) {
     const d = st.draft;
     if (!d) return;
-    if (key === 'workDate') {
+    const multi = (cur, v, list) => {
+      let a = String(cur || '').split(', ').filter(Boolean);
+      a = a.includes(v) ? a.filter((x) => x !== v) : [...a, v];
+      if (v === '시설 피해 없음' && a.includes(v)) a = [v];
+      else if (v !== '시설 피해 없음') a = a.filter((x) => x !== '시설 피해 없음');
+      return list.filter((x) => a.includes(x)).concat(a.filter((x) => !list.includes(x))).join(', ');
+    };
+    if (d.type === 'disaster' && key === 'workDate') {
+      setAccidentDate(value || '');
+      key = 'accident_date';
+    } else if (d.type === 'disaster' && ['peril', 'facility_damage', 'crop_symptom'].includes(key)) {
+      d[key] = raw ? value : multi(d[key], value, key === 'peril' ? PERILS : key === 'facility_damage' ? FACILITY_DAMAGES : CROP_SYMPTOMS);
+    } else if (key === 'variety' || key === 'plant_count') {
+      d[key] = value;
+    } else if (key === 'workDate') {
       d.workDate = value || todayStr();
       d.weather = null;
       loadWeather();
@@ -454,7 +625,7 @@ export function createAgent(deps) {
       const m = d.materials[i];
       if (!m) return;
       if (f === 'remove') { d.materials.splice(i, 1); return; }
-      if (f === 'kind' && m.kind !== value) { m.kind = value; m.type = ''; m.unit = value === '비료' ? 'kg' : 'mL'; if (value === '비료') { m.pest = ''; m.dilution = ''; } }
+      if (f === 'kind' && m.kind !== value) { m.kind = value; m.type = ''; m.unit = defaultUnit(value); if (value !== '농약') { m.pest = ''; m.dilution = ''; } }
       else if (!raw && (f === 'dilution' || f === 'pest')) m[f] = m[f] === value ? '' : value;
       else m[f] = value;
     }
