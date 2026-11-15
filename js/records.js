@@ -1,6 +1,11 @@
 // 일지 레코드 공통 로직: 빈 레코드, 작목 자동, 세부작업내용 자동 문장, 미완성 판정
 
-import { WEEKDAYS } from './constants.js';
+import { WEEKDAYS, defaultUnit } from './constants.js';
+
+// v0.3: 재해 기록은 작업 일지와 별도 기록 (type: 'disaster'). 같은 저장소에 두되 엑셀은 시트3으로 따로 나간다
+export function isDisaster(r) {
+  return !!r && r.type === 'disaster';
+}
 
 export function todayStr(d = new Date()) {
   const p = (n) => String(n).padStart(2, '0');
@@ -13,7 +18,7 @@ export function weekday(dateStr) {
 }
 
 export function newMaterial(kind = '농약') {
-  return { kind, action: '사용', type: '', name: '', qty: '', unit: kind === '농약' ? 'mL' : 'kg', dilution: '', pest: '' };
+  return { kind, action: '사용', type: '', name: '', qty: '', unit: defaultUnit(kind), dilution: '', pest: '' };
 }
 
 export function emptyRecord(profile) {
@@ -62,7 +67,16 @@ export function qtyText(m) {
 // 세부작업내용 자동 문장. 예: "1동 토마토 병해충 방제, 잿빛곰팡이병 대상 가상곰팡이 액상 100mL (1000배) 사용"
 export function autoText(profile, r) {
   const names = houseNames(profile, r.houseIds);
+  if (isDisaster(r)) {
+    // 예: "3동 딸기 재해(강풍·태풍), 시설 피해: 비닐 찢어짐, 작물 피해: 얼어서 시듦"
+    let d = [names, r.crop, `재해(${r.peril || '종류 미입력'})`].filter(Boolean).join(' ');
+    if (r.facility_damage) d += `, 시설 피해: ${r.facility_damage}`;
+    if (r.crop_symptom) d += `, 작물 피해: ${r.crop_symptom}`;
+    if (r.continuing) d += ', 연속 재해';
+    return d;
+  }
   let s = [names, r.crop, r.task || r.stage || '작업'].filter(Boolean).join(' ');
+  if (r.task === '정식' && (r.variety || r.plant_count)) s += `, ${[r.variety ? `품종 ${r.variety}` : '', r.plant_count ? `${r.plant_count}주` : ''].filter(Boolean).join(' ')}`;
   (r.materials || []).forEach((m) => {
     if (!m.name && !m.type) return;
     const label = m.name || `${m.type}`;
@@ -80,6 +94,14 @@ export function detailOf(profile, r) {
 // 필수 항목 빈칸 목록 (빈칸이어도 저장은 되고 "미완성" 표시)
 export function missingFields(r) {
   const a = [];
+  if (isDisaster(r)) {
+    if (!r.accident_date) a.push('사고일');
+    if (!r.peril) a.push('재해 종류');
+    if (!r.houseIds || !r.houseIds.length) a.push('피해 동');
+    if (!r.facility_damage) a.push('시설 피해');
+    if (!r.crop_symptom) a.push('작물 피해');
+    return a;
+  }
   if (!r.workDate) a.push('작업일');
   if (!r.houseIds || !r.houseIds.length) a.push('하우스 동');
   if (!r.crop) a.push('작목');

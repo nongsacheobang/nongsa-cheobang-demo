@@ -4,12 +4,12 @@
 // 해시 라우팅: #/login #/sent #/setup #/home #/chat #/write #/write/{id} #/saved/{id} #/list #/detail/{id} #/excel #/proof #/support #/me
 
 import { CONFIG } from './config.js';
-import { APP_VERSION, CROPS, STAGES, PESTICIDE_TYPES, FERTILIZER_TYPES, UNITS_PESTICIDE, UNITS_FERTILIZER, DILUTIONS, AREA_UNITS, SKY, EXCEL_HEADERS, tasksFor, pestsFor } from './constants.js';
+import { APP_VERSION, CROPS, STAGES, MATERIAL_KINDS, SEED, PHOTO_NOTICE, DILUTIONS, AREA_UNITS, SKY, EXCEL_HEADERS, tasksFor, pestsFor, typesFor, unitsFor } from './constants.js';
 import { getStore } from './storage/index.js';
 import { auth, isValidEmail, DEMO_EMAIL } from './auth.js';
 import { getWeather, weatherText, weatherSourceLabel, missingWeather } from './weather.js';
-import { todayStr, weekday, newMaterial, emptyRecord, housesOf, cropOf, houseNames, autoText, detailOf, missingFields, isBackfill, fmtDateTime, recentNames } from './records.js';
-import { buildSheet1Rows, buildWorkbook, fileName, downloadBlob, canShareFile, shareBlob } from './excel.js';
+import { todayStr, weekday, newMaterial, emptyRecord, housesOf, cropOf, houseNames, autoText, detailOf, missingFields, isBackfill, isDisaster, fmtDateTime, recentNames } from './records.js';
+import { buildSheet1Rows, buildDisasterRows, buildWorkbook, fileName, downloadBlob, canShareFile, shareBlob } from './excel.js';
 import { DEMO_PROFILE, buildDemoRecords } from './demo.js';
 import { createAgent } from './agent/agent.js';
 import { vChat, chatBar, demoTalks, DEMO_TALKS } from './agent/chat-view.js';
@@ -164,6 +164,7 @@ function vSetup() {
         <input class="inp sm" placeholder="지번 (예: OO리 123)" value="${esc(h.lot)}" ${attr({ in: 'house', i, k: 'lot' })}>
         ${d.houses.length > 1 ? `<button class="lnk danger" ${attr({ act: 'rmHouse', i })}>삭제</button>` : ''}</div>
       <div class="row"><span class="mut" style="width:34px">작목</span><div class="chips">${chips(CROPS, h.crop, 'houseCrop', { i })}</div></div>
+      <div class="row"><span class="mut" style="width:34px">면적</span><input class="inp sm" style="width:140px;flex:none" inputmode="decimal" placeholder="재배면적" value="${esc(h.area || '')}" ${attr({ in: 'house', i, k: 'area' })}><span class="mut">㎡ (선택)</span></div>
     </div>`).join('');
   return `<section class="scr">
     <div class="hd">${editing ? '<button class="bk" data-act="go" data-v="me" aria-label="뒤로">&lt;</button>' : ''}<h1>${editing ? '하우스 동·작목 관리' : '처음 설정'}</h1><span class="mut">${editing ? '' : '최초 1회'}</span></div>
@@ -172,7 +173,7 @@ function vSetup() {
       <div class="fld"><label>이름<span class="req">*</span></label><input class="inp" placeholder="예: 홍길동" value="${esc(d.name)}" ${attr({ in: 'setup', k: 'name' })}></div>
       <div class="fld"><label>농장 이름<span class="req">*</span></label><input class="inp" placeholder="예: OO농장" value="${esc(d.farmName)}" ${attr({ in: 'setup', k: 'farmName' })}></div>
       <div class="fld"><label>농장 위치 (시군구)<span class="req">*</span><span class="opt">날씨 자동 입력에 사용</span></label><input class="inp" placeholder="예: 경상남도 OO군 OO면" value="${esc(d.location)}" ${attr({ in: 'setup', k: 'location' })}></div>
-      <div class="fld"><label>하우스 동<span class="req">*</span><span class="opt">동 이름 + 지번 + 작목</span></label>
+      <div class="fld"><label>하우스 동<span class="req">*</span><span class="opt">동 이름 + 지번 + 작목 + 재배면적(선택)</span></label>
         ${houses}
         <button class="ghost dash" data-act="addHouse">+ 하우스 동 추가</button>
       </div>
@@ -194,15 +195,16 @@ function monthStats() {
 
 function li(r) {
   const [, m, d] = r.workDate.split('-').map(Number);
-  const mats = (r.materials || []).map((x) => `${x.kind} ${x.action}`).join(', ');
+  const dis = isDisaster(r);
+  const mats = dis ? [r.facility_damage, r.crop_symptom].filter(Boolean).join(' · ') : (r.materials || []).map((x) => `${x.kind} ${x.action}`).join(', ');
   const inc = missingFields(r).length;
-  const title = r.task || r.stage || '작업 미입력';
+  const title = dis ? `재해: ${r.peril || '종류 미입력'}` : r.task || r.stage || '작업 미입력';
   const chat = r.input_mode === 'chat' || r.input_mode === 'chat-handoff';
   return `<div class="li" ${attr({ act: 'openDetail', v: r.id })}>
     <div class="dt"><b>${d}</b><span>${m}월 ${weekday(r.workDate)}</span></div>
     <div class="ct"><p><b>${esc(title)}</b> <span class="t2">${esc(houseNames(S.profile, r.houseIds))} ${esc(r.crop)}</span></p>
       <p class="s">${esc(weatherText(r.weather))}${mats ? ' · ' + esc(mats) : ''}</p></div>
-    <div class="tags">${inc ? '<span class="tag inc">미완성</span>' : ''}${chat ? '<span class="tag ac">대화</span>' : ''}${r.demo ? '<span class="tag demo">가상</span>' : ''}</div>
+    <div class="tags">${dis ? '<span class="tag dis">재해</span>' : ''}${inc ? '<span class="tag inc">미완성</span>' : ''}${chat ? '<span class="tag ac">대화</span>' : ''}${r.demo ? '<span class="tag demo">가상</span>' : ''}</div>
   </div>`;
 }
 
@@ -269,16 +271,16 @@ function materialCard(m, i, crop) {
   const names = recentNames(S.records, m.kind);
   return `<div class="mat">
     <div class="row" style="margin-bottom:10px">
-      <div class="seg" style="flex:1">${['농약', '비료'].map((k) => `<button class="${m.kind === k ? 'on' : ''}" ${attr({ act: 'matKind', i, v: k })}>${k}</button>`).join('')}</div>
+      <div class="seg" style="flex:1.4">${MATERIAL_KINDS.map((k) => `<button class="${m.kind === k ? 'on' : ''}" ${attr({ act: 'matKind', i, v: k })}>${k === SEED ? '모종' : k}</button>`).join('')}</div>
       <div class="seg" style="flex:1">${['구입', '사용'].map((k) => `<button class="${m.action === k ? 'on' : ''}" ${attr({ act: 'matSet', i, k: 'action', v: k })}>${k}</button>`).join('')}</div>
       <button class="lnk danger" ${attr({ act: 'rmMat', i })}>삭제</button></div>
-    <div class="fld"><label>${m.kind} 종류<span class="req">*</span></label><div class="chips">${chips(P ? PESTICIDE_TYPES : FERTILIZER_TYPES, m.type, 'matSet', { i, k: 'type' })}</div></div>
-    <div class="fld"><label>제품명<span class="req">*</span><span class="opt">최근 사용 + 직접 입력</span></label>
+    <div class="fld"><label>${m.kind} 종류<span class="req">*</span></label><div class="chips">${chips(typesFor(m.kind), m.type, 'matSet', { i, k: 'type' })}</div></div>
+    <div class="fld"><label>${m.kind === SEED ? '품종' : '제품명'}<span class="req">*</span><span class="opt">최근 사용 + 직접 입력</span></label>
       ${names.length ? `<div class="chips" style="margin-bottom:7px">${chips(names, m.name, 'matSet', { i, k: 'name' })}</div>` : ''}
       <input class="inp" placeholder="직접 입력" value="${esc(m.name)}" ${attr({ in: 'mat', i, k: 'name' })}></div>
     <div class="fld"><label>양 · 단위<span class="req">*</span></label>
       <div class="qty"><input class="inp" inputmode="decimal" placeholder="숫자" value="${esc(m.qty)}" ${attr({ in: 'mat', i, k: 'qty' })}></div>
-      <div class="chips" style="margin-top:7px">${chips(P ? UNITS_PESTICIDE : UNITS_FERTILIZER, m.unit, 'matSet', { i, k: 'unit' })}</div></div>
+      <div class="chips" style="margin-top:7px">${chips(unitsFor(m.kind), m.unit, 'matSet', { i, k: 'unit' })}</div></div>
     ${P && m.action === '사용' ? `<div class="fld"><label>희석배수<span class="opt">선택</span></label><div class="chips">${DILUTIONS.map((x) => `<button class="chip${m.dilution === x ? ' on' : ''}" ${attr({ act: 'matToggle', i, k: 'dilution', v: x })}>${x}배</button>`).join('')}</div></div>
     <div class="fld" style="margin:0"><label>대상 병해충<span class="opt">선택</span></label><div class="chips">${chips(pestsFor(crop), m.pest, 'matToggle', { i, k: 'pest' })}</div></div>` : ''}
   </div>`;
@@ -312,9 +314,11 @@ function vWrite() {
         ${wxEdit}</div>
       <div class="fld"><label>작업단계<span class="req">*</span></label><div class="stg">${STAGES.map((x) => `<button class="${x === f.stage ? 'on' : ''}" ${attr({ act: 'setStage', v: x })}>${esc(x)}</button>`).join('')}</div></div>
       <div class="fld"><label>세부 작업</label><div class="chips">${tasks.length ? chips(tasks, f.task, 'setTask') : '<span class="mut">작업단계를 먼저 골라주세요</span>'}</div></div>
-      <div class="fld"><label>농약 / 비료</label>
+      ${f.task === '정식' ? `<div class="fld"><label>품종 · 주수<span class="opt">선택 · 보험 증빙(정식 주수)</span></label>
+        <div class="row"><input class="inp sm" placeholder="품종 (예: 설향)" value="${esc(f.variety || '')}" ${attr({ in: 'fv', k: 'variety' })}><input class="inp sm" style="width:110px;flex:none" inputmode="numeric" placeholder="주수" value="${esc(f.plant_count || '')}" ${attr({ in: 'fv', k: 'plant_count' })}><span class="mut">주</span></div></div>` : ''}
+      <div class="fld"><label>농약 / 비료 / 모종</label>
         ${f.materials.map((m, i) => materialCard(m, i, f.crop)).join('')}
-        <button class="ghost dash" style="margin:0" data-act="addMat">+ 농약/비료 추가</button></div>
+        <button class="ghost dash" style="margin:0" data-act="addMat">+ 농약/비료/모종 추가</button></div>
       <div class="fld"><label>처리 면적<span class="opt">선택</span></label>
         <div class="row"><input class="inp sm" style="width:120px;flex:none" inputmode="decimal" placeholder="숫자" value="${esc(f.area.value)}" data-in="areaValue" ${f.area.unit === '동 전체' ? 'disabled' : ''}><div class="chips">${chips(AREA_UNITS, f.area.unit, 'areaUnit')}</div></div></div>
       <div class="fld"><label>세부작업내용<span class="opt">${S.detailEditing ? '직접 고친 문장' : '선택한 내용으로 자동 작성'}</span></label>
@@ -380,6 +384,7 @@ function vDetail() {
   const r = S.records.find((x) => x.id === S.param);
   if (!r) return `<section class="scr"><div class="hd"><button class="bk" data-act="go" data-v="list">&lt;</button><h1>일지 상세</h1></div><div class="bd"><p class="empty">기록을 찾을 수 없어요</p></div></section>`;
   const mis = missingFields(r);
+  if (isDisaster(r)) return vDisasterDetail(r, mis);
   const ed = CONFIG.features.editDelete;
   let h = '';
   if (mis.length) h += `<div class="prog inc"><span class="tag inc">미완성</span><span>${esc(mis.join(', '))} 빈칸</span><span class="sp"></span>${ed ? `<button class="lnk" ${attr({ act: 'editRecord', v: r.id })}>채우기</button>` : ''}</div>`;
@@ -391,6 +396,7 @@ function vDetail() {
     <div class="kv"><span class="k">작목</span><span class="v">${r.crop ? esc(r.crop) : '<span class="mut">빈칸</span>'}</span></div>
     <div class="kv"><span class="k">날씨</span><span class="v">${esc(weatherText(w))}${w && w.status !== 'missing' && w.rain != null ? ` · 강수 ${w.rain}mm` : ''} <span class="mut">${esc(weatherSourceLabel(w))}</span></span></div>
     <div class="kv"><span class="k">작업단계</span><span class="v">${r.stage ? esc(r.stage + (r.task ? ' > ' + r.task : '')) : '<span class="mut">빈칸</span>'}</span></div>
+    ${r.task === '정식' && (r.variety || r.plant_count) ? `<div class="kv"><span class="k">품종·주수</span><span class="v">${esc([r.variety, r.plant_count ? r.plant_count + '주' : ''].filter(Boolean).join(' · '))}</span></div>` : ''}
     ${r.area?.value || r.area?.unit === '동 전체' ? `<div class="kv"><span class="k">처리 면적</span><span class="v">${esc(r.area.unit === '동 전체' ? '동 전체' : r.area.value + r.area.unit)}</span></div>` : ''}
   </div>`;
   (r.materials || []).forEach((m) => {
@@ -402,11 +408,35 @@ function vDetail() {
       ${m.pest ? `<div class="kv"><span class="k">대상 병해충</span><span class="v">${esc(m.pest)}</span></div>` : ''}</div>`;
   });
   h += `<div class="card"><h3>세부작업내용</h3><p style="line-height:1.5">${esc(detailOf(S.profile, r))}</p>${r.memo ? `<p class="mut" style="margin-top:6px">메모: ${esc(r.memo)}</p>` : ''}</div>`;
-  if (r.source_text) h += `<div class="card"><h3>대화 원문</h3><p style="line-height:1.5">"${esc(r.source_text)}"</p><p class="mut" style="margin-top:6px">입력 방식: ${r.input_mode === 'chat-handoff' ? '대화 후 직접 입력' : '대화'} · 추출 ${esc(r.extract_method || '규칙')}</p></div>`;
+  if (r.source_text) h += `<div class="card"><h3>대화 원문</h3><p style="line-height:1.5">"${esc(r.source_text)}"</p>${r.chat_answers ? `<p class="mut" style="margin-top:6px">되묻기에 답한 내용: ${esc(r.chat_answers)}</p>` : ""}<p class="mut" style="margin-top:6px">입력 방식: ${r.input_mode === 'chat-handoff' ? '대화 후 직접 입력' : '대화'} · 추출 ${esc(r.extract_method || '규칙')}</p></div>`;
   h += `<div class="card" style="background:#FAFAFA"><p class="mut" style="line-height:1.6">작성 ${esc(fmtDateTime(r.createdAt))} · ${r.updatedAt ? '수정 ' + esc(fmtDateTime(r.updatedAt)) : '수정 없음'} · 작성자 ${esc(r.author || '')}${isBackfill(r) ? ' · 사후입력' : ''}${r.demo ? ' · 가상 데이터' : ''} (엑셀 시트2)</p></div>`;
   if (ed) h += `<button class="ghost danger" ${attr({ act: 'deleteRecord', v: r.id })}>삭제</button>`;
   return `<section class="scr">
     <div class="hd"><button class="bk" data-act="go" data-v="list" aria-label="뒤로">&lt;</button><h1>일지 상세</h1>${ed ? `<button class="lnk" ${attr({ act: 'editRecord', v: r.id })}>수정</button>` : ''}</div>
+    <div class="bd">${h}</div></section>`;
+}
+
+// 재해 기록 상세 (v0.3). 작업 일지 수정 화면으로는 보내지 않음 (삭제만)
+function vDisasterDetail(r, mis) {
+  const ed = CONFIG.features.editDelete;
+  const hs = housesOf(S.profile, r.houseIds).map((x) => `${x.name}${x.lot ? ` (${x.lot})` : ''}`).join(', ');
+  const blank = '<span class="mut">빈칸</span>';
+  let h = '';
+  if (mis.length) h += `<div class="prog inc"><span class="tag inc">미완성</span><span>${esc(mis.join(', '))} 빈칸</span></div>`;
+  h += `<div class="card dis"><div class="row" style="margin-bottom:6px"><h3 style="margin:0">재해 기록</h3><span class="tag dis">재해</span></div>
+    <div class="kv"><span class="k">사고일</span><span class="v">${r.accident_date ? `<b>${esc(r.accident_date)} (${weekday(r.accident_date)})</b>${r.continuing ? ' 부터 계속' : ''}` : blank}</span></div>
+    <div class="kv"><span class="k">피해 동</span><span class="v">${hs ? `<b>${esc(hs)}</b>` : blank} ${esc(r.crop || '')}</span></div>
+    <div class="kv"><span class="k">재해 종류</span><span class="v">${r.peril ? esc(r.peril) : blank}</span></div>
+    <div class="kv"><span class="k">시설 피해</span><span class="v">${r.facility_damage ? esc(r.facility_damage) : blank}</span></div>
+    <div class="kv"><span class="k">작물 피해</span><span class="v">${r.crop_symptom ? esc(r.crop_symptom) : blank}</span></div>
+    <div class="kv"><span class="k">날씨</span><span class="v">${esc(weatherText(r.weather))}</span></div>
+    ${r.memo ? `<div class="kv"><span class="k">메모</span><span class="v">${esc(r.memo)}</span></div>` : ''}
+    <p class="photo-note">${esc(PHOTO_NOTICE)} (사진 첨부는 준비 중)</p></div>`;
+  if (r.source_text) h += `<div class="card"><h3>대화 원문</h3><p style="line-height:1.5">"${esc(r.source_text)}"</p>${r.chat_answers ? `<p class="mut" style="margin-top:6px">되묻기에 답한 내용: ${esc(r.chat_answers)}</p>` : ""}</div>`;
+  h += `<div class="card" style="background:#FAFAFA"><p class="mut" style="line-height:1.6">작성 ${esc(fmtDateTime(r.createdAt))} · 작성자 ${esc(r.author || '')}${isBackfill(r) ? ' · 사후입력' : ''}${r.demo ? ' · 가상 데이터' : ''} (엑셀 시트3 재해 기록)</p></div>`;
+  if (ed) h += `<button class="ghost danger" ${attr({ act: 'deleteRecord', v: r.id })}>삭제</button>`;
+  return `<section class="scr">
+    <div class="hd"><button class="bk" data-act="go" data-v="list" aria-label="뒤로">&lt;</button><h1>재해 기록 상세</h1></div>
     <div class="bd">${h}</div></section>`;
 }
 
@@ -431,6 +461,7 @@ function vExcel() {
   const { from, to } = excelRange();
   const recs = excelRecords();
   const rows = buildSheet1Rows(S.profile, recs);
+  const drows = buildDisasterRows(S.profile, recs);
   const L = 'ABCDEFGHIJKLM'.split('');
   const prev = `<tr><th class="cl"></th>${L.map((l) => `<th class="cl">${l}</th>`).join('')}</tr>
     <tr><td class="cl">1</td>${EXCEL_HEADERS.map((h) => `<th>${esc(h)}</th>`).join('')}</tr>
@@ -444,10 +475,10 @@ function vExcel() {
       <div class="fld"><label>기간</label>
         <div class="seg">${[['month', '이번 달'], ['all', '영농기간 전체'], ['custom', '직접 선택']].map(([v, l]) => `<button class="${p === v ? 'on' : ''}" ${attr({ act: 'excelPeriod', v })}>${l}</button>`).join('')}</div>
         ${p === 'custom' ? `<div class="dates"><input class="inp" type="date" value="${esc(from)}" data-in="xFrom"><input class="inp" type="date" value="${esc(to)}" data-in="xTo"></div>` : ''}
-        <p class="mut" style="margin-top:6px">${esc(from)} ~ ${esc(to)} · 기록 ${recs.length}건, 자재 행 포함 ${rows.length}행</p></div>
+        <p class="mut" style="margin-top:6px">${esc(from)} ~ ${esc(to)} · 기록 ${recs.length}건, 자재 행 포함 ${rows.length}행 · 재해 기록 ${drows.length}건</p></div>
       <div class="card">
         <h3>표준 영농기록장 양식 (농식품부 공익직불제)</h3>
-        <div class="chk"><b>1</b>시트1: 표준 영농기록장 순서 A~M열<br><b>2</b>1행은 머리글만, 셀 병합 없음<br><b>3</b>날짜는 날짜 형식, 빈 값은 0이 아닌 빈칸<br><b>4</b>농약·비료는 자재마다 1행<br><b>5</b>시트2: 작성·수정 시각, 사후입력 여부 (증빙 신뢰도)</div>
+        <div class="chk"><b>1</b>시트1: 표준 영농기록장 순서 A~M열<br><b>2</b>1행은 머리글만, 셀 병합 없음<br><b>3</b>날짜는 날짜 형식, 빈 값은 0이 아닌 빈칸<br><b>4</b>농약·비료는 자재마다 1행<br><b>5</b>시트2: 작성·수정 시각, 사후입력 여부 (증빙 신뢰도)<br><b>6</b>시트3: 재해 기록 (사고일, 재해 종류, 피해 동, 시설·작물 피해, 원문)</div>
       </div>
       <div class="fld"><label>미리보기 (시트1)</label><div class="xlw"><table class="xl">${prev}</table></div></div>
       <div class="card" style="background:#FAFAFA"><div class="mut">파일 이름</div><b style="font-size:13px;word-break:break-all">${esc(fileName(S.profile, from, to))}</b></div>
@@ -497,7 +528,7 @@ function vMe() {
         <div class="kv"><span class="k">이메일</span><span class="v">${esc(S.session.email)}</span></div>
         <div class="kv"><span class="k">농장</span><span class="v">${esc(p.farmName)}</span></div>
         <div class="kv"><span class="k">위치</span><span class="v">${esc(p.location)}</span></div></div>
-      <div class="card"><h3>하우스 동</h3>${p.houses.map((h) => `<div class="kv"><span class="k">${esc(h.name)}</span><span class="v">${esc(h.lot)} <span class="tag ac">${esc(h.crop)}</span></span></div>`).join('')}</div>
+      <div class="card"><h3>하우스 동</h3>${p.houses.map((h) => `<div class="kv"><span class="k">${esc(h.name)}</span><span class="v">${esc(h.lot)} <span class="tag ac">${esc(h.crop)}</span>${h.area ? ` <span class="mut">${esc(h.area)}㎡</span>` : ''}</span></div>`).join('')}</div>
       <button class="ghost" data-act="editSetup">하우스 동·작목 관리</button>
       ${CONFIG.features.demoData ? (hasDemo
         ? '<button class="ghost" data-act="removeDemo">가상 데모 일지 지우기</button>'
@@ -581,7 +612,7 @@ function handoffTo(form) {
   S.wxEdit = false;
   S.detailEditing = false;
   if (!S.form.weather) loadFormWeather();
-  toast('대화에서 알아낸 값을 채워 둬어요');
+  toast('대화에서 알아낸 값을 채워 뒀어요');
   go('write');
 }
 
@@ -667,7 +698,7 @@ const ACTIONS = {
   },
   async saveSetup(_el, withDemo = false) {
     const d = setupDraft();
-    d.houses.forEach((h) => { h.name = h.name.trim(); h.lot = h.lot.trim(); });
+    d.houses.forEach((h) => { h.name = h.name.trim(); h.lot = h.lot.trim(); h.area = String(h.area || '').replace(/[^\d.]/g, ''); });
     const errs = [];
     if (!d.name?.trim()) errs.push('이름');
     if (!d.farmName?.trim()) errs.push('농장 이름');
@@ -971,6 +1002,7 @@ function onInput(e) {
   if (k === 'setup') setupDraft()[el.dataset.k] = v;
   else if (k === 'house') setupDraft().houses[Number(el.dataset.i)][el.dataset.k] = v;
   else if (k === 'mat') S.form.materials[Number(el.dataset.i)][el.dataset.k] = v;
+  else if (k === 'fv') S.form[el.dataset.k] = v;
   else if (k === 'memo') S.form.memo = v;
   else if (k === 'detail') S.form.detail = v;
   else if (k === 'areaValue') S.form.area.value = v.trim();

@@ -2,9 +2,11 @@
 // 시트1 "영농기록장": 표준 영농기록장 순서 A~M열, 1행은 머리글만, 셀 병합 없음,
 //   날짜는 날짜 셀(yyyy-mm-dd), 빈 값은 0 이 아닌 빈칸, 농약·비료는 자재마다 1행(A~D, L, M 반복)
 // 시트2 "증빙정보": 기록ID, 작성·수정 시각, 사후입력 여부, 작성자, 위치, 기온·강수량 등 (증빙 신뢰도용)
+// 시트3 "재해 기록" (v0.3): 사고일, 재해 종류, 피해 동, 시설 피해, 작물 피해, 원문. 작업 일지(시트1·2)와 분리
+//   종묘(모종)은 표준 양식에 열이 없어 E열(구입/사용)과 M열(세부작업내용)에만 남는다
 
-import { EXCEL_HEADERS } from './constants.js';
-import { plotsText, qtyText, detailOf, missingFields, isBackfill, todayStr } from './records.js';
+import { EXCEL_HEADERS, DISASTER_HEADERS } from './constants.js';
+import { plotsText, qtyText, detailOf, missingFields, isBackfill, isDisaster, todayStr } from './records.js';
 import { weatherCell } from './weather.js';
 
 const XLSX_URL = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs';
@@ -27,7 +29,7 @@ function sortAsc(records) {
 // 시트1 행 (A열은 'YYYY-MM-DD' 문자열, 파일 만들 때 날짜 셀로 바꿈)
 export function buildSheet1Rows(profile, records) {
   const rows = [];
-  for (const r of sortAsc(records)) {
+  for (const r of sortAsc(records.filter((x) => !isDisaster(x)))) {
     const base = [r.workDate, plotsText(profile, r.houseIds), r.crop || '', weatherCell(r.weather)];
     const tail = [stageText(r), fullDetail(profile, r)];
     const mats = r.materials || [];
@@ -36,10 +38,11 @@ export function buildSheet1Rows(profile, records) {
     } else {
       for (const m of mats) {
         const P = m.kind === '농약';
+        const F = m.kind === '비료';
         const q = qtyText(m);
         rows.push({
           rec: r,
-          cells: [...base, m.action || '', P ? m.type : '', P ? m.name : '', P ? q : '', P ? '' : m.type, P ? '' : m.name, P ? '' : q, ...tail],
+          cells: [...base, m.action || '', P ? m.type : '', P ? m.name : '', P ? q : '', F ? m.type : '', F ? m.name : '', F ? q : '', ...tail],
         });
       }
     }
@@ -81,6 +84,18 @@ export function fileName(profile, from, to) {
   return `영농기록장_${farm}_${from.replace(/-/g, '')}_${to.replace(/-/g, '')}.xlsx`;
 }
 
+// 시트3 행 (재해 기록 1건당 1행). 사고일과 작성일을 따로 남긴다
+export function buildDisasterRows(profile, records) {
+  return sortAsc(records.filter(isDisaster)).map((r) => ({
+    rec: r,
+    cells: [
+      r.id, r.accident_date || '', r.createdAt || '', isBackfill(r) ? 'Y' : 'N', r.peril || '', plotsText(profile, r.houseIds), r.crop || '',
+      r.facility_damage || '', r.crop_symptom || '', r.continuing ? 'Y' : 'N', r.memo || '', r.source_text || '',
+      inputModeText(r), r.author || '', r.demo ? 'Y' : 'N',
+    ],
+  }));
+}
+
 export async function buildWorkbook(profile, session, records) {
   const XLSX = await import(XLSX_URL);
   const rows = buildSheet1Rows(profile, records);
@@ -99,7 +114,7 @@ export async function buildWorkbook(profile, session, records) {
   rows.forEach((r, i) => {
     if (!firstRow.has(r.rec.id)) firstRow.set(r.rec.id, i + 2);
   });
-  const recs = sortAsc(records);
+  const recs = sortAsc(records.filter((x) => !isDisaster(x)));
   const aoa2 = [SHEET2_HEADERS];
   recs.forEach((r) => {
     const w = r.weather || {};
@@ -132,9 +147,22 @@ export async function buildWorkbook(profile, session, records) {
   });
   ws2['!cols'] = [18, 12, 10, 19, 19, 10, 10, 22, 22, 10, 10, 10, 10, 16, 24, 18, 12, 18, 50].map((w) => ({ wch: w }));
 
+  // 시트3 재해 기록 (기록이 없어도 머리글은 둔다)
+  const drows = buildDisasterRows(profile, records);
+  const aoa3 = [DISASTER_HEADERS, ...drows.map((r) => r.cells.map((c) => (c === '' ? null : c)))];
+  const ws3 = XLSX.utils.aoa_to_sheet(aoa3);
+  drows.forEach((r, i) => {
+    const R = i + 1;
+    if (r.rec.accident_date) ws3[XLSX.utils.encode_cell({ r: R, c: 1 })] = { t: 'n', v: excelSerialDate(r.rec.accident_date), z: 'yyyy-mm-dd' };
+    const c = excelSerialDateTime(r.rec.createdAt);
+    if (c != null) ws3[XLSX.utils.encode_cell({ r: R, c: 2 })] = { t: 'n', v: c, z: 'yyyy-mm-dd hh:mm:ss' };
+  });
+  ws3['!cols'] = [18, 12, 19, 10, 20, 24, 10, 26, 22, 10, 30, 50, 18, 10, 12].map((w) => ({ wch: w }));
+
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws1, '영농기록장');
   XLSX.utils.book_append_sheet(wb, ws2, '증빙정보');
+  XLSX.utils.book_append_sheet(wb, ws3, '재해 기록');
   wb.Props = { Title: '표준 영농기록장', Author: session?.email || '', CreatedDate: new Date() };
   const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
   return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
