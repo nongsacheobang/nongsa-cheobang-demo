@@ -1,6 +1,20 @@
-# 농사 처방 시연 웹앱 (PWA) P0 골격 v0.2 (대화 입력 모드 추가)
+# 농사 처방 시연 웹앱 (PWA) P0 골격 v0.3 (재해 기록·수확 개시/종료·종묘 추가)
+
+이 저장소는 공개 시연용(가상 데이터만)입니다. 개발 원본은 팀 비공개 저장소에 있습니다.
 
 작성: 2026-11-15 허간(개발 총괄) / 상태: 골격 (개발 착수 11/20 전 선작업, 게이트1 결정 전이라 허간 추천안 기준)
+
+## 저장소 (2026-11-15 회사 계정으로 이전)
+
+| 용도 | 주소 |
+|-|-|
+| 개발 원본 (비공개) | https://github.com/nongsacheobang/nongsa-cheobang |
+| 시연 (공개, 가상 데이터만) | https://github.com/nongsacheobang/nongsa-cheobang-demo |
+| 시연 배포 (GitHub Pages) | https://nongsacheobang.github.io/nongsa-cheobang-demo/ |
+| 옛 시연 저장소 (개인 계정, 수정·삭제 안 함) | https://github.com/gani-byte/nongsa-cheobang-demo |
+
+- [ ] TODO: 로컬 git remote를 nongsacheobang/nongsa-cheobang 으로 변경 필요 (이 작업 환경은 git.exe가 막혀 있어 못 바꿈. 예: `git remote set-url origin https://github.com/nongsacheobang/nongsa-cheobang.git`, 시연 저장소는 `git remote add demo https://github.com/nongsacheobang/nongsa-cheobang-demo.git`)
+- [ ] TODO: v0.3은 GitHub 웹 업로드로 올렸으므로 로컬 git 기록과 원격 기록이 다름. 로컬에서 `git fetch` 후 원격 main 기준으로 맞추기
 
 기준 문서
 - 기능 목록·메뉴 트리 v0.1 (P0 7기능, 홈·일지·증빙·지원금 4탭, 첫 화면 1안)
@@ -61,7 +75,7 @@
 - 작업: 키워드 사전 22개 규칙(곁순, 적엽, 런너, 방제, 엽면시비·웃거름, 밑거름, 관수·양액, 환기, 보온, 정식, 경운, 멀칭, 수확, 출하, 철거 등) -> 작목별 세부작업명과 작업단계(constants.js)
 - 자재: 농약/비료 구분(키워드·제품명 접미사), 구입(샀어/구입)/사용, 종류(살균/살충/칼슘·엽면/퇴비·유박/복합 등, 병해충에서 추측), 제품명(최근 사용 제품 사전 -> "~수화제/유제/액상/복합비료" 접미사 -> 칼슘제 등 일반명 -> "~을/를" 앞 명사), 양·단위(L, mL/미리/cc, kg/키로, g/그램, 포대, 병, 봉지, 톤, "두 병", "오백 배"), 희석배수, 대상 병해충, 처리 면적(평/㎡/동 전체)
 - 계산: "물 50리터에 50그램" -> 희석 1000배, "500배로 20리터 뿌렸어" -> 사용량 40mL(둘 다 "확인 필요", 메모에 근거). 수확·출하 양은 자재가 아니라 메모(수확량)
-- 단위 테스트: 예시 발화 22개(`TEST_CASES`). 앱을 연 뒤 브라우저 콘솔에서 `ncAgentTests()` 실행 -> 표와 "규칙 추출 테스트: N/22 통과"
+- 단위 테스트: 예시 발화 30개(`TEST_CASES`, v0.3에서 평가 문장 8개 추가). 앱을 연 뒤 브라우저 콘솔에서 `ncAgentTests()` 실행 -> 표와 "규칙 추출 테스트: N/30 통과"
 
 ### 규칙 추출 한계
 - 한 발화에 작업 1개만 잡음("곁순 따고 약 쳤어"는 앞 작업만). 자재도 발화당 1개(두 번째는 카드의 [+ 농약/비료 추가]로)
@@ -79,6 +93,27 @@
 - [ ] 폴백: 엔드포인트 미설정·오류·`agentTimeoutMs`(5초) 초과·하루 한도 초과면 자동으로 규칙 추출 (구현됨). 예산 100% 알림 시 rules 강제 전환은 2R 전 검토
 - [ ] 서비스 계정·API 키는 서버 런타임 서비스 계정과 Secret Manager에만. 이 저장소에 비밀값 커밋 금지
 - [ ] 대화 시나리오 10개(게이트 2)로 규칙 vs Gemini 정확도·토큰 측정 -> 운영비 v2
+
+## v0.3 손해평가사 관점 평가 반영 (2026-11-15, P0 최소)
+
+근거: 슬랙 #20-앱기획-화면설계 효신 글(시연 앱 손해평가사 관점 평가) + 첫부 `농사처방_시연앱_손해평가사관점_평가_v1.md`. 여전히 규칙 기반(AI 호출 없음).
+
+| 항목 | 내용 |
+|-|-|
+| 의도 "재해" | 강풍·태풍·우박·냉해·동상해·호우·폭설·폭염·짐승·새·화재 단어 + 피해 표현(찢어짐, 상처, 입었어요 등)이 있으면 재해 기록. "대비/예방/예보"는 제외 |
+| 재해 카드 | 사고일 `accident_date`(말한 날짜만, 어제/그제 유지), 재해 종류 `peril`, 피해 동 `houseIds`(plots), 시설 피해 `facility_damage`, 작물 피해 `crop_symptom`, 메모, 원문. 빠진 필수는 평가 문서 3장 문구로 되묻기("피해는 언제 생겼어요?", "어떤 피해예요?", "몇 동이 피해를 입었어요?", "하우스 자체도 부서졌나요?", "작물은 어떻게 됐어요?"). 사진은 "수리·철거 전에 사진 먼저 찍어두세요" 안내 문구만 |
+| 저장 | 작업 일지와 별도 기록 `type: 'disaster'`(같은 저장소). 목록에 "재해" 태그, 재해 기록 상세(삭제만, 작업 일지 수정 화면으로 안 보냄), 엑셀 시트3 `재해 기록`(사고일·작성시각 따로). 시트1·2에는 안 들어감 |
+| 세부 작업 | 수확·출하에 "수확 개시", "수확 종료" 추가(토마토·딸기). "수확 시작했어요", "수확 끝났어요" 자동 |
+| 자재 종류 | "종묘(모종)" 추가(종류: 모종/접목묘/종자/기타, 단위: 주/포기/판/봉지). "모종 3000주 구입했어요. 45만원" -> 종묘 구입 3000주, 메모 "금액 45만원". 엑셀 시트1은 표준 양식에 종묘 열이 없어 E열과 M열(세부작업내용)에만 남음 |
+| 정식 카드 | 품종·주수 칸(말에 있으면 자동). 직접 입력 화면도 세부 작업이 정식이면 품종·주수 칸 |
+| 동 등록 | 재배면적(㎡, 선택) 칸. 내 농장에 표시 |
+| 오류 수정 | "병든 잎 따고"처럼 약 안 친 문장은 농약 자재를 만들지 않고 메모에 "잿빛곰팡이병 발생". "최저 5도" 같은 온도 값, 수확 문장의 출하량(박스 단위 추가)·출하처·마지막 출하는 메모에 보존. 확인 카드가 떠 있을 때 다른 작업·재해 문장을 말하면 새 초안으로(원문 섞임 방지), 되묻기 답은 원문에 붙이지 않고 `chat_answers`로 따로 저장 |
+| 확인 카드 | 날짜·동 번호·주수를 크게 강조(눌러서 수정) |
+| 시연 대화 버튼 | "강풍·냉해 재해 기록" 추가(4개) |
+| 단위 테스트 | 기존 22개 + 평가 문서 테스트 문장 8개 = 30개, 전부 통과 (`ncAgentTests()` -> "규칙 추출 테스트: 30/30 통과") |
+| 서비스 워커 | 캐시 `nongsa-cheobang-v0.3.0`, 앱 버전 0.3.0 |
+
+남은 것 (평가 문서 P1): 기상특보 자동 조회, 재배 포기 여부, 피해 규모, 사진 첨부(촬영 시각·위치), 사고 접수 여부, 응급조치 비용, 직전 7일 관리 기록 연결, 작기(정식일·수확 개시·종료) 화면, 보험 계약 정보, 시설면적·규격, 출하 기록 구조화, 연속 재해 종료일. 대화에서 "2동은 방울토마토로 등록돼 있어요" 경고 반복은 미확인.
 
 ## 파일 구조
 
@@ -99,7 +134,7 @@ js/demo.js                 가상 데모 농장·일지 20건
 js/firebase-init.js        Firebase SDK CDN 로드 (firebase 모드일 때만)
 js/storage/index.js        저장소 선택
 js/storage/local.js        localStorage 어댑터 (지금 동작)
-js/agent/extract-rules.js  규칙 기반 한국어 추출기 + 되묻기 답 해석 + 단위 테스트(runExtractTests, TEST_CASES 22개)
+js/agent/extract-rules.js  규칙 기반 한국어 추출기(재해 포함) + 되묻기 답 해석 + 단위 테스트(runExtractTests, TEST_CASES 30개)
 js/agent/agent.js          대화 상태 머신 (이해 -> 되묻기 -> 확인 카드 -> 저장 / 거절 / 실패 시 직접 입력)
 js/agent/llm-adapter.js    agentMode rules|llm 선택, Gemini save_farm_log 함수 선언, 실패 시 rules 폴백
 js/agent/chat-view.js      대화 화면·확인 카드·입력창(마이크)·시연 대화 버튼 UI
@@ -110,7 +145,9 @@ serve.ps1                  python 없을 때 쓰는 PowerShell 정적 서버
 ```
 
 데이터 모양 (local, firebase 공통)
-- 프로필: `{ name, farmName, location, houses: [{ id, name, lot, crop }], demo? }`
+- 프로필: `{ name, farmName, location, houses: [{ id, name, lot, crop, area(㎡, 선택) }], demo? }`
+- 일지 v0.3 추가: 정식일 때 `variety, plant_count`, 대화 되묻기 답 `chat_answers`, 자재 kind 에 `'종묘(모종)'`
+- 재해 기록 v0.3: `{ id, type: 'disaster', accident_date, workDate(=사고일, 없으면 작성일), continuing, houseIds[], crop, peril, facility_damage, crop_symptom, weather, memo, source_text, chat_answers, extract_method, input_mode, agent_guessed[], missing[], createdAt, demo }`
 - 일지 v0.2 추가 필드(대화 입력일 때): `source_text, extract_method('규칙'|'AI'), input_mode('chat'|'chat-handoff'), agent_guessed[]`
 - 일지: `{ id, workDate, houseIds[], crop, weather{status, sky, tmin, tmax, rain, source, reason}, stage, task, materials[{kind, action, type, name, qty, unit, dilution, pest}], area{value, unit}, detail, detailEdited, memo, author, authorEmail, location, missing[], createdAt, updatedAt, demo }`
 
