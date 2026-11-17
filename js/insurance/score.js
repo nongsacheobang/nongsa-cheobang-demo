@@ -164,7 +164,7 @@ export function runReadinessTests() {
   cropOnly.records[5].facility_damage = '시설 피해 없음';
   cropOnly.alerts = [];
   const co = computeReadiness(cropOnly);
-  check('작물만 피해 + 특보 없음은 경고', st(co, 'R-15') === UNMET && co.warnings.some((w) => w.id === 'R-15'), co.warnings.map((w) => w.id));
+  check('작물만 피해와 특보 없음만으로 약관 요건 판정하지 않음', st(co, 'R-15') === UNKNOWN && !co.warnings.some((w) => w.id === 'R-15'), co.warnings.map((w) => w.id));
   cropOnly.alerts = [{ date: '2026-11-16', kind: '한파주의보' }];
   check('작물만 피해와 특보 이력은 조건 확인 필요', st(computeReadiness(cropOnly), 'R-15') === UNKNOWN, 0);
 

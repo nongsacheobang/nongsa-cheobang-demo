@@ -241,8 +241,8 @@ export const FACTORS = [
       const r14 = FACTORS.find((f) => f.id === 'R-14').evaluate(ctx);
       if (r14.state === MET) return { state: UNKNOWN, reason: '작물만 피해를 봤고 특보 이력이 있어요. 계약과 피해 조건은 가입한 농축협에 확인해 주세요', todo: { label: '가입한 농축협에 확인', go: 'insurance' } };
       // 특보를 못 불러온 것과 특보가 없었던 것을 구분한다(Codex 반례 11/16). 못 불러왔으면 모름, 경고 아님
-      if (r14.state === UNKNOWN) return { state: UNKNOWN, reason: '작물만 피해를 봤어요. 기상특보 이력을 확인하면 판단할 수 있어요', todo: { label: '특보 이력 확인', go: `accident/${d.id}` } };
-      return { state: UNMET, reason: '작물만 피해를 봤다면 보상 조건이 까다로울 수 있어요. 특보 이력과 피해 정도를 기록해 두세요', todo: { label: '가입한 농축협에 확인', go: 'insurance' } };
+      if (r14.state === UNKNOWN) return { state: UNKNOWN, reason: '작물만 피해를 봤어요. 특보 이력과 다른 약관 요건을 가입한 농축협에 확인해 주세요', todo: { label: '특보 이력 확인', go: `accident/${d.id}` } };
+      return { state: UNKNOWN, reason: '특보 이력이 없어도 다른 약관 요건을 함께 확인해야 해요. 가입한 농축협에 문의해 주세요', todo: { label: '가입한 농축협에 확인', go: 'insurance' } };
     },
   },
 ];
