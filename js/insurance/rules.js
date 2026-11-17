@@ -88,14 +88,19 @@ export const FACTORS = [
       const hs = cropHouses(ctx);
       const real = hs.reduce((s, h) => s + (Number(h.area_m2) || 0), 0);
       if (!ins || !real || hs.some((h) => !Number(h.area_m2))) return { state: UNKNOWN, reason: '가입 면적과 동별 재배 면적을 넣어 주세요', todo: { label: '면적 입력', go: 'farm' } };
+      const missingFacility = hs.filter(h => !(Number(h.facility_area_m2) > 0));
+      const invalidArea = hs.filter(h => Number(h.facility_area_m2) > 0 && Number(h.area_m2) > Number(h.facility_area_m2));
+      if (invalidArea.length) return { state: UNKNOWN, reason: `${invalidArea.map(h=>h.name).join(', ')} 재배 면적이 시설 면적보다 커요. 입력한 면적을 확인해 주세요.`, todo: { label: '면적 입력', go: 'farm' } };
+      const lowCropArea = hs.filter(h => Number(h.facility_area_m2) > 0 && Number(h.area_m2) / Number(h.facility_area_m2) < 0.5);
+      const areaNote = lowCropArea.length ? `${lowCropArea.map(h=>h.name).join(', ')} 재배 면적이 시설 면적의 절반보다 적어요. 가입 조건을 농축협에 확인해 주세요.` : missingFacility.length ? '시설 면적이 없는 동은 재배 면적 비율을 확인하지 못했어요.' : '모든 동의 재배 면적이 시설 면적의 절반 이상이에요.';
       const gap = Math.abs(ins - real) / real;
-      if (gap <= 0.1) return { state: MET, reason: '가입 면적과 재배 면적이 비슷해요', todo: null };
-      return { state: UNMET, reason: `가입 면적(${ins}㎡)과 재배 면적(${real}㎡) 차이가 커요`, todo: { label: '가입한 농축협에 면적 확인', go: 'insurance' } };
+      if (gap <= 0.1) return { state: MET, reason: `가입 면적과 재배 면적이 비슷해요. ${areaNote}`, todo: null };
+      return { state: UNMET, reason: `가입 면적(${ins}㎡)과 재배 면적(${real}㎡) 차이가 커요. ${areaNote}`, todo: { label: '가입한 농축협에 면적 확인', go: 'insurance' } };
     },
   },
   {
     id: 'R-04', group: '재배 기록', weight: 15, title: '동별 정식일 기록',
-    basis: '보험금은 정식일부터 사고일까지 키운 기간을 보고 계산해요',
+    basis: '정식일이 보험증권의 재배 일정과 다르면 가입한 농축협에 알려 주세요',
     evaluate(ctx) {
       const hs = cropHouses(ctx);
       if (!hs.length) return { state: UNKNOWN, reason: '동과 작물을 먼저 넣어 주세요', todo: { label: '농장 정보 입력', go: 'farm' } };
