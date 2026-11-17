@@ -9,7 +9,7 @@ const WEIGHT_TEXT = (w) => (w === 'gate' ? '꼭 필요' : w === 'warn' ? '경고
 function row(f, esc) {
   const cls = f.state === 'met' ? 'ok' : f.weight === 'warn' && f.state === 'unmet' ? 'bad' : f.state === 'na' ? 'na' : 'low';
   return `<details class="rd-fac ${cls}">
-    <summary class="row"><b>${esc(f.title)}</b><span class="sp"></span><span class="tag">${esc(STATE_LABEL[f.state] || f.state)}</span><span class="tag">${esc(WEIGHT_TEXT(f.weight))}</span></summary>
+    <summary class="row"><b>${esc(f.title)}</b><span class="sp"></span><span class="tag">${esc(STATE_LABEL[f.state] || f.state)}</span><span class="tag">${esc(f.pending ? '점수 반영 전' : WEIGHT_TEXT(f.weight))}</span></summary>
     <p>${esc(f.reason)}</p>${f.pending ? '<p>곧 확인할 항목이에요. 아직 점수에 반영하지 않아요.</p>' : typeof f.progress === 'number' && f.progress > 0 && typeof f.weight === 'number' ? `<p>${f.id === 'R-08' ? '이전 대응 기록' : '동별 기록 ' + esc(Math.round(f.progress * 100)) + '%'}을 점수에 반영했어요.</p>` : ''}
     <p class="mut">${esc(f.group)}: ${esc(f.basis)}</p>
     ${f.todo && f.state !== 'met' ? `<button class="ghost sm" data-act="go" data-v="${esc(f.todo.go)}">${esc(f.todo.label)}</button>` : ''}
