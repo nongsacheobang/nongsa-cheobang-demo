@@ -223,8 +223,10 @@ export const FACTORS = [
     evaluate(ctx) {
       const d = latestDisaster(ctx);
       if (!d) return { state: NA, reason: '사고 기록이 없어요', todo: null };
-      const noFacility = /시설 피해 없음/.test(String(d.facility_damage || ''));
-      if (!noFacility) return { state: NA, reason: '하우스 피해가 있거나 아직 몰라요', todo: null };
+      const facility = Array.isArray(d.facility_damage) ? d.facility_damage.filter(Boolean).join(', ') : String(d.facility_damage || '').trim();
+      if (!facility) return { state: UNKNOWN, reason: '하우스 피해가 있는지 아직 몰라요', todo: { label: '하우스 피해 확인', go: `accident/${d.id}` } };
+      const noFacility = /시설 피해 없음/.test(facility);
+      if (!noFacility) return { state: NA, reason: '하우스 피해가 있어요', todo: null };
       const r14 = FACTORS.find((f) => f.id === 'R-14').evaluate(ctx);
       if (r14.state === MET) return { state: UNKNOWN, reason: '작물만 피해를 봤고 특보 이력이 있어요. 계약과 피해 조건은 가입한 농축협에 확인해 주세요', todo: { label: '가입한 농축협에 확인', go: 'insurance' } };
       // 특보를 못 불러온 것과 특보가 없었던 것을 구분한다(Codex 반례 11/16). 못 불러왔으면 모름, 경고 아님
