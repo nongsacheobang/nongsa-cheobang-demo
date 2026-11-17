@@ -223,12 +223,12 @@ function li(r) {
   const inc = missingFields(r).length;
   const title = dis ? `재해: ${r.cause_text || (Array.isArray(r.peril) ? r.peril.join(', ') : r.peril) || '종류 미입력'}` : r.task || r.stage || '작업 미입력';
   const chat = r.input_mode === 'chat' || r.input_mode === 'chat-handoff';
-  return `<div class="li" ${attr({ act: 'openDetail', v: r.id })}>
-    <div class="dt"><b>${d}</b><span>${m}월 ${weekday(r.workDate)}</span></div>
-    <div class="ct"><p><b>${esc(title)}</b> <span class="t2">${esc(houseNames(S.profile, r.houseIds))} ${esc(r.crop)}</span></p>
-      <p class="s">${esc(weatherText(r.weather))}${mats ? ', ' + esc(mats) : ''}</p></div>
-    <div class="tags">${dis ? '<span class="tag dis">재해</span>' : ''}${inc ? '<span class="tag inc">미완성</span>' : ''}${chat ? '<span class="tag ac">대화</span>' : ''}${r.demo ? '<span class="tag demo">가상</span>' : ''}</div>
-  </div>`;
+  return `<button type="button" class="li" ${attr({ act: 'openDetail', v: r.id })}>
+    <span class="dt"><b>${d}</b><span>${m}월 ${weekday(r.workDate)}</span></span>
+    <span class="ct"><span class="li-title"><b>${esc(title)}</b> <span class="t2">${esc(houseNames(S.profile, r.houseIds))} ${esc(r.crop)}</span></span>
+      <span class="s">${esc(weatherText(r.weather))}${mats ? ', ' + esc(mats) : ''}</span></span>
+    <span class="tags">${dis ? '<span class="tag dis">재해</span>' : ''}${inc ? '<span class="tag inc">미완성</span>' : ''}${chat ? '<span class="tag ac">대화</span>' : ''}${r.demo ? '<span class="tag demo">가상</span>' : ''}</span>
+  </button>`;
 }
 
 function weatherLine(w, sub) {
