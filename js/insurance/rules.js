@@ -61,8 +61,9 @@ const PEST_WORDS = /병해충|병충해|벌레|곰팡이|흰가루|잿빛|역병
 export const FACTORS = [
   {
     id: 'R-01', group: '가입', weight: 'gate', title: '농업용시설물(하우스) 보험 가입',
-    basis: '하우스를 먼저 가입해야 작물을 가입할 수 있어요(NH농협손해보험 원예시설 안내)',
+    basis: '대부분은 시설물과 작물을 함께 가입해요. 유리온실에서 재배하는 시설작물은 단독 가입을 확인할 수 있어요',
     evaluate(ctx) {
+      if (ctx.profile?.insurance?.facility_type === 'glass_only') return { state: NA, reason: '유리온실에서 재배하는 작물은 시설물 없이 단독 가입이 가능해요. 가입 내용을 농축협에 확인해 주세요', todo: null };
       const v = ctx.profile?.insurance?.facility_insured;
       if (v === true) return { state: MET, reason: '하우스 보험에 가입했어요', todo: null };
       if (v === false) return { state: UNMET, reason: '하우스 보험이 없으면 작물 보험도 가입할 수 없어요', todo: { label: '가입 안내 보기', go: 'insurance/guide' } };
@@ -81,7 +82,7 @@ export const FACTORS = [
   },
   {
     id: 'R-03', group: '가입', weight: 10, title: '가입 면적과 실제 재배 면적이 맞음',
-    basis: '가입할 때 사실대로 알려야 해요(계약 전 알릴 의무)',
+    basis: '가입할 때 사실대로 알려야 해요. 면적 차이 10%는 약관 기준이 아닌 앱의 임시 점검 기준이에요',
     evaluate(ctx) {
       const ins = Number(ctx.profile?.insurance?.insured_area_m2);
       const hs = cropHouses(ctx);
@@ -100,7 +101,7 @@ export const FACTORS = [
       if (!hs.length) return { state: UNKNOWN, reason: '동과 작물을 먼저 넣어 주세요', todo: { label: '농장 정보 입력', go: 'farm' } };
       const missing = hs.filter((h) => !works(ctx).some((r) => isTask(r, PLANTING) && onHouse(r, h)));
       if (!missing.length) return { state: MET, reason: '모든 동의 정식일이 있어요', todo: null };
-      return { state: UNMET, reason: `${missing.map((h) => h.name).join(', ')} 정식일이 없어요`, todo: { label: '정식일 기록하기', go: 'record/정식' } };
+      return { state: UNMET, progress: (hs.length - missing.length) / hs.length, reason: `${missing.map((h) => h.name).join(', ')} 정식일이 없어요`, todo: { label: '정식일 기록하기', go: 'record/정식' } };
     },
   },
   {
@@ -109,8 +110,11 @@ export const FACTORS = [
     evaluate(ctx) {
       const hv = works(ctx).filter((r) => HARVEST_TASKS.includes(r.task));
       if (!hv.length) return { state: NA, reason: '아직 수확 전이에요', todo: null };
-      if (hv.some((r) => isTask(r, HARVEST_START))) return { state: MET, reason: '수확 개시일이 있어요', todo: null };
-      return { state: UNMET, reason: '수확 기록은 있는데 수확 개시일이 없어요', todo: { label: '수확 개시일 기록', go: 'record/수확 개시' } };
+      const hs = cropHouses(ctx);
+      if (!hs.length) return { state: UNKNOWN, reason: '동과 작물을 먼저 넣어 주세요', todo: { label: '농장 정보 입력', go: 'farm' } };
+      const missing = hs.filter(h => !hv.some(r => isTask(r, HARVEST_START) && onHouse(r, h)));
+      if (!missing.length) return { state: MET, reason: '동마다 수확 개시일이 있어요', todo: null };
+      return { state: UNMET, progress: (hs.length - missing.length) / hs.length, reason: `${missing.map(h => h.name).join(', ')} 수확 개시일이 없어요`, todo: { label: '수확 개시일 기록', go: 'record/수확 개시' } };
     },
   },
   {
@@ -142,7 +146,8 @@ export const FACTORS = [
       if (!seen.length) return { state: NA, reason: '최근 병해충 발견 기록이 없어요', todo: null };
       const late = seen.filter((s) => !works(ctx).some((r) => isTask(r, PEST_CONTROL) && (() => { const d = daysBetween(s.workDate, r.workDate); return d != null && d >= 0 && d <= 7; })()));
       if (!late.length) return { state: MET, reason: '병해충을 본 뒤 7일 안에 방제했어요', todo: null };
-      return { state: UNMET, reason: '병해충을 본 뒤 방제 기록이 없어요', todo: { label: '방제 기록하기', go: 'record/병해충 방제' } };
+      const previouslyAddressed = late.length < seen.length;
+      return { state: UNMET, progress: previouslyAddressed ? 1 : 0, reason: previouslyAddressed ? '이전에 대응한 기록은 점수에 반영했어요. 새로 발견한 병해충의 방제 기록을 확인해 주세요' : '병해충을 본 뒤 방제 기록이 없어요', todo: { label: '방제 기록하기', go: 'record/병해충 방제' } };
     },
   },
   {
@@ -164,7 +169,7 @@ export const FACTORS = [
       if (!houses.length) return { state: UNKNOWN, reason: '동과 작물을 먼저 넣어 주세요', todo: { label: '농장 정보 입력', go: 'farm' } };
       const noPhoto = houses.filter((h) => !works(ctx).some((r) => onHouse(r, h) && Number(r.photo_count) > 0 && within(r.workDate, ctx.today, 30)));
       if (!noPhoto.length) return { state: MET, reason: '동마다 최근 한 달 안에 작물 사진이 있어요', todo: null };
-      return { state: UNMET, reason: `${noPhoto.map((h) => h.name).join(', ')} 최근 한 달 작물 사진이 없어요`, todo: { label: '사진과 함께 기록', go: 'record/작물관리' } };
+      return { state: UNMET, progress: (houses.length - noPhoto.length) / houses.length, reason: `${noPhoto.map((h) => h.name).join(', ')} 최근 한 달 작물 사진이 없어요`, todo: { label: '사진과 함께 기록', go: 'record/작물관리' } };
     },
   },
   {

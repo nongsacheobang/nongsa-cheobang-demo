@@ -18,7 +18,7 @@ export function renameRecord(st) {
 export const SCHEMA_VERSION = 1;
 
 // 처음 저장 때만 쓰고 수정 때는 기존 값을 그대로 둔다(계약 C-7, 2-2 "못 바꿈")
-export const IMMUTABLE = ['record_id', 'schema_version', 'type', 'source_text', 'answers', 'extract_method', 'model_id', 'input_mode', 'conversation_id', 'created_at', 'author_uid', 'author_role', 'author_name', 'is_demo'];
+export const IMMUTABLE = ['record_id', 'schema_version', 'type', 'source_text', 'answers', 'extract_method', 'model_id', 'input_mode', 'conversation_id', 'created_at', 'author_uid', 'author_role', 'author_name', 'is_demo', 'available_at'];
 
 const EXTRACT = { AI: 'ai', ai: 'ai', 규칙: 'rule', rule: 'rule', manual: 'manual', 직접: 'manual' };
 // 화면(목록, 엑셀)은 아직 옛 표시 값을 쓴다. 읽을 때 되돌린다.
@@ -214,6 +214,7 @@ export function toRecordDoc(state, ctx = {}) {
     author_name: ctx.authorName ?? state.author ?? '',
     is_demo: !!(ctx.isDemo ?? state.demo),
     created_at: state.createdAt || now,
+    available_at: state.availableAt || ctx.availableAt || null,
     updated_at: null,
   };
   // 프로필에 없는 동 ID는 사본을 못 만든다. 확인 필요로 두고 미완성 판정은 missingFields가 한다(C-5)
@@ -286,6 +287,7 @@ export function fromRecordDoc(doc) {
     author: doc.author_name || '',
     demo: !!doc.is_demo,
     createdAt: doc.created_at || null,
+    availableAt: doc.available_at || null,
     updatedAt: doc.updated_at || null,
   };
   if (!st.type) delete st.type;

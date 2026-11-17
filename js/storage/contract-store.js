@@ -50,7 +50,7 @@ export function withContract(inner) {
         const oldDoc = isDoc(old) ? old : toRecordDoc(old, { ...ctx, now: old.createdAt || now });
         doc = mergeForUpdate(oldDoc, rec, { ...ctx, now });
       } else {
-        doc = toRecordDoc({ ...rec, id: rec.id || newId() }, { ...ctx, now });
+        doc = toRecordDoc({ ...rec, id: rec.id || newId(), availableAt: null }, { ...ctx, now, availableAt: now });
       }
       await inner.saveRecord(uid, doc);
       return fromRecordDoc(doc);
@@ -60,7 +60,7 @@ export function withContract(inner) {
       const ctx = await ctxFor(uid);
       recs.forEach((r) => rejectMixed(ctx.profile, r)); // 하나라도 걸리면 하나도 쓰지 않음
       const now = new Date().toISOString();
-      const docs = recs.map((r) => toRecordDoc({ ...r, id: r.id || newId() }, { ...ctx, now: r.createdAt || now }));
+      const docs = recs.map((r) => toRecordDoc({ ...r, id: r.id || newId(), availableAt: null }, { ...ctx, now: r.createdAt || now, availableAt: now }));
       return inner.saveRecordsBulk(uid, docs);
     },
   };

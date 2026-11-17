@@ -11,6 +11,16 @@ function tri(name, v, esc) {
   return `<div class="chips">${TRI.map(([k, label]) => `<button class="chip${triKey(v) === k ? ' on' : ''}" data-act="insurancePick" data-f="${name}" data-v="${k}">${esc(label)}</button>`).join('')}</div>`;
 }
 
+// 선택지를 누르면 화면이 다시 그려지므로 입력 중인 값도 초안에 보존한다.
+function insuranceDraft(ctx) {
+  const draft = { ...(ctx.S.insEdit || ctx.profile.insurance || {}) };
+  for (const [id, key] of [['insYear','year'],['insArea','insured_area_m2'],['insCoop','coop_name']]) {
+    const input = document.getElementById(id);
+    if (input) draft[key] = input.value;
+  }
+  return draft;
+}
+
 function guide(ctx) {
   const { esc, profile } = ctx;
   const crops = [...new Set((profile.houses || []).map((h) => h.crop).filter(Boolean))];
@@ -47,19 +57,25 @@ export default {
         <div class="fld"><label>화재 특약<span class="opt">선택</span></label><div class="chips"><button class="chip${ins.fire_rider ? ' on' : ''}" data-act="insuranceToggle" data-f="fire_rider">가입</button></div></div>
         <div class="fld"><label>물 피해 빼는 특약(수재위험부보장)<span class="opt">선택. 해당 특약의 물 피해 조건은 가입한 농축협에 확인해 주세요</span></label><div class="chips"><button class="chip${ins.no_flood_rider ? ' on' : ''}" data-act="insuranceToggle" data-f="no_flood_rider">가입</button></div></div>
         <div class="fld"><label for="insCoop">가입한 농축협<span class="opt">선택</span></label><input class="inp" id="insCoop" value="${esc(ins.coop_name ?? '')}" placeholder="예: 가상농협"></div>
+        <div class="fld"><label>보험을 확인할 시설</label><div class="chips">${[['glass_only','유리온실만'],['other','비닐하우스 또는 혼합'],['unknown','모르겠어요']].map(([v,label]) => `<button type="button" class="chip${(ins.facility_type || 'unknown') === v ? ' on' : ''}" data-act="insuranceFacilityType" data-v="${v}">${label}</button>`).join('')}</div><p class="mut">여러 시설이 있으면 혼합을 골라 주세요.</p></div>
         <button class="big" data-act="insuranceSave" ${S.busy ? 'disabled' : ''}>저장</button>
         <button class="ghost" data-act="go" data-v="insurance/guide">가입 안내 보기</button>
       </div></section>`;
   },
   actions: {
+    insuranceFacilityType(el, ctx) {
+      if (!['glass_only','other','unknown'].includes(el.dataset.v)) return;
+      ctx.S.insEdit = { ...insuranceDraft(ctx), facility_type: el.dataset.v };
+      ctx.rerender();
+    },
     insurancePick(el, ctx) {
       const v = { yes: true, no: false, unk: null }[el.dataset.v];
-      ctx.S.insEdit = { ...(ctx.S.insEdit || ctx.profile.insurance || {}), [el.dataset.f]: v };
+      ctx.S.insEdit = { ...insuranceDraft(ctx), [el.dataset.f]: v };
       ctx.rerender();
     },
     insuranceToggle(el, ctx) {
       const f = el.dataset.f;
-      const cur = ctx.S.insEdit || ctx.profile.insurance || {};
+      const cur = insuranceDraft(ctx);
       ctx.S.insEdit = { ...cur, [f]: !cur[f] };
       ctx.rerender();
     },
