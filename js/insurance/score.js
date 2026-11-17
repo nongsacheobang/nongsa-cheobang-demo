@@ -38,7 +38,7 @@ export function computeReadiness(ctx) {
   // 사후 입력은 작업일이 아니라 실제 입력일부터 유예한다. 입력 시각이 없는 옛 기록만 작업일을 쓴다.
   const recordedDate = r => { const time = (r.availableAt || r.createdAt) && new Date(r.availableAt || r.createdAt); return time && Number.isFinite(time.getTime()) ? new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(time) : r.workDate; };
   const firstDate = predicate => records.filter(predicate).map(recordedDate).filter(d => daysBetween(d, ctx.today) != null && daysBetween(d, ctx.today) >= 0).sort()[0];
-  const triggers = { 'R-05': firstDate(r => HARVEST_TASKS.includes(r.task)), 'R-06': firstDate(r => r.task === '정식'), 'R-07': firstDate(r => r.task === '정식'), 'R-08': firstDate(r => !!r.pest_seen && daysBetween(r.workDate, ctx.today) != null && daysBetween(r.workDate, ctx.today) >= 0 && daysBetween(r.workDate, ctx.today) <= 30), 'R-10': firstDate(r => r.task === '정식') };
+  const triggers = { 'R-05': currentHarvestRecords(ctx).map(recordedDate).filter(d => daysBetween(d, ctx.today) != null && daysBetween(d, ctx.today) >= 0).sort()[0], 'R-06': firstDate(r => r.task === '정식'), 'R-07': firstDate(r => r.task === '정식'), 'R-08': firstDate(r => !!r.pest_seen && daysBetween(r.workDate, ctx.today) != null && daysBetween(r.workDate, ctx.today) >= 0 && daysBetween(r.workDate, ctx.today) <= 30), 'R-10': firstDate(r => r.task === '정식') };
   for (const f of factors) { const age = daysBetween(triggers[f.id], ctx.today); if (f.state !== MET && f.state !== NA && !(f.id === 'R-08' && Number(f.progress) > 0) && age != null && age >= 0 && age < 7) { f.pending = true; f.basis += ' 새 항목은 첫 7일 동안 점수에서 제외하는 앱 기준이에요.'; } }
   const stage = stageOf(ctx);
   const gates = factors.filter((f) => f.weight === 'gate');
