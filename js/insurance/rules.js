@@ -45,6 +45,21 @@ export const HARVEST_TASKS = ['수확 개시', '수확', '수확 종료', '출�
 export const FACILITY_CHECK_TASKS = ['하우스 점검', '하우스 정비'];
 export const PEST_CONTROL = '병해충 방제';
 
+// 동별 최신 정식 이전의 수확은 현재 작기에 포함하지 않는다.
+export function currentHarvestRecords(ctx) {
+  const records=works(ctx), houses=cropHouses(ctx);
+  return records.filter(r => HARVEST_TASKS.includes(r.task)).map(r => {
+    if (!houses.length) return r;
+    const ids=houses.filter(h => {
+      if (!onHouse(r,h)) return false;
+      const planting=records.filter(p => isTask(p,PLANTING) && onHouse(p,h) && dayNum(p.workDate)!=null).map(p=>dayNum(p.workDate)).sort((a,b)=>b-a)[0];
+      const date=dayNum(r.workDate);
+      return planting==null || date==null || date>=planting;
+    }).map(h=>h.id);
+    return {...r, houseIds:ids};
+  }).filter(r => !houses.length || r.houseIds.length);
+}
+
 export function planted(ctx) {
   return works(ctx).some((r) => isTask(r, PLANTING));
 }
@@ -113,7 +128,7 @@ export const FACTORS = [
     id: 'R-05', group: '재배 기록', weight: 5, title: '수확 개시일 기록',
     basis: '수확 중 사고는 수확을 시작한 날을 기준으로 계산해요',
     evaluate(ctx) {
-      const hv = works(ctx).filter((r) => HARVEST_TASKS.includes(r.task));
+      const hv = currentHarvestRecords(ctx);
       if (!hv.length) return { state: NA, reason: '아직 수확 전이에요', todo: null };
       const hs = cropHouses(ctx);
       if (!hs.length) return { state: UNKNOWN, reason: '동과 작물을 먼저 넣어 주세요', todo: { label: '농장 정보 입력', go: 'farm' } };

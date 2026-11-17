@@ -3,7 +3,7 @@
 // 신호등: 80 이상 준비됨, 50~79 보완 필요, 50 미만 위험. 경고가 있으면 한 단계 낮춤.
 // 보험금 액수와 지급 여부는 말하지 않는다(U-11). 화면은 항상 NOTICE를 함께 보여 준다(U-12).
 
-import { evaluateAll, MET, UNMET, NA, UNKNOWN, planted, latestDisaster, HARVEST_TASKS, daysBetween } from './rules.js';
+import { evaluateAll, MET, UNMET, NA, UNKNOWN, planted, latestDisaster, HARVEST_TASKS, currentHarvestRecords, daysBetween } from './rules.js';
 
 export const NOTICE = '보험금 지급을 보장하지 않습니다. 약관 요건과 증빙을 얼마나 갖췄는지 보여 주는 점검입니다. 지급 여부와 금액은 보험사의 손해평가로 정해집니다.';
 
@@ -24,8 +24,9 @@ export function stageOf(ctx) {
   const ins = ctx.profile?.insurance || {};
   if ((ins.facility_type !== 'glass_only' && ins.facility_insured !== true) || ins.crop_insured !== true) return { key: 'before_insurance', label: '가입 전' };
   const recs = (ctx.records || []).filter((r) => r.type !== 'disaster');
-  if (recs.some((r) => r.task === '수확 종료')) return { key: 'season_end', label: '작기 끝' };
-  if (recs.some((r) => HARVEST_TASKS.includes(r.task))) return { key: 'harvest', label: '수확 중' };
+  const harvests = currentHarvestRecords(ctx);
+  if (harvests.some((r) => r.task === '수확 종료')) return { key: 'season_end', label: '작기 끝' };
+  if (harvests.some((r) => HARVEST_TASKS.includes(r.task))) return { key: 'harvest', label: '수확 중' };
   if (planted(ctx)) return { key: 'growing', label: '생육 중' };
   return { key: 'before_planting', label: '정식 전' };
 }
