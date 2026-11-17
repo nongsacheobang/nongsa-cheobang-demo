@@ -315,7 +315,7 @@ function vWrite() {
   const tasks = tasksFor(f.crop)[f.stage] || [];
   const w = f.weather;
   const miss = !w || w.status === 'missing';
-  const wxSub = w ? `${w.rain != null && !miss ? `강수 ${w.rain}mm, ` : ''}${locShort()}, ${weatherSourceLabel(w)}` : '불러오는 중';
+  const wxSub = w ? `${w.rain != null && !miss ? `강수 ${w.rain}mm, ` : ''}${locShort()}, ${weatherSourceLabel(w)}` : (editing ? '기존 기록에 날씨가 없어요' : '불러오는 중');
   const wxEdit = S.wxEdit ? `<div class="wxedit">
       <div class="fld" style="margin-bottom:10px"><label>하늘상태</label><div class="chips">${chips(SKY, miss ? '' : w.sky, 'wxSky')}</div></div>
       <div class="row" style="margin-bottom:10px">
@@ -333,7 +333,7 @@ function vWrite() {
         <div class="chips">${S.profile.houses.filter(h => !h.hidden).map((h) => `<button class="chip${f.houseIds.includes(h.id) ? ' on' : ''}" ${attr({ act: 'toggleHouse', v: h.id })}>${esc(h.name)} <span class="lot">${esc(h.lot)}</span></button>`).join('')}</div></div>
       <div class="fld"><label>작목<span class="req">*</span><span class="opt">동에 맞춰 자동</span></label><div class="chips">${chips(CROPS, f.crop, 'setCrop')}</div></div>
       <div class="fld"><label>날씨<span class="opt">기상청 자동, 눌러서 수정</span></label>
-        <div class="wx${miss ? ' miss' : ''}" data-act="wxToggle" style="cursor:pointer"><div class="sq">${miss ? '미수집' : esc(w.sky || '-')}</div><div class="sp"><b>${esc(w ? weatherText(w) : '...')}</b><div class="mut">${esc(wxSub)}</div></div><span class="lnk">수정</span></div>
+        <div class="wx${miss ? ' miss' : ''}" data-act="wxToggle" style="cursor:pointer"><div class="sq">${miss ? '미수집' : esc(w.sky || '-')}</div><div class="sp"><b>${esc(w ? weatherText(w) : editing ? '미수집' : '...')}</b><div class="mut">${esc(wxSub)}</div></div><span class="lnk">수정</span></div>
         ${wxEdit}</div>
       <div class="fld"><label>작업단계<span class="req">*</span></label><div class="stg">${STAGES.map((x) => `<button class="${x === f.stage ? 'on' : ''}" ${attr({ act: 'setStage', v: x })}>${esc(x)}</button>`).join('')}</div></div>
       <div class="fld"><label>세부 작업</label><div class="chips">${tasks.length ? chips(tasks, f.task, 'setTask') : '<span class="mut">작업단계를 먼저 골라주세요</span>'}</div></div>
