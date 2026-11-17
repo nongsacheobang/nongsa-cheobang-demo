@@ -31,3 +31,7 @@
 .accident-navigation button{min-height:48px}
 
 .card summary,.rd-fac summary{min-height:48px;cursor:pointer;align-items:center;font-size:16px;font-weight:700}
+
+/* 읽기 쉬운 기본 글자 크기 */
+.scr h3,.scr .mut,.scr .rd-sig-cap,.scr .rd-sig-sub,.scr .rd-todo small,.scr .k,.scr .v,.scr .ghost,.scr .chip,.scr .lnk,.scr .hd .ic,.tabs button,.tabs button span{font-size:16px}
+.tabs{height:70px}
