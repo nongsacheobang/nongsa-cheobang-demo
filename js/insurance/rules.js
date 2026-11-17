@@ -210,7 +210,6 @@ export const FACTORS = [
     evaluate(ctx) {
       const d = latestDisaster(ctx);
       if (!d) return { state: NA, reason: '사고 기록이 없어요', todo: null };
-      if (d.alert_match === true) return { state: MET, reason: '사고일 무렵 기상특보 이력이 있어요', todo: null };
       if (dayNum(d.accident_date) == null) return { state: UNKNOWN, reason: '사고 날짜를 확인해 주세요', todo: null };
       if (!Array.isArray(ctx.alerts)) return { state: UNKNOWN, reason: '기상특보 이력을 아직 못 불러왔어요', todo: { label: '특보 이력 확인', go: `accident/${d.id}` } };
       const hit = ctx.alerts.find((a) => { const g = daysBetween(d.accident_date, a.date); return g != null && Math.abs(g) <= 1; });
