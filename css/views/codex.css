@@ -42,3 +42,5 @@
 .home-b .bd{padding-top:8px}.home-b .rd-sig{padding:8px;margin-bottom:4px}.home-b-weather{padding:4px 0}.home-b-score>.ghost{margin:0}.home-b-todo{padding:10px}.home-b-todo .rd-todo{margin-top:4px}
 
 .field-accident .accident-form{font-size:20px}.field-accident .accident-form button,.field-accident .accident-choice{min-height:64px}.field-accident .accident-form legend{font-size:20px}
+
+.accident-no-facility{display:none}.accident-facility-choice:has(#accident-facility option[value="no"]:checked) .accident-no-facility{display:block}
