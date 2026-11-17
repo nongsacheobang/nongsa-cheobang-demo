@@ -326,7 +326,8 @@ export function mergeForUpdate(oldDoc, editedState, ctx = {}) {
   const confirmed = (ctx.confirmedFields || []).map((k) => toDocPath(k, fresh.materials));
   out.edited_fields = [...new Set([...(oldDoc.edited_fields || []), ...changed])];
   // 이전 수정 횟수와 각 수정 시점의 변경 항목을 보존한다. 원본 값은 기존 기록과 분리해 바꾸지 않는다.
-  out.edit_history = [...(Array.isArray(oldDoc.edit_history) ? oldDoc.edit_history : []), ...(changed.length ? [{ at: now, fields: changed }] : [])];
+  const historyFields = changed.filter(field => field !== 'detail' || oldDoc.detail_edited || fresh.detail_edited);
+  out.edit_history = [...(Array.isArray(oldDoc.edit_history) ? oldDoc.edit_history : []), ...(historyFields.length ? [{ at: now, fields: historyFields }] : [])];
   // 정확히 그 칸이 바뀐 경우만 뺀다. 자재가 통째로 바뀌거나 빠지면(materials[i]) 그 자재의 표시만 뺀다
   const hit = (p, c) => p === c || p.startsWith(c + '.') || p.startsWith(c + '[');
   out.needs_confirm = (oldDoc.needs_confirm || []).filter((p) => !changed.some((c) => hit(p, c)) && !confirmed.includes(p));

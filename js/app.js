@@ -435,7 +435,7 @@ function vDetail() {
   });
   h += `<div class="card"><h3>세부작업내용</h3><p style="line-height:1.5">${esc(detailOf(S.profile, r))}</p>${r.memo ? `<p class="mut" style="margin-top:6px">메모: ${esc(r.memo)}</p>` : ''}</div>`;
   if (r.source_text) h += `<div class="card"><h3>대화 원문</h3><p style="line-height:1.5">"${esc(r.source_text)}"</p>${r.chat_answers ? `<p class="mut" style="margin-top:6px">되묻기에 답한 내용: ${esc(r.chat_answers)}</p>` : ""}<p class="mut" style="margin-top:6px">입력 방식: ${r.input_mode === 'chat-handoff' ? '대화 후 직접 입력' : '대화'}, 추출 ${esc(r.extract_method || '규칙')}</p></div>`;
-  const editLabel = field => ({work_date:'작업일',plots:'작업한 동',crop:'작물',stage:'생육 단계',task:'작업',memo:'메모',detail:'세부 작업',weather:'날씨',photo_count:'사진 수'})[field] || (field.startsWith('materials[') ? '자재 정보' : '기록 항목');
+  const editLabel = field => ({work_date:'작업일',plots:'작업한 동',crop:'작물',stage:'생육 단계',task:'작업',memo:'메모',detail:'세부 작업',detail_edited:'세부 작업',weather:'날씨',photo_count:'사진 수'})[field] || (field.startsWith('materials[') ? '자재 정보' : '기록 항목');
   if (r.editHistory?.length) h += `<div class="card"><h3>수정 이력</h3>${r.editHistory.map(entry => `<p>${esc(fmtDateTime(entry.at))}: ${esc([...new Set(entry.fields.map(editLabel))].join(', '))}</p>`).join('')}</div>`;
   h += `<div class="card" style="background:#FAFAFA"><p class="mut" style="line-height:1.6">작성 ${esc(fmtDateTime(r.createdAt))}, ${r.updatedAt ? '수정 ' + esc(fmtDateTime(r.updatedAt)) : '수정 없음'}, 작성자 ${esc(r.author || '')}${isBackfill(r) ? ', 사후입력' : ''}${r.demo ? ', 가상 데이터' : ''} (엑셀 시트2)</p></div>`;
   if (ed) h += `<button class="ghost danger" ${attr({ act: 'deleteRecord', v: r.id })}>삭제</button>`;
@@ -464,7 +464,7 @@ function vDisasterDetail(r, mis) {
     ${r.memo ? `<div class="kv"><span class="k">메모</span><span class="v">${esc(r.memo)}</span></div>` : ''}
     <p class="photo-note">${esc(PHOTO_NOTICE)} (사진 첨부는 준비 중)</p></div>`;
   if (r.source_text) h += `<div class="card"><h3>대화 원문</h3><p style="line-height:1.5">"${esc(r.source_text)}"</p>${r.chat_answers ? `<p class="mut" style="margin-top:6px">되묻기에 답한 내용: ${esc(r.chat_answers)}</p>` : ""}</div>`;
-  const editLabel = field => ({work_date:'작업일',plots:'작업한 동',crop:'작물',stage:'생육 단계',task:'작업',memo:'메모',detail:'세부 작업',weather:'날씨',photo_count:'사진 수'})[field] || (field.startsWith('materials[') ? '자재 정보' : '기록 항목');
+  const editLabel = field => ({work_date:'작업일',plots:'작업한 동',crop:'작물',stage:'생육 단계',task:'작업',memo:'메모',detail:'세부 작업',detail_edited:'세부 작업',weather:'날씨',photo_count:'사진 수'})[field] || (field.startsWith('materials[') ? '자재 정보' : '기록 항목');
   if (r.editHistory?.length) h += `<div class="card"><h3>수정 이력</h3>${r.editHistory.map(entry => `<p>${esc(fmtDateTime(entry.at))}: ${esc([...new Set(entry.fields.map(editLabel))].join(', '))}</p>`).join('')}</div>`;
   h += `<div class="card" style="background:#FAFAFA"><p class="mut" style="line-height:1.6">작성 ${esc(fmtDateTime(r.createdAt))}, 작성자 ${esc(r.author || '')}${isBackfill(r) ? ', 사후입력' : ''}${r.demo ? ', 가상 데이터' : ''} (엑셀 시트3 피해 기록)</p></div>`;
   if (ed) h += `<button class="ghost danger" ${attr({ act: 'deleteRecord', v: r.id })}>삭제</button>`;
