@@ -9,7 +9,7 @@ export function buildReportData(profile, records, readiness, { period='season', 
   const fallback=shift(date,-180), profileHouses=profile?.houses||[];
   const periods=profileHouses.map(h=>{
     const own=all.filter(r=>r.type!=='disaster'&&(r.houseIds||[]).includes(h.id));
-    const planting=own.filter(r=>r.task==='정식'&&validDate(r.workDate)&&r.workDate<=date).map(r=>r.workDate).sort()[0];
+    const planting=own.filter(r=>r.task==='정식'&&validDate(r.workDate)&&r.workDate<=date).map(r=>r.workDate).sort().at(-1);
     const end=planting?(own.filter(r=>r.task==='수확 종료'&&validDate(r.workDate)&&r.workDate>=planting&&r.workDate<=date).map(r=>r.workDate).sort().at(-1)||date):date;
     return {id:h.id,name:h.name||'',start:planting?shift(planting,-30):fallback,end,basis:planting?'planting':'recent'};
   });
