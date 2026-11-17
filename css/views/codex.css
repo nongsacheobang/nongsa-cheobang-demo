@@ -12,7 +12,7 @@
 
 .info-item{min-height:52px;text-align:left;padding:12px;display:flex;flex-direction:column;gap:4px}.info-item strong{font-size:17px}
 
-.field-screen .bd{font-size:20px}.field-screen h2{font-size:24px;margin-bottom:20px}.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field-button{min-height:64px;width:100%;padding:16px;border:1px solid #47774f;border-radius:12px;background:#fff;color:#173d20;font-size:22px;font-weight:700;margin-bottom:12px}.field-grid .field-button{min-height:96px;margin:0}.field-danger{background:#b3261e;color:#fff}.field-button:focus-visible{outline:3px solid #1c5f8c;outline-offset:2px}
+.field-screen .bd{font-size:20px}.field-screen h2{font-size:24px;margin-bottom:20px}.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field-screen .field-button{min-height:64px;width:100%;padding:16px;border:1px solid #47774f;border-radius:12px;background:#fff;color:#173d20;font-size:22px;font-weight:700;margin-bottom:12px}.field-grid .field-button{min-height:96px;margin:0}.field-danger{background:#b3261e;color:#fff}.field-button:focus-visible{outline:3px solid #1c5f8c;outline-offset:2px}
 
 .record-terms{display:grid;gap:8px}.record-term-card{border:1px solid #7d9184;border-radius:12px;padding:12px;margin-top:8px}.record-term-card p{margin:8px 0}.record-term-card button{min-height:48px}
 
