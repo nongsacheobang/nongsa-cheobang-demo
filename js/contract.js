@@ -234,6 +234,7 @@ export function toRecordDoc(state, ctx = {}) {
     doc.mitigation_note = state.mitigation_note || '';
     doc.checklist = Object.fromEntries(['photo','reported','damage','alerts','mitigation'].map(k => [k, state.checklist?.[k] === true]));
     doc.peril = state.peril || '';
+    if (state.peril_source === 'manual') doc.peril_source = 'manual';
     if (state.peril_group) doc.peril_group = state.peril_group;
     doc.facility_damage = state.facility_damage || '';
     doc.crop_symptom = state.crop_symptom || '';
@@ -308,6 +309,7 @@ export function fromRecordDoc(doc) {
     st.mitigation_note = doc.mitigation_note || '';
     st.checklist = Object.fromEntries(['photo','reported','damage','alerts','mitigation'].map(k => [k, doc.checklist?.[k] === true]));
     st.peril = doc.peril || '';
+    if (doc.peril_source === 'manual') st.peril_source = 'manual';
     if (doc.peril_group) st.peril_group = doc.peril_group;
     st.facility_damage = doc.facility_damage || '';
     st.crop_symptom = doc.crop_symptom || '';
