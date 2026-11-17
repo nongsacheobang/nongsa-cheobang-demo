@@ -38,7 +38,7 @@ const S = {
   wxEdit: false,
   detailEditing: false,
   listFilter: 'all',
-  excel: { period: 'month', from: '', to: '' },
+  excel: { period: 'month', from: '', to: '', sheets: [true, true, true, true] },
   setup: null,
   setupErr: '',
   loginErr: '',
@@ -509,6 +509,7 @@ function vExcel() {
         <h3>표준 영농기록장 양식 (농식품부 공익직불제)</h3>
         <div class="chk"><b>1</b>시트1: 표준 영농기록장 순서 A~M열<br><b>2</b>1행은 머리글만, 셀 병합 없음<br><b>3</b>날짜는 날짜 형식, 빈 값은 0이 아닌 빈칸<br><b>4</b>농약, 비료는 자재마다 1행<br><b>5</b>시트2: 작성, 수정 시각, 사후입력 여부 (증빙 신뢰도)<br><b>6</b>시트3: 피해 기록 (사고일, 피해 원인, 피해 동, 시설, 작물 피해, 원문)<br><b>7</b>시트4: 준비도 보고서 (점수, 작기, 요인, 빠진 기록, 피해 기록과 고지)</div>
       </div>
+      <fieldset class="card"><legend>포함할 시트</legend>${['영농기록장', '증빙정보', '피해 기록', '준비도 보고서'].map((name, i) => `<label class="record-choice"><input type="checkbox" data-sheet="${i}" ${S.excel.sheets[i] ? 'checked' : ''}> ${name}</label>`).join('')}</fieldset>
       <div class="fld"><label>미리보기 (시트1)</label><div class="xlw"><table class="xl">${prev}</table></div></div>
       <div class="card" style="background:#FAFAFA"><div class="mut">파일 이름</div><b style="font-size:13px;word-break:break-all">${esc(fileName(S.profile, from, to))}</b></div>
     </div>
@@ -1062,17 +1063,20 @@ async function makeXlsx(share) {
   const { from, to } = excelRange();
   const recs = excelRecords();
   if (!recs.length) return toast('기간 안에 기록이 없어요');
+  const sheets = [...document.querySelectorAll('[data-sheet]')].map(el => el.checked);
+  if (!sheets.some(Boolean)) return toast('시트를 하나 이상 골라 주세요');
+  S.excel.sheets = sheets;
   S.busy = true;
   renderKeep();
   try {
     // 증빙 엑셀에 준비도 요약 시트(M-08). 점수는 전체 기록 기준(기간과 무관)
-      const blob = await buildWorkbook(S.profile, S.session, recs, viewCtx().readiness);
+      const blob = await buildWorkbook(S.profile, S.session, recs, viewCtx().readiness, sheets);
     const name = fileName(S.profile, from, to);
     if (share) await shareBlob(blob, name);
     else downloadBlob(blob, name);
     S.lastExport = { name, size: blob.size, rows: buildSheet1Rows(S.profile, recs).length, at: new Date().toISOString() };
     window.__lastExport = S.lastExport;
-    toast(`${name} 저장`);
+    toast('다 만들었어요');
   } catch (e) {
     if (e.name !== 'AbortError') toast('엑셀을 만들지 못했어요: ' + e.message);
   } finally {
@@ -1084,6 +1088,7 @@ async function makeXlsx(share) {
 // 입력값 (다시 그리지 않고 상태만 갱신해 커서 유지)
 function onInput(e) {
   const el = e.target;
+  if (el.dataset.sheet !== undefined) { S.excel.sheets[Number(el.dataset.sheet)] = el.checked; return; }
   const k = el.dataset.in;
   if (!k) return;
   const v = el.value;
