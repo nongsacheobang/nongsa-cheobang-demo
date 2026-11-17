@@ -116,7 +116,7 @@ const TAB_HOME = { home: 'home', journal: 'list', coverage: 'coverage', info: 'i
 // 화면 모듈에 넘기는 것. 점수는 여기서 한 번 계산하고 화면은 읽기만 한다
 function viewCtx() {
   return {
-    S, session: S.session, profile: S.profile, records: S.records, param: S.param,
+    S, session: S.session, profile: S.profile, records: S.records, param: S.param, features: CONFIG.features,
     readiness: S.profile ? computeReadiness({ profile: S.profile, records: S.records, today: todayStr(), alerts: S.alerts ?? null }) : null,
     alerts: S.alerts ?? null, // 특보(읽기만). null은 못 불러옴
     go, toast, store: S.store, esc, reload, rerender: () => renderKeep(),

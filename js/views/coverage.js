@@ -12,6 +12,7 @@ export default {
     <button class="big" data-act="go" data-v="factors">준비도 자세히 보기</button>
     <button class="ghost" data-act="go" data-v="accident">사고 났어요</button>
     <button class="ghost" data-act="go" data-v="report">준비도 보고서 보기</button><button class="ghost" data-act="go" data-v="insurance">내 보험 정보</button>
+    ${ctx.features?.premiumCalc ? '<button class="ghost" data-act="go" data-v="premium">보험료 대략 확인</button>' : ''}
     <details class="card"><summary>보험금이 정해지는 과정</summary><p>시설작물 보험금은 피해 작물 재배면적, 단위면적당 보장생산비, 경과비율, 피해율을 살펴 정해요.</p><p>경과비율은 정식일부터 사고일까지 키운 기간을 살펴 정해요.</p><p>피해율은 손해평가사가 현장에서 동마다 조사해요.</p><p>설명은 이해를 돕는 예시예요. 지급 여부와 금액은 가입 내용과 손해평가에 따라 정해집니다.</p></details>
     </div></section>`;
   }, actions: {}
