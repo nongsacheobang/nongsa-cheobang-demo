@@ -37,9 +37,9 @@ export default {
     const openDamage = (ctx.records || []).filter(x=>x.type==='disaster' && !x.closed).sort((a,b)=>String(b.accident_date||b.workDate||'').localeCompare(String(a.accident_date||a.workDate||'')))[0];
     const todos = openDamage ? [{id:'open_damage',label:'피해 기록 확인하기',title:'사고 때 할 일',go:'accident/'+openDamage.id},...r.todo] : r.todo;
     const todo = todos.length
-      ? todos.slice(0,1).map((t) => `<button class="rd-todo" data-act="go" data-v="${esc(t.go)}"><span>${esc(t.label)}</span><small>${esc(t.title)}</small></button>`).join('')
+      ? todos.slice(0,1).map((t) => `<button class="rd-todo" data-spec-id="B-HOME-03" data-act="go" data-v="${esc(t.go)}"><span>${esc(t.label)}</span><small>${esc(t.title)}</small></button>`).join('')
       : '<p class="mut">지금 할 일이 없어요. 기록을 꾸준히 남겨 주세요.</p>';
-    const notice = p.settings?.disclaimer_seen_at ? `<details class="rd-notice"><summary>이 점수는 기록 상태만 보여줘요. 안내 보기</summary><p>${esc(r.notice)}</p></details>` : `<div class="rd-notice"><p>${esc(r.notice)}</p><button type="button" class="ghost" data-act="homeNoticeSeen">확인했어요</button></div>`;
+    const notice = p.settings?.disclaimer_seen_at ? `<details class="rd-notice"><summary data-spec-id="B-HOME-13">이 점수는 기록 상태만 보여줘요. 안내 보기</summary><p>${esc(r.notice)}</p></details>` : `<div class="rd-notice"><p>${esc(r.notice)}</p><button type="button" class="ghost" data-act="homeNoticeSeen">확인했어요</button></div>`;
     const w = S.todayWx;
     // 사고일 전후 이력은 오늘의 활성 특보가 아니므로 홈 날씨에 쓰지 않는다.
     const todayAlertText = Array.isArray(S.todayAlerts) ? (S.todayAlerts.length ? S.todayAlerts.map(x=>x.kind).filter(Boolean).join(', ') || '특보 정보 미수집' : '오늘 특보 없음') : '특보 정보 미수집';
@@ -51,15 +51,15 @@ export default {
     const first = news[0];
     const crops = [...new Set((p.houses||[]).filter(h=>!h.hidden && h.crop).map(h=>h.crop))].join(', ');
     const date = new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',weekday:'long',timeZone:'Asia/Seoul'}).format(new Date());
-    return `<section class="scr home-b">
-      <div class="hd home-b-bar"><h1>${esc(p.farmName || '내 농장')}</h1><button class="ghost" data-act="fieldEnter">현장 모드</button><button class="ghost" data-act="go" data-v="accident">사고 났어요</button></div>
+    return `<section class="scr home-b" data-screen-id="S-HOME">
+      <div class="hd home-b-bar"><h1>${esc(p.farmName || '내 농장')}</h1><button class="ghost" data-spec-id="B-HOME-06" data-act="fieldEnter">현장 모드</button><button class="ghost" data-spec-id="B-HOME-07" data-act="go" data-v="accident">사고 났어요</button></div>
       <div class="bd">
         <p class="mut">${esc(date)}, ${crops ? esc(crops)+' ' : ''}${esc((p.houses||[]).filter(h=>!h.hidden&&h.crop).length)}동</p><h2>오늘 한 일을 기록해 볼까요?</h2>
-        <button class="big" data-act="go" data-v="record">기록하기</button>
+        <button class="big" data-spec-id="B-HOME-01" data-act="go" data-v="record">기록하기</button>
         <div class="home-b-weather">오늘 날씨 ${esc(weatherText(w))}, ${esc(todayAlertText)}</div>
-        <div class="home-b-score">${signalCard(r,esc)}<p>피해가 나면 확인하는 기록(정식일, 관리, 출하)을 얼마나 남겼는지예요</p>${why?`<p class="rd-why">${esc(why)}</p>`:''}${notice}${warn}${r.gate_open?'<button class="ghost" data-act="go" data-v="factors">자세히 보기</button>':'<button class="ghost" data-act="go" data-v="insurance/guide">가입 안내 보기</button>'}</div>
-        <div class="card home-b-todo"><h3>지금 할 일</h3>${todo}${todos.length>1?`<button class="ghost" data-act="go" data-v="factors">${todos.length-1}개 더</button>`:''}</div>
-        <div class="card"><h3>새 소식</h3><p class="mut">가상 예시예요</p>${first?`<button class="ghost info-item" data-act="infoRead" data-v="${esc(first[0])}"><span>${esc(first[1])}</span><strong>${esc(first[2])}</strong></button>`:'<p>새 소식이 없어요</p>'}<button class="ghost" data-act="go" data-v="info">${news.length>1?`${news.length-1}건 더`:'소식 보기'}</button></div>
+        <div class="home-b-score">${signalCard(r,esc)}<p>피해가 나면 확인하는 기록(정식일, 관리, 출하)을 얼마나 남겼는지예요</p>${why?`<p class="rd-why">방금 ${esc(why)}</p>`:''}${notice}${warn}${r.gate_open?'<button class="ghost" data-spec-id="B-HOME-02" data-act="go" data-v="factors">자세히 보기</button>':'<button class="ghost" data-act="go" data-v="insurance/guide">가입 안내 보기</button>'}</div>
+        <div class="card home-b-todo"><h3>지금 할 일</h3>${todo}${todos.length>1?`<button class="ghost" data-spec-id="B-HOME-04" data-act="go" data-v="factors">${todos.length-1}개 더</button>`:''}</div>
+        <div class="card"><h3>새 소식</h3><p class="mut">가상 예시예요</p>${first?`<button class="ghost info-item" data-spec-id="B-HOME-08" data-act="infoRead" data-v="${esc(first[0])}"><span>${esc(first[1])}</span><strong>${esc(first[2])}</strong></button>`:'<p>새 소식이 없어요</p>'}<button class="ghost" data-spec-id="B-HOME-09" data-act="go" data-v="info">${news.length>1?`${news.length-1}건 더`:'소식 보기'}</button></div>
         ${demo}
       </div></section>`;
   },
