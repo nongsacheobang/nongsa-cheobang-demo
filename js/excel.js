@@ -117,7 +117,7 @@ export function buildReadinessRows(readiness, today) {
     ['경고', readiness.warnings.map((w) => w.title).join(', ')],
   ];
   const factors = readiness.factors.map((f) => [
-    f.id, f.group, f.title, STATE_TEXT[f.state] || f.state,
+    f.id, f.group, f.title, (STATE_TEXT[f.state] || f.state) + (f.pending ? ' (점수 반영 전)' : ''),
     f.weight === 'gate' ? '관문' : f.weight === 'warn' ? '경고' : f.weight,
     f.reason, f.basis, f.todo && f.state !== 'met' ? f.todo.label : '',
   ]);
