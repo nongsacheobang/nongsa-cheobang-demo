@@ -1,3 +1,5 @@
+import { cropInsurance } from './insurance/crops.js';
+
 // 보고서의 기간과 빈값을 보존한다. 작기 경계는 임시 기준이다.
 export function buildReportData(profile, records, readiness, { period='season', today } = {}) {
   const date=today||new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
@@ -16,6 +18,7 @@ export function buildReportData(profile, records, readiness, { period='season', 
   const work=chosen.filter(r=>r.type!=='disaster'),damage=chosen.filter(r=>r.type==='disaster');
   const houses=profileHouses.map(h=>{const interval=periods.find(p=>p.id===h.id);const own=work.filter(r=>(r.houseIds||[]).includes(h.id)&&(period==='all'||inPeriod(r,interval)));const last=t=>own.filter(r=>r.task===t&&r.workDate).map(r=>r.workDate).sort().at(-1)||'';return {id:h.id,name:h.name||'',crop:h.crop||'',area:h.area_m2??'',plants:h.plant_count??'',planted:last('정식'),harvest:last('수확 개시'),ended:last('수확 종료')}});
   const start=periods.map(p=>p.start).sort()[0]||fallback,seasonBasis=periods.some(p=>p.basis==='planting')?'planting':'recent';
+  const cropReferences=[...new Set(profileHouses.map(h=>h.crop).filter(Boolean))].map(crop=>{const c=cropInsurance(crop);if(!c.facility_crop)return null;return {crop, grow:`표준생장일수 ${c.standard_grow_days}일${c.winter_grow_days ? `, 월동 작형 ${c.winter_grow_days}일` : ''}`, harvest:c.standard_harvest_days ? `표준수확일수 ${c.standard_harvest_days}일` : '표준수확일수는 실제 수확 개시일부터 종료일까지', prep:'준비기생산비계수 40%'} }).filter(Boolean);
   const counts={};for(const r of work){const stage=r.stage||'미입력';counts[stage]=(counts[stage]||0)+1}
-  return {period,date,start,seasonBasis,periods,work,damage,houses,counts,factors:readiness?.factors||[],missing:(readiness?.factors||[]).filter(f=>['unmet','unknown'].includes(f.state)&&f.todo)};
+  return {period,date,start,seasonBasis,periods,work,damage,houses,counts,cropReferences,factors:readiness?.factors||[],missing:(readiness?.factors||[]).filter(f=>['unmet','unknown'].includes(f.state)&&f.todo)};
 }
