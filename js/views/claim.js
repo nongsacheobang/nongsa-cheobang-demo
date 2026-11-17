@@ -15,7 +15,7 @@ export function updateClaimButton() {
   const crop = number('claim-damage') > 0 && number('claim-band-low') !== null && number('claim-area') > 0 && number('claim-sum') > 0 && !!get('claim-plant') && !!get('claim-date') && (get('claim-damage-unit') !== 'plants' || number('claim-plants') > 0);
   const facility = number('claim-estimate-1') > 0 && ['yes','no'].includes(get('claim-cover'));
   button.disabled = !(crop || facility);
-  if (hint) { const missing = []; if (!get('claim-plant')) missing.push('정식일'); if (!(number('claim-sum') > 0)) missing.push('작물 가입금액'); if (!(number('claim-damage') > 0)) missing.push('피해 넓이 또는 주수'); if (number('claim-band-low') === null) missing.push('손해정도'); hint.textContent = button.disabled ? `${missing.join(', ')}을 확인하거나 하우스 수리 견적을 넣어 주세요.` : ''; }
+  if (hint) { const missing = []; if (!get('claim-plant')) missing.push('정식일'); if (!(number('claim-sum') > 0)) missing.push('작물 가입금액'); if (!(number('claim-damage') > 0)) missing.push('피해 넓이 또는 주수'); if (number('claim-band-low') === null) missing.push('손해정도'); hint.textContent = button.disabled ? (missing.length ? `다음 항목을 확인하거나 하우스 수리 견적을 넣어 주세요: ${missing.join(', ')}` : '입력값을 확인하거나 하우스 수리 견적을 넣어 주세요.') : ''; }
   const harvestHint = document.getElementById('claim-harvest-hint');
   if (harvestHint) harvestHint.hidden = !!get('claim-harvest');
   const plantLink = document.getElementById('claim-plant-link'), insuranceLink = document.getElementById('claim-insurance-link');
