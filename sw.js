@@ -1,6 +1,6 @@
 // 서비스 워커: 정적 파일 캐시 (오프라인에서도 앱 화면이 열리게)
 // 파일을 바꾸면 CACHE 이름의 버전을 올린다.
-const CACHE = 'nongsa-cheobang-v0.4.73';
+const CACHE = 'nongsa-cheobang-v0.4.74';
 const ASSETS = [
   './',
   './index.html',
@@ -82,13 +82,14 @@ self.addEventListener('fetch', (e) => {
 
   // 앱 화면 이동은 네트워크 우선, 실패 시 캐시를 사용한다.
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).then((res) => {
+    const network = fetch(req);
+    const update = network.then(async (res) => {
       if (res.ok && !url.search) {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put('./index.html', copy));
+        try { const copy = res.clone(); await (await caches.open(CACHE)).put('./index.html', copy); } catch (_) {}
       }
-      return res;
-    }).catch(() => caches.match('./index.html')));
+    }).catch(() => {});
+    e.waitUntil(update);
+    e.respondWith(network.catch(() => caches.match('./index.html')));
     return;
   }
 
