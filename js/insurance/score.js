@@ -72,7 +72,12 @@ export function computeReadiness(ctx) {
   const unresolved = activeHouses.map(h => {
     const actions = records.filter(r => (r.houseIds || []).includes(h.id) && r.task === '하우스 점검' && (r.house_check_result === 'problem' || String(r.memo || '').includes('피복, 골조 점검, 문제 발견') || String(r.memo || '') === '수리'));
     actions.sort((a,b) => String(b.workDate || '').localeCompare(String(a.workDate || '')) || String(b.createdAt || b.availableAt || '').localeCompare(String(a.createdAt || a.availableAt || '')) || Number(String(b.memo || '').includes('문제 발견')) - Number(String(a.memo || '').includes('문제 발견')));
-    return actions.length && (actions[0].house_check_result === 'problem' || String(actions[0].memo || '').includes('문제 발견')) ? { ...h, foundRecordId: actions[0].id || null } : null;
+    const isProblem = r => r.house_check_result === 'problem' || String(r.memo || '').includes('문제 발견');
+    const latestProblem = actions.find(isProblem);
+    if (!latestProblem) return null;
+    // 명시적으로 다른 점검에 연결한 수리는 새 점검의 할 일을 지우지 않는다.
+    const relevant = actions.filter(r => isProblem(r) || !r.repair_of || r.repair_of === latestProblem.id);
+    return isProblem(relevant[0]) ? { ...h, foundRecordId: latestProblem.id || null } : null;
   }).filter(Boolean);
   if (unresolved.length) { const repairTodo = {id:'facility_repair',label:unresolved[0].name+' 수리했어요 기록하기',go:'field',houseId:unresolved[0].id,foundRecordId:unresolved[0].foundRecordId,title:unresolved[0].name + ' 점검 문제'}; if (stage.key === 'accident') todo.push(repairTodo); else todo.unshift(repairTodo); }
 
