@@ -1,0 +1,44 @@
+{
+  "area": {
+    "sigungu": "가상군",
+    "areaCode": "TEST0001",
+    "from": "2026-11-01",
+    "to": "2026-11-30"
+  },
+  "response": {
+    "header": {
+      "resultCode": "00",
+      "resultMsg": "OK"
+    },
+    "body": {
+      "dataType": "JSON",
+      "pageNo": 1,
+      "numOfRows": 100,
+      "totalCount": 2,
+      "items": {
+        "item": [
+          {
+            "stnId": "000",
+            "areaCode": "TEST0001",
+            "areaName": "가상군",
+            "warnVar": "1",
+            "warnStress": "0",
+            "command": "1",
+            "startTime": "202611170900",
+            "cancel": "0"
+          },
+          {
+            "stnId": "000",
+            "areaCode": "TEST0002",
+            "areaName": "다른가상군",
+            "warnVar": "2",
+            "warnStress": "1",
+            "command": "1",
+            "startTime": "202611180900",
+            "cancel": "0"
+          }
+        ]
+      }
+    }
+  }
+}

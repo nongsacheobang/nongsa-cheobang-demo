@@ -74,7 +74,7 @@ export async function getWeather(date, location) {
 
 // 화면 표시용 한 줄: "맑음 4~15℃"
 export function weatherText(w) {
-  if (!w || w.status === 'missing' || (!w.sky && w.tmin == null && w.tmax == null)) return '미수집';
+  if (!w || w.status !== 'ok' || (!w.sky && w.tmin == null && w.tmax == null)) return '미수집';
   let s = w.sky || '';
   if (w.tmin != null || w.tmax != null) s += (s ? ' ' : '') + `${w.tmin ?? '?'}~${w.tmax ?? '?'}℃`;
   return s;
@@ -82,7 +82,7 @@ export function weatherText(w) {
 
 // 엑셀 D열용: "맑음, 4~15℃". 미수집은 빈칸
 export function weatherCell(w) {
-  if (!w || w.status === 'missing') return '';
+  if (!w || w.status !== 'ok') return '';
   const parts = [];
   if (w.sky) parts.push(w.sky);
   if (w.tmin != null || w.tmax != null) parts.push(`${w.tmin ?? ''}~${w.tmax ?? ''}℃`);
@@ -90,10 +90,11 @@ export function weatherCell(w) {
 }
 
 export function weatherSourceLabel(w) {
-  if (!w || w.status === 'missing') return w?.reason || '미수집';
+  if (!w || w.status !== 'ok') return w?.reason || '미수집';
   if (w.source === 'manual') return '직접 수정';
   if (w.source === 'kma') return '기상청 자동';
-  return '기상청 자동 자리 (가상 고정값)';
+  if (w.source === 'mock') return '가상 고정값';
+  return '출처 미확인';
 }
 
 // 기상청 격자 변환 (위경도 -> nx, ny). 기상청 단기예보 활용가이드 LCC DFS 공식

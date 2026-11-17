@@ -3,21 +3,22 @@
 //                                  --목적 외--> 정중한 거절 + 할 수 있는 일 안내 (5회 연속이면 그날 대화 잠금)
 //                                  --인식 실패 2회 연속--> 직접 입력 화면으로 넘김 (알아낸 값은 미리 채움)
 // 규칙: 한 번에 1개 질문 + 선택지 버튼, 같은 항목은 최대 2번, "모르겠어요"는 건너뛰고 "미완성"으로 저장 허용,
-//       작업일은 오늘·동이 1개면 자동, 추측한 값은 "확인 필요" 표시, 농민이 [저장]을 눌러야만 저장.
-// v0.3 (손해평가사 관점 평가 v1): 의도 "재해" -> 재해 초안(draft.type = 'disaster'). 필수 빈칸(사고일·재해 종류·피해 동·시설 피해·작물 피해)은
+//       작업일은 오늘, 동이 1개면 자동, 추측한 값은 "확인 필요" 표시, 농민이 [저장]을 눌러야만 저장.
+// v0.3 (손해평가사 관점 평가 v1): 의도 "재해" -> 재해 초안(draft.type = 'disaster'). 필수 빈칸(사고일, 재해 종류, 피해 동, 시설 피해, 작물 피해)은
 //       평가 문서 3장의 질문 문구로 되묻고, 작업 일지와 별도 기록(type: 'disaster')으로 저장. 사진은 안내 문구만.
 
 import { CROPS, STAGES, SEED, MATERIAL_KINDS, PERILS, FACILITY_DAMAGES, CROP_SYMPTOMS, PHOTO_NOTICE, tasksFor, typesFor, unitsFor, defaultUnit } from '../constants.js';
 import { todayStr, missingFields, recentNames, autoText, houseNames } from '../records.js';
 import { getStore } from '../storage/index.js';
 import { getWeather, weatherText, missingWeather } from '../weather.js';
-import { extractRules, parseAnswer } from './extract-rules.js';
+import { extractRules, parseAnswer, parseHouses } from './extract-rules.js';
 import { understand } from './llm-adapter.js';
+import { preserveDisasterWords, disasterCauseWords } from './disaster-language.js';
 
 export const AGENT_TEXT = {
   hello: '오늘 하신 작업이나 재해 피해를 말이나 글로 남겨 주세요. 영농일지 항목으로 정리해 확인 카드로 보여 드릴게요.',
-  disasterStart: `재해 기록으로 정리할게요. ${PHOTO_NOTICE}.`,
-  disasterConfirm: '이대로 재해 기록을 저장할까요? 틀린 칸은 눌러서 고칠 수 있어요.',
+  disasterStart: `피해 기록으로 정리할게요. ${PHOTO_NOTICE}.`,
+  disasterConfirm: '이대로 피해 기록을 저장할까요? 틀린 칸은 눌러서 고칠 수 있어요.',
   refuse: '저는 영농일지 기록과 농사 정보 안내만 도와드려요. 오늘 하신 작업을 말씀해 주시면 바로 기록할게요.',
   weather: (w) => `날씨 질문은 아직 대화로 답하지 못해요. 홈 위 날씨 카드에서 확인해 주세요${w ? ` (오늘 ${w})` : ''}.`,
   greet: '안녕하세요. 오늘 하신 작업을 말씀해 주시면 일지로 정리해 드릴게요.',
@@ -33,7 +34,7 @@ export const AGENT_TEXT = {
 };
 
 const SKIP = /^(__skip|모르겠|몰라|모름|나중에|건너|패스|없어|글쎄|기억\s*안)/;
-const YES = /^(__save|네|예|응|어|맞아|좋아|저장|그래|ㅇㅇ|오케이|ok)/i;
+
 const NO = /^(__cancel|아니|취소|그만|됐어|안\s*해)/;
 const CAPABILITY_QUICK = [
   { l: '작업 기록 예시', v: '1동 토마토 곁순 제거했어요' },
@@ -50,6 +51,17 @@ function ro(word) {
   return word + (jong === 0 || jong === 8 ? '로' : '으로');
 }
 
+// 임시: 연도를 말하지 않은 월은 현재 연도로 해석하고 화면에서 확인한다.
+export function exportPeriod(text, today) {
+  const match = String(text).match(/(?:(\d{4})\s*년\s*)?(\d{1,2})\s*월/);
+  if (!match || !/^\d{4}-\d{2}-\d{2}$/.test(today)) return null;
+  const year = match[1] ? Number(match[1]) : Number(today.slice(0, 4));
+  const month = Number(match[2]);
+  if (year < 1900 || year > 9999 || month < 1 || month > 12) return null;
+  const endDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  return {period_start:`${prefix}-01`,period_end:`${prefix}-${String(endDay).padStart(2,'0')}`,year_inferred:!match[1]};
+}
 let seq = 0;
 const mid = () => 'm' + (++seq);
 
@@ -87,12 +99,15 @@ export function createAgent(deps) {
   function newDraft(ext, method) {
     st.asked = {};
     st.skipped = [];
+    // 구입만 한 발화의 동은 발화에서 직접 찾은 동만 사용한다(U-03).
+    const buyOnly = ext.materials.length > 0 && ext.materials.every(m => m.action === '구입');
+    const explicitHouses = buyOnly ? parseHouses(ext.text || '', deps.getProfile()) : ext.houseIds;
     st.draft = {
       type: 'work',
       variety: ext.variety || '',
       plant_count: ext.plant_count || '',
       workDate: ext.workDate,
-      houseIds: [...ext.houseIds],
+      houseIds: [...explicitHouses],
       crop: ext.crop,
       stage: ext.stage,
       task: ext.task,
@@ -121,6 +136,7 @@ export function createAgent(deps) {
       houseIds: [...ext.houseIds],
       crop: ext.crop,
       peril: x.peril || '',
+      peril_group: x.peril_group || '',
       facility_damage: x.facility_damage || '',
       crop_symptom: x.crop_symptom || '',
       memo: ext.memo || '',
@@ -155,9 +171,11 @@ export function createAgent(deps) {
       if (!d.houseIds.length && ext.houseIds.length) { d.houseIds = [...ext.houseIds]; if (!d.crop) d.crop = ext.crop; n++; }
       if (!d.accident_date && x.accident_date) { setAccidentDate(x.accident_date); n++; }
       for (const k of ['peril', 'facility_damage', 'crop_symptom']) if (!d[k] && x[k]) { d[k] = x[k]; n++; }
+      if (!d.peril_group && x.peril_group) d.peril_group = x.peril_group;
       return n;
     }
-    if (!d.houseIds.length && ext.houseIds.length) { d.houseIds = [...ext.houseIds]; n++; }
+    const candidateHouses = d.materials.length && d.materials.every(m => m.action === '구입') ? parseHouses(ext.text || '', deps.getProfile()) : ext.houseIds;
+    if (!d.houseIds.length && candidateHouses.length) { d.houseIds = [...candidateHouses]; n++; }
     if (!d.crop && ext.crop) { d.crop = ext.crop; n++; }
     if (!d.stage && ext.stage) { d.stage = ext.stage; d.task = ext.task; n++; }
     ext.materials.forEach((em, i) => {
@@ -186,10 +204,12 @@ export function createAgent(deps) {
       if (x.accident_date && x.accident_date !== d.accident_date) { setAccidentDate(x.accident_date); n++; }
       if (ext.houseIds.length) { d.houseIds = [...ext.houseIds]; if (ext.crop) d.crop = ext.crop; n++; }
       for (const k of ['peril', 'facility_damage', 'crop_symptom']) if (x[k]) { d[k] = x[k]; n++; }
+      if (x.peril_group) d.peril_group = x.peril_group;
       return n;
     }
     if (ext.dateSaid && ext.workDate !== d.workDate) { d.workDate = ext.workDate; d.weather = null; loadWeather(); n++; }
-    if (ext.houseIds.length) { d.houseIds = [...ext.houseIds]; n++; }
+    const candidateHouses = d.materials.length && d.materials.every(m => m.action === '구입') ? parseHouses(ext.text || '', deps.getProfile()) : ext.houseIds;
+    if (candidateHouses.length) { d.houseIds = [...candidateHouses]; n++; }
     if (ext.crop) { d.crop = ext.crop; n++; }
     if (ext.stage) { d.stage = ext.stage; d.task = ext.task; n++; }
     ext.materials.forEach((em, i) => {
@@ -204,6 +224,7 @@ export function createAgent(deps) {
   function requiredKeys(d) {
     if (d.type === 'disaster') return ['accident_date', 'peril', 'houseIds', 'facility_damage', 'crop_symptom'];
     const keys = ['houseIds', 'crop'];
+    d.materials.forEach((m, i) => { if (!['구입', '사용'].includes(m.action)) keys.push(`m${i}.action`); });
     const buyOnly = d.materials.length && d.materials.every((m) => m.action === '구입');
     if (!buyOnly) keys.push('stage'); // 구입만 한 기록은 작업단계를 묻지 않음 (미완성으로 표시)
     d.materials.forEach((m, i) => keys.push(`m${i}.kind`, `m${i}.type`, `m${i}.name`, `m${i}.qty`, `m${i}.unit`));
@@ -215,11 +236,14 @@ export function createAgent(deps) {
     if (['accident_date', 'peril', 'facility_damage', 'crop_symptom'].includes(key)) return !d[key];
     const [, i, f] = key.match(/^m(\d+)\.(\w+)$/);
     const m = d.materials[Number(i)];
+    if (f === 'action') return !m || !['구입', '사용'].includes(m.action);
     return !m || m[f] === '' || m[f] == null;
   }
   function nextMissing() {
     const d = st.draft;
-    return requiredKeys(d).find((k) => isEmpty(d, k) && !st.skipped.includes(k) && (st.asked[k] || 0) < 2) || '';
+    // 양을 모르겠다고 건너뛴 자재는 단위를 따로 묻지 않는다(Codex 흰가루병 화면 확인)
+    const unitOfSkippedQty = (k) => /^m\d+\.unit$/.test(k) && st.skipped.includes(k.replace('.unit', '.qty'));
+    return requiredKeys(d).find((k) => isEmpty(d, k) && !st.skipped.includes(k) && !unitOfSkippedQty(k) && (st.asked[k] || 0) < 2) || '';
   }
 
   function question(key) {
@@ -232,8 +256,9 @@ export function createAgent(deps) {
       if (d.continuing) return { text: '언제부터였어요? 시작한 날을 알려 주세요. 예: 11월 12일', quick: [{ l: '어제', v: '어제' }, { l: '그제', v: '그제' }, skip] };
       return { text: '피해는 언제 생겼어요?', quick: [{ l: '오늘', v: '오늘' }, { l: '어제', v: '어제' }, { l: '그제', v: '그제' }, { l: '며칠째 계속돼요', v: '며칠째 계속돼요' }, skip] };
     }
-    if (key === 'peril') return { text: '어떤 피해예요?', quick: [...PERILS.map((x) => ({ l: x, v: x })), skip] };
-    if (key === 'facility_damage') return { text: '하우스 자체도 부서졌나요?', quick: [...FACILITY_DAMAGES.map((x) => ({ l: x, v: x })), skip] };
+    if (key === 'peril') return { text: '어떤 피해예요?', quick: [...['강풍','태풍','돌풍','우박','저온','냉해','한파','서리','호우','폭우','폭설','폭염','고온','새','멧돼지','조수해','화재','기타'].map((x) => ({ l: x, v: x })), skip] };
+    // 계약 v1.1 V-7 문구. [없어요]는 '시설 피해 없음'으로 저장
+    if (key === 'facility_damage') return { text: '하우스 골조나 비닐도 피해가 있나요?', quick: [...FACILITY_DAMAGES.filter((x) => x !== '시설 피해 없음').map((x) => ({ l: x, v: x })), { l: '없어요', v: '시설 피해 없음' }, skip] };
     if (key === 'crop_symptom') return { text: '작물은 어떻게 됐어요?', quick: [...CROP_SYMPTOMS.map((x) => ({ l: x, v: x })), skip] };
     if (key === 'houseIds' && dis) return { text: '몇 동이 피해를 입었어요?', quick: [...p.houses.map((h) => ({ l: h.name, v: h.name })), skip] };
     if (key === 'houseIds') return { text: '몇 동에서 하셨어요?', quick: [...p.houses.map((h) => ({ l: h.name, v: h.name })), skip] };
@@ -244,6 +269,7 @@ export function createAgent(deps) {
     const K = m.kind || '자재';
     const seed = m.kind === SEED;
     if (f === 'kind') return { text: '농약인가요, 비료인가요, 모종인가요?', quick: [...MATERIAL_KINDS.map((x) => ({ l: x, v: x })), skip] };
+    if (f === 'action') return { text: '구입하셨어요, 사용하셨어요?', quick: [{ l: '구입', v: '구입' }, { l: '사용', v: '사용' }, skip] };
     if (f === 'type') return { text: `${K} 종류를 골라 주세요.`, quick: [...typesFor(m.kind).map((x) => ({ l: x, v: x })), skip] };
     if (f === 'name') {
       const names = recentNames(deps.getRecords() || [], m.kind).slice(0, 4);
@@ -285,14 +311,33 @@ export function createAgent(deps) {
       else m[f] = v;
     }
     d.guessed = d.guessed.filter((g) => g !== key);
-    // 작목이 나중에 정해져 세부작업이 그 작목 목록에 없으면 작업단계만 남김 (예: 딸기에 '유인·곁순 제거')
+    // 작목이 나중에 정해져 세부작업이 그 작목 목록에 없으면 작업단계만 남김 (예: 딸기에 '유인과 곁순 제거')
     if ((key === 'houseIds' || key === 'crop') && d.task && !(tasksFor(d.crop)[d.stage] || []).includes(d.task)) {
       d.task = '';
       if (!d.guessed.includes('stage')) d.guessed.push('stage');
     }
   }
 
+  // 임시(결정 필요 D-20): 서로 다른 작목을 한 기록에 섞지 않는다.
+  function hasMixedCrops(d) {
+    const houses = deps.getProfile()?.houses || [];
+    const crops = d.houseIds.map(id => houses.find(h => h.id === id)?.crop).filter(Boolean);
+    return new Set(crops).size > 1;
+  }
+  function separateMixedCrops() {
+    const d = st.draft;
+    if (!d || !hasMixedCrops(d)) return false;
+    const warning = '작목이 달라 따로 기록해야 해요. 어느 동부터 할까요?';
+    if (!d.warnings.includes(warning)) d.warnings.push(warning);
+    d.houseIds = [];
+    d.crop = '';
+    st.skipped = st.skipped.filter(k => k !== 'houseIds');
+    st.asked.houseIds = 0;
+    ask('houseIds', warning + ' ');
+    return true;
+  }
   function proceed() {
+    if (separateMixedCrops()) return;
     const k = nextMissing();
     if (k) return ask(k);
     st.phase = 'confirm';
@@ -347,7 +392,7 @@ export function createAgent(deps) {
 
   function fail(prefixQuestionKey) {
     st.fails++;
-    // 재해 기록은 직접 입력(작업 일지) 화면으로 넘기지 않고, 못 알아들은 칸은 건너뛴다
+    // 피해 기록은 직접 입력(작업 일지) 화면으로 넘기지 않고, 못 알아들은 칸은 건너뛴다
     if (st.draft?.type === 'disaster') {
       if (prefixQuestionKey && (st.asked[prefixQuestionKey] || 0) < 2) { ask(prefixQuestionKey, AGENT_TEXT.retry + ' '); return null; }
       if (prefixQuestionKey) { st.skipped.push(prefixQuestionKey); proceed(); return null; }
@@ -394,6 +439,7 @@ export function createAgent(deps) {
       houseIds: [...d.houseIds],
       crop: d.crop || (p.houses.find((h) => h.id === d.houseIds[0])?.crop || ''),
       peril: d.peril,
+      peril_group: d.peril_group || '', // 분류는 통계용. 원인 칸에는 말한 낱말만(V-5)
       facility_damage: d.facility_damage,
       crop_symptom: d.crop_symptom,
       weather: d.weather || (d.accident_date ? await getWeather(d.accident_date, p) : null) || missingWeather('미수집'),
@@ -409,7 +455,8 @@ export function createAgent(deps) {
       location: p.location,
       demo: false,
       source_text: d.sourceTexts.join(' / '),
-      chat_answers: (d.answers || []).join(' / '),
+      answers: (d.answers || []).map((a) => (typeof a === 'string' ? { field: null, label: a, value: a, source: null } : a)), // 계약 v1.1 V-6
+      chat_answers: (d.answers || []).map((a) => (typeof a === 'string' ? a : a.label || a.value)).join(' / '),
       extract_method: d.method,
       input_mode: 'chat',
       agent_guessed: [...d.guessed],
@@ -424,13 +471,14 @@ export function createAgent(deps) {
     st.phase = 'saved';
     st.fails = 0;
     const mis = rec.missing.length ? ` 빈칸 ${rec.missing.join(', ')}은(는) "미완성"으로 표시했어요.` : '';
-    say(`${houseNames(p, rec.houseIds) || '동 미입력'} ${rec.peril || '재해'} 피해를 재해 기록으로 저장했어요.${mis} ${PHOTO_NOTICE}.`, { savedId: saved.id });
+    say(`${houseNames(p, rec.houseIds) || '동 미입력'} ${rec.peril || '재해'} 피해를 피해 기록으로 저장했어요.${mis} ${PHOTO_NOTICE}.`, { savedId: saved.id });
     say(AGENT_TEXT.more, { quick: [{ l: '네, 더 있어요', v: '__more' }, { l: '아니요', v: '__done' }, { l: '일지 목록 보기', v: '__list' }] });
     return { action: 'saved', id: saved.id };
   }
 
   async function save() {
     const d = st.draft;
+    if (separateMixedCrops()) return null;
     if (d.type === 'disaster') return saveDisaster();
     const p = deps.getProfile();
     const s = deps.getSession();
@@ -456,7 +504,8 @@ export function createAgent(deps) {
       location: p.location,
       demo: false,
       source_text: d.sourceTexts.join(' / '),
-      chat_answers: (d.answers || []).join(' / '),
+      answers: (d.answers || []).map((a) => (typeof a === 'string' ? { field: null, label: a, value: a, source: null } : a)), // 계약 v1.1 V-6
+      chat_answers: (d.answers || []).map((a) => (typeof a === 'string' ? a : a.label || a.value)).join(' / '),
       extract_method: d.method, // '규칙' | 'AI'
       input_mode: 'chat',
       agent_guessed: [...d.guessed],
@@ -484,13 +533,22 @@ export function createAgent(deps) {
     st.messages.push({ id: mid(), role: 'user', text: label || raw });
     st.busy = true;
     try {
-      return await turn(raw);
+      // 버튼은 화면이 표시값(label)을 함께 넘긴다. 글 입력은 label이 없다(계약 v1.1 V-6 답한 방법)
+      return await turn(raw, raw === '__save' && label === '저장', label ? 'button' : 'text', label || null);
     } finally {
       st.busy = false;
     }
   }
 
-  async function turn(raw) {
+  // 되묻기 답 기록: { field, label, value, source }. 글 답은 원문(source_text)에도 잇는다(계약 v1 1-4).
+  // 버튼 답 글자는 원문에 넣지 않는다(T-8).
+  function recordAnswer(field, text, source, label) {
+    const d = st.draft;
+    (d.answers = d.answers || []).push({ field: field || null, label: label || null, value: text, source });
+    if (source === 'text' && d.sourceTexts && !d.sourceTexts.includes(text)) d.sourceTexts.push(text);
+  }
+
+  async function turn(raw, saveButton = false, source = 'text', label = null) {
     // 버튼 신호
     if (raw === '__form') return { action: 'handoff', form: toForm('chat-handoff') };
     if (raw === '__list') { say(AGENT_TEXT.list); return { action: 'go', to: 'list' }; }
@@ -503,11 +561,11 @@ export function createAgent(deps) {
     const text = raw.slice(0, 500);
 
     if (st.phase === 'confirm' && st.draft) {
-      if (YES.test(text) && text.length <= 12) return save();
+      if (saveButton) return save();
       if (NO.test(text)) { st.draft = null; st.phase = 'idle'; say(AGENT_TEXT.cancel); return null; }
       const ext = extractRules(text, c);
       if (ext.intent === 'offtopic') return refuse();
-      // 확인 카드가 떠 있는데 완전히 다른 기록(재해 또는 다른 작업)을 말하면 고치기로 섞지 않고 새 초안으로 (원문·세부내용 오기입 방지)
+      // 확인 카드가 떠 있는데 완전히 다른 기록(재해 또는 다른 작업)을 말하면 고치기로 섞지 않고 새 초안으로 (원문, 세부내용 오기입 방지)
       const d0 = st.draft;
       const isNew = ext.intent === 'disaster'
         ? d0.type !== 'disaster'
@@ -521,7 +579,7 @@ export function createAgent(deps) {
         return null;
       }
       if (mergeOverride(ext)) {
-        (st.draft.answers = st.draft.answers || []).push(text); // 원문(첫 발화)과 되묻기 답을 섞지 않는다
+        recordAnswer(null, text, source, label); // 확인 카드에서 고친 말
         st.fails = 0;
         proceed();
         return null;
@@ -535,12 +593,14 @@ export function createAgent(deps) {
       const ext = extractRules(text, c);
       if (ext.intent === 'offtopic') return refuse();
       st.offStreak = 0;
-      const a = parseAnswer(key, text, c, st.draft);
+      const actionAnswer = /^m\d+\.action$/.test(key) ? (/^(구입|샀|사왔)/.test(text) ? '구입' : /^(사용|썼|뿌렸)/.test(text) ? '사용' : '') : null;
+      const perilWords = key === 'peril' ? disasterCauseWords(text) : null;
+      const a = perilWords !== null ? (perilWords.length ? { ok: true, value: [...new Set(perilWords)].join(', ') } : text.trim() === '기타' ? { ok: true, value: '기타' } : { ok: false }) : actionAnswer === null ? parseAnswer(key, text, c, st.draft) : actionAnswer ? { ok: true, value: actionAnswer } : { ok: false };
       let got = 0;
       if (a.ok) { applyAnswer(key, a.value); got++; }
       got += mergeEmpty(ext);
       if (got) {
-        (st.draft.answers = st.draft.answers || []).push(text); // 원문(첫 발화)과 되묻기 답을 섞지 않는다
+        recordAnswer(key, text, source, label);
         st.fails = 0;
         proceed();
         return null;
@@ -549,7 +609,9 @@ export function createAgent(deps) {
     }
 
     // idle / saved: 새 발화
-    const u = await understand(text, c);
+    const understood = await understand(text, c);
+    const corrected = preserveDisasterWords(text, understood.ext);
+    const u = corrected === understood.ext ? understood : { ...understood, intent: corrected.intent, ext: corrected };
     if (u.intent === 'offtopic') return refuse();
     st.offStreak = 0;
     if (u.intent === 'weather') {
@@ -557,7 +619,7 @@ export function createAgent(deps) {
       say(AGENT_TEXT.weather(weatherText(w) !== '미수집' ? weatherText(w) : ''), { quick: CAPABILITY_QUICK, kind: 'refuse' });
       return null;
     }
-    if (u.intent === 'export') { say(AGENT_TEXT.export); return { action: 'go', to: 'excel' }; }
+    if (u.intent === 'export') { say(AGENT_TEXT.export); const period = exportPeriod(text, c.today); return { action: 'go', to: 'excel', ...(period || {}) }; }
     if (u.intent === 'list') { say(AGENT_TEXT.list, { quick: [{ l: '일지 목록 보기', v: '__list' }] }); return null; }
     if (u.intent === 'greet') { say(AGENT_TEXT.greet, { quick: CAPABILITY_QUICK }); return null; }
     if (u.intent === 'disaster') {
@@ -568,6 +630,11 @@ export function createAgent(deps) {
       return null;
     }
     if (u.intent !== 'record') return fail();
+    // 앞선 기록을 가리키는 모호한 발화는 제품, 동을 지어내지 않고 다시 받는다.
+    const e = u.ext;
+    const vagueReference = /그\s*(약|거)|저번처럼|전에\s*쓰던/.test(text);
+    const concrete = e.houseIds.length || e.crop || e.pest || e.materials.some(m => m.name || m.qty || m.dilution);
+    if (vagueReference && !concrete) return fail();
     st.fails = 0;
     newDraft(u.ext, u.method);
     if (u.fallback === 'limit') say('오늘 AI 대화 한도를 다 써서 규칙으로 정리했어요.');

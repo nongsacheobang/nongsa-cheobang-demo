@@ -1,16 +1,17 @@
 // 규칙 기반 한국어 추출기 (LLM 없이 동작하는 대체 모드)
 // 발화 한두 문장에서 영농일지 항목(입력 항목표 v0.1 3장)을 뽑는다.
 //   날짜(오늘/어제/그제/N일 전/11월 14일/11/14), 하우스 동(1동, 1동이랑 2동, 1,2동, 전체 동),
-//   작목, 작업단계·세부작업(사전), 농약/비료 구분, 구입/사용, 종류, 제품명(사전 + 접미사 + "~를/을" 앞 명사),
-//   양·단위(숫자+L/mL/kg/g/포대/병/봉지/톤, "두 병", "천배" 같은 한글 숫자), 희석배수, 대상 병해충, 처리 면적
+//   작목, 작업단계, 세부작업(사전), 농약/비료 구분, 구입/사용, 종류, 제품명(사전 + 접미사 + "~를/을" 앞 명사),
+//   양, 단위(숫자+L/mL/kg/g/포대/병/봉지/톤, "두 병", "천배" 같은 한글 숫자), 희석배수, 대상 병해충, 처리 면적
 // 한계는 README "규칙 추출 한계" 참고. 추측으로 채운 값은 guessed 목록에 넣어 확인 카드에 "확인 필요"로 표시한다.
 //
-// v0.3 (손해평가사 관점 평가 v1 반영): 재해 의도(강풍·우박·냉해 등) -> ext.disaster, 수확 개시/종료, 종묘(모종) 구입,
-//   정식 품종·주수, 온도 값("최저 5도")·출하량·출하처 메모 보존, 약 안 친 병해충 문장은 농약 자재를 만들지 않음
+// v0.3 (손해평가사 관점 평가 v1 반영): 재해 의도(강풍, 우박, 냉해 등) -> ext.disaster, 수확 개시/종료, 종묘(모종) 구입,
+//   정식 품종, 주수, 온도 값("최저 5도"), 출하량, 출하처 메모 보존, 약 안 친 병해충 문장은 농약 자재를 만들지 않음
 //
 // 브라우저 콘솔 테스트: (홈 화면에서) await ncAgentTests()  또는  import('./js/agent/extract-rules.js').then(m => m.runExtractTests())
 
 import { STAGES, PESTICIDE_TYPES, FERTILIZER_TYPES, SEED, PERILS, FACILITY_DAMAGES, CROP_SYMPTOMS, tasksFor, typesFor } from '../constants.js';
+import { disasterCauseWords } from './disaster-language.js';
 
 // ---------- 숫자 정규화 ----------
 const NATIVE = { 열한: 11, 열두: 12, 다섯: 5, 여섯: 6, 일곱: 7, 여덟: 8, 아홉: 9, 하나: 1, 스무: 20, 스물: 20, 서른: 30, 마흔: 40, 한: 1, 두: 2, 둘: 2, 세: 3, 셋: 3, 석: 3, 네: 4, 넷: 4, 넉: 4, 열: 10, 쉰: 50, 반: 0.5 };
@@ -90,8 +91,8 @@ export function parseHouses(text, profile) {
   if (!hs.length) return [];
   if (/전체\s*동|모든\s*동|동\s*전체|전\s*동에|하우스\s*전부|모든\s*하우스|전체\s*하우스/.test(text)) return hs.map((h) => h.id);
   const names = new Map();
-  // "1,2동" "1·2동" "1~3동" 확장 (이름 -> 말한 위치)
-  text.replace(/(\d+)\s*[,·~\-]\s*(\d+)\s*동/g, (m, a, b, off) => {
+  // "1,2동" "1, 2동" "1~3동" 확장 (이름 -> 말한 위치)
+  text.replace(/(\d+)\s*[,\u00b7~\-]\s*(\d+)\s*동/g, (m, a, b, off) => {
     const A = Number(a), B = Number(b);
     if (m.includes('~') || m.includes('-')) for (let i = Math.min(A, B); i <= Math.max(A, B) && i - A < 20; i++) names.set(`${i}동`, off + (i - Math.min(A, B)) / 100);
     else { names.set(`${A}동`, off); names.set(`${B}동`, off + 0.5); }
@@ -115,31 +116,31 @@ export function parseCrop(text) {
   return '';
 }
 
-// ---------- 작업단계·세부작업 사전 ----------
-// t: 토마토·방울토마토 세부작업, s: 딸기 세부작업, st: 세부작업이 없을 때 작업단계, kind: 자재 힌트
+// ---------- 작업단계, 세부작업 사전 ----------
+// t: 토마토, 방울토마토 세부작업, s: 딸기 세부작업, st: 세부작업이 없을 때 작업단계, kind: 자재 힌트
 const TASK_RULES = [
-  { re: /곁순|유인/, t: '유인·곁순 제거', s: '적엽·런너 제거' },
+  { re: /곁순|유인/, t: '유인과 곁순 제거', s: '적엽과 런너 제거' },
   { re: /런너\s*(받|유인|키우)/, t: null, s: '육묘(런너 받기)', st: '사전준비' },
-  { re: /런너/, t: null, s: '적엽·런너 제거', st: '작물관리' },
-  { re: /적엽|잎\s*(을|를)?\s*(따|땄|정리|제거|솎|떼)|아랫잎|하엽/, t: '적엽(잎 따기)', s: '적엽·런너 제거' },
-  { re: /적화|적과|꽃\s*(을|를)?\s*(따|땄|솎|정리)|열매\s*(을|를)?\s*솎|과\s*솎/, t: '적화·적과', s: '적화·적과' },
-  { re: /수정벌|착과제|토마토톤|호르몬\s*처리|착과\s*처리/, t: '수정(수정벌·착과제)', s: '꿀벌 투입' },
-  { re: /꿀벌|벌통|벌\s*(을|를)?\s*(넣|투입|놓)/, t: '수정(수정벌·착과제)', s: '꿀벌 투입' },
-  { re: /토양\s*소독/, t: '토양소독', s: null, st: '경운·토양관리' },
+  { re: /런너/, t: null, s: '적엽과 런너 제거', st: '작물관리' },
+  { re: /적엽|잎\s*(을|를)?\s*(따|땄|정리|제거|솎|떼)|아랫잎|하엽/, t: '적엽(잎 따기)', s: '적엽과 런너 제거' },
+  { re: /적화|적과|꽃\s*(을|를)?\s*(따|땄|솎|정리)|열매\s*(을|를)?\s*솎|과\s*솎/, t: '적화와 적과', s: '적화와 적과' },
+  { re: /수정벌|착과제|토마토톤|호르몬\s*처리|착과\s*처리/, t: '수정(수정벌과 착과제)', s: '꿀벌 투입' },
+  { re: /꿀벌|벌통|벌\s*(을|를)?\s*(넣|투입|놓)/, t: '수정(수정벌과 착과제)', s: '꿀벌 투입' },
+  { re: /토양\s*소독/, t: '토양소독', s: null, st: '경운과 토양관리' },
   { re: /방제|농약\s*(을|를|도)?\s*(쳤|치|뿌|줬|했|살포|탔)|약\s*(을|를|도)?\s*(쳤|치고|친|뿌|줬|했|살포|탔)|살균제|살충제|소독\s*했/, t: '병해충 방제', s: '병해충 방제', kind: '농약' },
   { re: /엽면\s*시비|엽면\s*살포|웃거름|추비|덧거름/, t: '웃거름(추비)', s: '웃거름(추비)', kind: '비료' },
-  { re: /밑거름|퇴비|유박|계분/, t: '밑거름·퇴비', s: '밑거름·퇴비', kind: '비료', weak: true },
-  { re: /양액|관수|점적|물\s*(을|를)?\s*(줬|주|댔|대|뿌)/, t: '관수·양액', s: '관수·양액' },
-  { re: /보온|커튼|난방|온풍기/, t: '환기·온도관리', s: '보온(커튼·난방)' },
-  { re: /환기|온도\s*관리|측창|천창|창\s*(을|를)?\s*(열|닫)/, t: '환기·온도관리', s: '보온(커튼·난방)' },
+  { re: /밑거름|퇴비|유박|계분/, t: '밑거름과 퇴비', s: '밑거름과 퇴비', kind: '비료', weak: true },
+  { re: /양액|관수|점적|물\s*(을|를)?\s*(줬|주|댔|대|뿌)/, t: '관수와 양액', s: '관수와 양액' },
+  { re: /보온|커튼|난방|온풍기/, t: '환기와 온도관리', s: '보온(커튼과 난방)' },
+  { re: /환기|온도\s*관리|측창|천창|창\s*(을|를)?\s*(열|닫)/, t: '환기와 온도관리', s: '보온(커튼과 난방)' },
   { re: /정식|아주심기|모종\s*(을|를)?\s*(심|옮)/, t: '정식', s: '정식' },
-  { re: /경운|로터리|밭\s*(을|를)?\s*갈|땅\s*(을|를)?\s*갈/, t: '경운·로터리', s: '경운·로터리' },
-  { re: /이랑|멀칭|두둑|비닐\s*(을|를)?\s*(깔|덮)/, t: '이랑·멀칭', s: '두둑·멀칭' },
+  { re: /경운|로터리|밭\s*(을|를)?\s*갈|땅\s*(을|를)?\s*갈/, t: '경운과 로터리', s: '경운과 로터리' },
+  { re: /이랑|멀칭|두둑|비닐\s*(을|를)?\s*(깔|덮)/, t: '이랑과 멀칭', s: '두둑과 멀칭' },
   { re: /하우스\s*(정비|수리|보수)|비닐\s*(을|를)?\s*교체|파이프\s*(수리|교체)/, t: '하우스 정비', s: null, st: '사전준비' },
-  { re: /육묘/, t: null, s: '육묘(런너 받기)', st: '육묘·정식' },
+  { re: /육묘/, t: null, s: '육묘(런너 받기)', st: '육묘와 정식' },
   { re: /수확|땄|따\s*(냈|왔)|거뒀/, t: '수확', s: '수확' },
   { re: /출하|공판장|납품|경매|택배\s*보냈/, t: '출하', s: '출하' },
-  { re: /철거|폐기물|줄기\s*(정리|제거)|뽑았|작물\s*정리/, t: '작물 철거·폐기물 처리', s: '작물 철거' },
+  { re: /철거|폐기물|줄기\s*(정리|제거)|뽑았|작물\s*정리/, t: '작물 철거와 폐기물 처리', s: '작물 철거' },
 ];
 // v0.3: 수확 개시 / 수확 종료 (경과비율 산식의 기준일, 손해평가사 평가 P0) -> 일반 "수확" 규칙보다 먼저
 TASK_RULES.splice(TASK_RULES.findIndex((r) => r.t === '수확'), 0,
@@ -181,7 +182,7 @@ export function parsePest(text) {
   return null;
 }
 
-// ---------- 양·단위, 희석배수 ----------
+// ---------- 양, 단위, 희석배수 ----------
 const UNIT_RE = /(\d+(?:\.\d+)?)\s*(밀리리터|미리리터|밀리|미리|ml|mL|ML|㎖|cc|CC|시시|리터|ℓ|L|l|킬로그램|킬로|키로|kg|KG|Kg|그램|g|G|포대|포(?!기|도)|봉지|봉|병|톤|박스|상자)(?![A-Za-z])/g;
 
 export function normUnit(u) {
@@ -199,7 +200,7 @@ export function normUnit(u) {
   return '';
 }
 
-// ---------- 주수·품종·금액·온도·출하처 (v0.3) ----------
+// ---------- 주수, 품종, 금액, 온도, 출하처 (v0.3) ----------
 const PLANT_RE = /(\d+(?:\.\d+)?)\s*(주|포기|판)(?=$|[\s,.!?]|를|을|씩|정도|째|심|사|샀|구입|이|가|요)/;
 export function parsePlants(t) {
   const m = t.match(PLANT_RE);
@@ -224,28 +225,28 @@ const SHIP_TO_RE = /([가-힣A-Za-z]{0,6}(?:공판장|도매시장|경매장|농
 
 // ---------- 재해 (v0.3) ----------
 const PERIL_RULES = [
-  ['강풍·태풍', /강풍|태풍|돌풍|회오리|바람\s*(에|때문|이\s*세|이\s*많이)/],
+  ['강풍과 태풍', /강풍|태풍|돌풍|회오리|바람\s*(에|때문|이\s*세|이\s*많이)/],
   ['우박', /우박/],
-  ['냉해·동상해', /냉해|(?<!\d\s?)동해|동상해|서리\s*(피해|맞|내려)|한파|얼어|얼었/],
+  ['냉해와 동상해', /냉해|(?<!\d\s?)동해|동상해|서리\s*(피해|맞|내려)|한파|얼어|얼었/],
   ['호우', /호우|폭우|큰\s*비|장맛비|침수|물에\s*잠/],
   ['폭설', /폭설|대설|설해|눈\s*(이)?\s*(많이|무게|쌓여)|눈\s*때문/],
   ['폭염', /폭염|고온\s*피해|열\s*피해/],
-  ['짐승·새', /짐승|멧돼지|고라니|노루|조수해|까치|까마귀|새\s*(떼|피해)|새가\s*(쪼|먹)/],
+  ['짐승과 새', /짐승|멧돼지|고라니|노루|조수해|까치|까마귀|새\s*(떼|피해)|새가\s*(쪼|먹)/],
   ['화재', /화재|불이\s*(났|붙)|불\s*났|불타|전소/],
 ];
 const DAMAGE_CUE = /피해|찢|뜯|파손|부서|무너|주저앉|휘었|휘어|휘다|휨|꺾|쓰러|넘어|상처|상했|얼어|얼었|시들|죽었|죽어|고사|냉해|(?<!\d\s?)동해|동상해|입었|맞았|났|침수|잠겼|날아|탔|구멍|깨졌|떨어졌|낙과|전소|쪼아/;
 const NOT_DISASTER = /대비|예방|막으려|방지|대책|오기\s*전|올\s*까|온대|온다|예보|대요\?|나요\?/;
 const FACILITY_RULES = [
   ['비닐 찢어짐', /(비닐|피복|필름)\s*(이|가|은|는|을|도)?\s*[가-힣\s]{0,6}?(찢|뜯|날아|벗겨|구멍|터졌|째졌)/],
-  ['골조 휨·파손', /골조|파이프|기둥|서까래|아치|하우스\s*(가|이|는|도)?\s*(무너|주저앉|휘|부서|파손|쓰러)/],
-  ['보온커튼·난방기 등 설비', /(커튼|난방기|보일러|온풍기|환풍기|모터|개폐기|설비)\s*(이|가|도|는)?\s*[가-힣\s]{0,6}?(고장|망가|부서|파손|탔|끊|멈)/],
+  ['골조 휨과 파손', /골조|파이프|기둥|서까래|아치|하우스\s*(가|이|는|도)?\s*(무너|주저앉|휘|부서|파손|쓰러)/],
+  ['보온커튼과 난방기 등 설비', /(커튼|난방기|보일러|온풍기|환풍기|모터|개폐기|설비)\s*(이|가|도|는)?\s*[가-힣\s]{0,6}?(고장|망가|부서|파손|탔|끊|멈)/],
   ['시설 피해 없음', /(시설|하우스|비닐)\s*(은|는|도)?\s*(피해\s*)?(는|은)?\s*(없|괜찮|멀쩡|이상\s*없)/],
 ];
 const CROP_RULES = [
-  ['잎·줄기 상함', /(잎|줄기)\s*(이|가|은|는|도)?\s*[가-힣\s]{0,4}?(상했|상함|상처|찢|탔|말랐|피해|멍)/],
+  ['잎과 줄기 상함', /(잎|줄기)\s*(이|가|은|는|도)?\s*[가-힣\s]{0,4}?(상했|상함|상처|찢|탔|말랐|피해|멍)/],
   ['열매 상처', /(열매|과실|과일|토마토|딸기)\s*(에|가|이|는|도)?\s*[가-힣\s]{0,4}?(상처|멍|터졌|깨졌|갈라|떨어)|낙과/],
   ['얼어서 시듦', /얼어|얼었|시들|냉해|(?<!\d\s?)동해|동상해/],
-  ['쓰러짐·꺾임', /(작물|포기|줄기|대|모|토마토|딸기)\s*(이|가|는|도)?\s*[가-힣\s]{0,3}?(쓰러|꺾|넘어)|도복/],
+  ['쓰러짐과 꺾임', /(작물|포기|줄기|대|모|토마토|딸기)\s*(이|가|는|도)?\s*[가-힣\s]{0,3}?(쓰러|꺾|넘어)|도복/],
   ['죽음', /죽었|죽어|고사|전멸/],
 ];
 const hits = (rules, t) => rules.filter(([, re]) => re.test(t)).map(([v]) => v);
@@ -257,7 +258,9 @@ export function parsePerils(t) {
 // 재해 문장 판단 + 칸 추출. 사고일은 말한 날짜만 (없으면 빈칸 -> 되묻기)
 export function parseDisaster(t, today) {
   const perils = parsePerils(t);
-  const hit = perils.length > 0 && DAMAGE_CUE.test(t) && !NOT_DISASTER.test(t);
+  // 재해 원인은 농민이 말한 낱말 그대로(계약 v1.1 V-5). 묶음 분류는 peril_group에만 둔다
+  const words = [...new Set(disasterCauseWords(t))];
+  const hit = (perils.length > 0 || words.length > 0) && DAMAGE_CUE.test(t) && !NOT_DISASTER.test(t);
   const guessed = [];
   const fac = hits(FACILITY_RULES, t);
   const crop = hits(CROP_RULES, t);
@@ -269,7 +272,8 @@ export function parseDisaster(t, today) {
     hit,
     accident_date: said || '',
     continuing: /며칠째|계속\s*(돼|되|이어)/.test(t),
-    peril: perils.join(', '),
+    peril: words.join(', '),
+    peril_group: perils.join(', '),
     facility_damage: fac.join(', '),
     crop_symptom: crop.join(', '),
     photo: /사진/.test(t),
@@ -285,7 +289,10 @@ export function parseQtys(t) {
     const before = t.slice(Math.max(0, m.index - 5), m.index);
     const after = t.slice(m.index + m[0].length, m.index + m[0].length + 3);
     const water = /물\s*(을|를|은|는)?\s*$/.test(before) || /^\s*(에|씩\s*물)/.test(after);
-    out.push({ qty: m[1], unit: normUnit(m[2]), water, index: m.index, raw: m[0] });
+    // 양 뒤에 부정이나 불확실이 오면("2리터는 아니고", "2리터인지 모르겠고", "2리터가 아니라") 그 값은 확정하지 않는다
+    const tail = t.slice(m.index + m[0].length, m.index + m[0].length + 12);
+    const unsure = /^\s*(는|은|이|가|도)?\s*(아니|아냐|아닌|아닙|말고)|^\s*(인지|였는지|인가|였나|인가요)|^\s*(는|은|이|가)?\s*(맞는지|확실하지|기억이\s*안|모르|몰라)/.test(tail);
+    out.push({ qty: m[1], unit: normUnit(m[2]), water: water && !unsure, unsure, index: m.index, raw: m[0] });
   }
   return out;
 }
@@ -293,17 +300,6 @@ export function parseQtys(t) {
 export function parseDilution(t) {
   const m = t.match(/(\d+)\s*배(?!추|나무|꽃|낭|달)/);
   return m ? m[1] : '';
-}
-
-function toMl(q) {
-  const v = Number(q.qty);
-  if (q.unit === 'L') return v * 1000;
-  if (q.unit === 'mL' || q.unit === 'g') return v;
-  if (q.unit === 'kg') return v * 1000;
-  return null;
-}
-function fmtNum(n) {
-  return String(Math.round(n * 10) / 10);
 }
 
 // ---------- 제품명 ----------
@@ -355,10 +351,10 @@ export function pesticideTypeOf(t) {
   return '';
 }
 export function fertilizerTypeOf(t) {
-  if (/칼슘|엽면|미량|붕소|아미노|영양제/.test(t)) return '엽면시비·미량요소';
-  if (/퇴비|유박|계분|유기질/.test(t)) return '유기질(퇴비·유박)';
+  if (/칼슘|엽면|미량|붕소|아미노|영양제/.test(t)) return '엽면시비와 미량요소';
+  if (/퇴비|유박|계분|유기질/.test(t)) return '유기질(퇴비와 유박)';
   if (/양액/.test(t)) return '양액 비료';
-  if (/복합|요소|화학|단비|NPK|NK|\d+-\d+-\d+/.test(t)) return '화학(복합·단비)';
+  if (/복합|요소|화학|단비|NPK|NK|\d+-\d+-\d+/.test(t)) return '화학(복합과 단비)';
   if (/석회|규산|고토|토양\s*개량/.test(t)) return '토양개량제';
   return '';
 }
@@ -380,6 +376,10 @@ export function classifyIntent(text, ext) {
   const t = String(text || '');
   if (OFFTOPIC.test(t)) return 'offtopic';
   if (ext && ext.disaster && ext.disaster.hit) return 'disaster';
+  // "그거 저번처럼 그 약 했어"처럼 가리키는 말만 있고 동, 작목, 제품명, 양이 하나도 없으면
+  // 무슨 기록인지 추측하지 않고 다시 묻는다(Codex core-09)
+  const vague = /그거|저번처럼|저번에|그때처럼|그\s*약|그\s*작업|하던\s*거|늘\s*하던/.test(t);
+  if (vague && ext && !ext.houseIds.length && !ext.crop && !(ext.materials || []).some((m) => m.name || m.qty) && !ext.pest) return 'unknown';
   const strong = !!(ext && (ext.task || ext.stage || ext.materials.length || ext.pest));
   if (strong) return 'record';
   if (WEATHER_Q.test(t) && (QUESTIONISH.test(t) || t.length < 15)) return 'weather';
@@ -405,7 +405,7 @@ export function extractRules(text, ctx = {}) {
   const said = parseDate(t, today);
   const workDate = said || today;
 
-  // 동·작목
+  // 동, 작목
   let houseIds = parseHouses(t, profile);
   let crop = parseCrop(t);
   const hs = profile.houses || [];
@@ -417,11 +417,12 @@ export function extractRules(text, ctx = {}) {
       warnings.push(`${hs.find((h) => h.id === houseIds[0])?.name}은 ${houseCrop}로 등록돼 있어요`);
       guessed.push('crop');
     }
-  } else if (!houseIds.length && crop) {
+  } else if (!houseIds.length && crop && !BUY.test(t)) {
+    // 구입 기록은 동을 자동으로 채우지 않는다(U-03). 사용 기록만 작목이 같은 동이 하나일 때 추측하고 확인 필요로 둔다
     const same = hs.filter((h) => h.crop === crop);
     if (same.length === 1) { houseIds = [same[0].id]; guessed.push('houseIds'); }
   }
-  if (!houseIds.length && hs.length === 1) { houseIds = [hs[0].id]; if (!crop) crop = hs[0].crop; }
+  if (!houseIds.length && hs.length === 1 && !BUY.test(t)) { houseIds = [hs[0].id]; guessed.push('houseIds'); if (!crop) crop = hs[0].crop; }
 
   // 제품명 먼저 (제품명 안의 "가루이" 같은 글자를 병해충으로 잘못 잡지 않게)
   const nm = parseName(t, ctx.knownNames || []);
@@ -436,11 +437,16 @@ export function extractRules(text, ctx = {}) {
   let rule = matchTaskRule(tNoName, buy);
   if (!rule && pestHit && !buy) rule = TASK_RULES.find((r) => r.t === '병해충 방제');
 
-  // 수확·출하 양은 자재가 아니라 메모로 (v0.3: 출하량·출하처·마지막 출하 보존)
+  // 수확과 출하 양은 자재가 아니라 메모로 (v0.3: 출하량, 출하처, 마지막 출하 보존)
   const harvest = rule && ['수확', '출하', '수확 개시', '수확 종료'].includes(rule.t);
   const shipping = /출하|보냈|납품|공판장|경매|택배/.test(t);
-  let nonWater = qtys.filter((q) => !q.water);
-  let water = qtys.find((q) => q.water);
+  // 부정하거나 확실하지 않다고 한 양은 사용량도 물 양도 아니다. 말한 그대로 메모에 두고 확인한다(U-02, BR-14)
+  for (const q of qtys.filter((x) => x.unsure)) {
+    memo.push(`${q.qty}${q.unit}(아니라고 하시거나 확실하지 않음, 확인 필요)`);
+    warnings.push(`말씀하신 ${q.qty}${q.unit}는 확실하지 않아 사용량에 넣지 않았어요`);
+  }
+  let nonWater = qtys.filter((q) => !q.water && !q.unsure);
+  let water = qtys.find((q) => q.water && !q.unsure);
   if (harvest) {
     if (nonWater.length) memo.push(`${shipping ? '출하량' : '수확량'} ${nonWater.map((q) => q.qty + q.unit).join(', ')}`);
     const to = shipping ? t.match(SHIP_TO_RE) : null;
@@ -459,14 +465,33 @@ export function extractRules(text, ctx = {}) {
   const planting = rule && rule.t === '정식';
   const variety = seedBuy || planting ? parseVariety(t) : '';
   const fertSig = FERT_SIG.test(t);
-  // 희석배수 + "20리터 뿌렸어" 처럼 L 하나만 있으면 살포 물량으로 본다
-  if (!water && dilution && nonWater.length === 1 && nonWater[0].unit === 'L' && Number(nonWater[0].qty) >= 5 && SPRAY.test(t)) {
-    water = nonWater[0];
+  // 희석배수 + 살포 동사 + 양 하나만 있고 '물'이나 '원액'이라고 말하지 않았으면, 그 양이 약 양인지
+  // 물(희석액) 양인지 단위만으로는 알 수 없다. 단위와 크기로 추측하지 않는다(U-02, BR-14).
+  // (Codex 반례 11/16: "4리터", "4000밀리리터", "4키로"를 500배로 뿌렸어)
+  // 사용량 칸은 비워 되묻고, 말한 값은 메모에 그대로 두고 확인 필요를 알린다.
+  // 살포 동사가 없어도("4리터로 500배 방제했어", "100ml 1000배 방제") 배수와 양이 같이 나오면 양의 대상이 불명확하다.
+  // (Codex 재검증 11/16) 동사 유무로 약 양이라고 단정하지 않는다.
+  // "원액 2리터"처럼 원액이 그 양 바로 앞에서 양을 꾸밀 때만 약 양이다.
+  // "원액은 모르겠고 4리터"처럼 원액을 부정하거나 모른다고 하면 원액으로 보지 않는다.
+  const AMBIGUOUS_UNITS = ['L', 'mL', 'g', 'kg'];
+  const concentrateFor = (q) => {
+    if (!q || q.index == null) return false;
+    const before = t.slice(Math.max(0, q.index - 8), q.index);
+    if (!/원액\s*(을|를|은|는|으로|로|만|이|가)?\s*$/.test(before)) return false;
+    return !/원액[^,.\d]{0,10}(모르|몰라|모름|없|않|아니|안\s|글쎄)/.test(t);
+  };
+  const saysConcentrate = nonWater.length === 1 && concentrateFor(nonWater[0]);
+  if (!water && dilution && nonWater.length === 1 && AMBIGUOUS_UNITS.includes(nonWater[0].unit) && !saysConcentrate) {
+    const amb = nonWater[0];
+    memo.push(`${amb.qty}${amb.unit}(물 양인지 약 양인지 확인 필요)`);
+    warnings.push(`말씀하신 ${amb.qty}${amb.unit}가 물 양인지 약 양인지 확인이 필요해요`);
     nonWater = [];
   }
 
   const materials = [];
-  const hasMat = !harvest && !seedBuy && (pestStrong || fertSig || nonWater.length > 0 || !!nm || (buy && !rule));
+  // 희석배수를 말하고 뿌렸다면 약을 쓴 기록이다. 제품명을 못 잡아도 말한 배수를 버리지 않는다.
+  const sprayWithDilution = !!dilution && SPRAY.test(t);
+  const hasMat = !harvest && !seedBuy && (pestStrong || fertSig || nonWater.length > 0 || !!nm || sprayWithDilution || (buy && !rule));
   if (hasMat) {
     let kind = '';
     if (pestStrong && !fertSig) kind = '농약';
@@ -487,28 +512,9 @@ export function extractRules(text, ctx = {}) {
     if (m.action === '사용') {
       if (dilution) m.dilution = dilution;
       if (pestHit && kind !== '비료') m.pest = pestHit.pest;
-      // 계산: 물량 + 희석배수 -> 사용량 / 물량 + 사용량 -> 희석배수
-      if (water) {
-        const w = toMl(water);
-        if (!m.qty && dilution && w) {
-          const ml = w / Number(dilution);
-          if (ml >= 1000) { m.qty = fmtNum(ml / 1000); m.unit = 'L'; } else { m.qty = fmtNum(ml); m.unit = 'mL'; }
-          guessed.push('m0.qty');
-          memo.push(`살포 물량 ${water.qty}${water.unit}, 사용량은 ${dilution}배로 계산`);
-        } else if (m.qty && !dilution && w) {
-          const p = toMl({ qty: m.qty, unit: m.unit });
-          if (p) {
-            let d = w / p;
-            const near = [250, 500, 1000, 1500, 2000, 3000, 4000].find((c) => Math.abs(d - c) / c < 0.06);
-            d = near || Math.round(d);
-            m.dilution = String(d);
-            guessed.push('m0.dilution');
-            memo.push(`물 ${water.qty}${water.unit}에 희석`);
-          }
-        } else {
-          memo.push(`물 ${water.qty}${water.unit}`);
-        }
-      }
+      // 희석배수와 사용량은 계산하거나 역산하지 않는다(기획서 U-02). 농민이 말한 값만 쓰고,
+      // 물 양은 메모로만 남긴다. 사용량이 비면 되묻기로 농민에게 직접 받는다.
+      if (water) memo.push(`물 ${water.qty}${water.unit}`);
     }
     if (m.kind === '비료' && m.pest) m.pest = '';
     materials.push(m);
@@ -558,7 +564,7 @@ export function extractRules(text, ctx = {}) {
 export function parseAnswer(key, text, ctx = {}, draft = {}) {
   const raw = String(text || '').trim();
   const t = normalizeText(raw);
-  const flat = t.replace(/[\s·]/g, '');
+  const flat = t.replace(/[\s\u00b7]/g, '');
   if (key === 'houseIds') {
     let ids = parseHouses(t, ctx.profile);
     if (!ids.length) {
@@ -592,8 +598,8 @@ export function parseAnswer(key, text, ctx = {}, draft = {}) {
     const f = hits(FACILITY_RULES, t);
     if (f.length) return { ok: true, value: f.join(', ') };
     if (/비닐|피복/.test(t)) return { ok: true, value: '비닐 찢어짐' };
-    if (/골조|파이프|기둥|무너|휘/.test(t)) return { ok: true, value: '골조 휨·파손' };
-    if (/커튼|난방|보일러|설비/.test(t)) return { ok: true, value: '보온커튼·난방기 등 설비' };
+    if (/골조|파이프|기둥|무너|휘/.test(t)) return { ok: true, value: '골조 휨과 파손' };
+    if (/커튼|난방|보일러|설비/.test(t)) return { ok: true, value: '보온커튼과 난방기 등 설비' };
     if (/^(아니|없|괜찮|멀쩡|안\s*부서)/.test(t)) return { ok: true, value: '시설 피해 없음' };
     return { ok: false };
   }
@@ -607,14 +613,14 @@ export function parseAnswer(key, text, ctx = {}, draft = {}) {
     return { ok: false };
   }
   if (key === 'stage') {
-    const st = STAGES.find((s) => flat.includes(s.replace(/·/g, '')) || flat === s.replace(/·/g, ''));
+    const st = STAGES.find((s) => flat.includes(s.replace(/\u00b7/g, '')) || flat === s.replace(/\u00b7/g, ''));
     const rule = matchTaskRule(t, false);
     if (rule) {
       const r = resolveTask(rule, draft.crop);
       if (r.stage && (!st || st === r.stage)) return { ok: true, value: r };
     }
     if (st) return { ok: true, value: { stage: st, task: '' } };
-    const loose = [['경운', '경운·토양관리'], ['토양', '경운·토양관리'], ['육묘', '육묘·정식'], ['정식', '육묘·정식'], ['관리', '작물관리'], ['수확', '수확·출하'], ['출하', '수확·출하'], ['정리', '정리'], ['준비', '사전준비']].find(([k]) => flat.includes(k));
+    const loose = [['경운', '경운과 토양관리'], ['토양', '경운과 토양관리'], ['육묘', '육묘와 정식'], ['정식', '육묘와 정식'], ['관리', '작물관리'], ['수확', '수확과 출하'], ['출하', '수확과 출하'], ['정리', '정리'], ['준비', '사전준비']].find(([k]) => flat.includes(k));
     return loose ? { ok: true, value: { stage: loose[1], task: '' } } : { ok: false };
   }
   const mk = key.match(/^m(\d+)\.(\w+)$/);
@@ -629,7 +635,7 @@ export function parseAnswer(key, text, ctx = {}, draft = {}) {
   }
   if (f === 'type') {
     const list = typesFor(m.kind);
-    const exact = list.find((x) => flat === x.replace(/[\s·]/g, '') || raw === x);
+    const exact = list.find((x) => flat === x.replace(/[\s\u00b7]/g, '') || raw === x);
     if (exact) return { ok: true, value: exact };
     if (m.kind === SEED) return /종자|씨/.test(t) ? { ok: true, value: '종자' } : /접목/.test(t) ? { ok: true, value: '접목묘' } : /모종|묘/.test(t) ? { ok: true, value: '모종' } : { ok: false };
     const v = m.kind === '비료' ? fertilizerTypeOf(t) : pesticideTypeOf(t);
@@ -675,36 +681,60 @@ const TEST_NAMES = ['가상곰팡이 액상', '가상충 유제', '가상 복합
 
 // 기대값: 적힌 키만 비교. houses 는 동 이름 배열, mats 는 자재 개수, m0.* 는 첫 자재, memoHas 는 메모에 들어갈 글자
 export const TEST_CASES = [
-  { text: '어제 1동 토마토에 칼슘제 엽면시비 500배로 20리터 뿌렸어', expect: { intent: 'record', workDate: '2026-11-14', houses: ['1동'], crop: '토마토', stage: '작물관리', task: '웃거름(추비)', mats: 1, 'm0.kind': '비료', 'm0.action': '사용', 'm0.type': '엽면시비·미량요소', 'm0.name': '칼슘제', 'm0.qty': '40', 'm0.unit': 'mL', 'm0.dilution': '500' } },
+  { text: '어제 1동 토마토에 칼슘제 엽면시비 500배로 20리터 뿌렸어', expect: { intent: 'record', workDate: '2026-11-14', houses: ['1동'], crop: '토마토', stage: '작물관리', task: '웃거름(추비)', mats: 1, 'm0.kind': '비료', 'm0.action': '사용', 'm0.type': '엽면시비와 미량요소', 'm0.name': '칼슘제', 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '500', memoHas: '20L(물 양인지 약 양인지 확인 필요)' } },
+  // Codex 검증 반례(11/16): '물'이라고 말하지 않은 10L를 물로도, 약 양으로도 단정하지 않는다
+  { text: '가상 약제 4리터를 500배로 뿌렸어', expect: { 'm0.kind': '농약', 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '500', memoHas: '4L(물 양인지 약 양인지 확인 필요)', warnHas: '물 양인지 약 양인지', guessedHas: 'm0.kind' } },
+  { text: '가상 약제 4000밀리리터를 500배로 뿌렸어', expect: { 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '500', memoHas: '4000mL(물 양인지 약 양인지 확인 필요)', warnHas: '물 양인지 약 양인지' } },
+  { text: '가상 약제 4키로를 500배로 뿌렸어', expect: { 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '500', memoHas: '4kg(물 양인지 약 양인지 확인 필요)', warnHas: '물 양인지 약 양인지' } },
+  { text: '원액 2리터를 500배로 뿌렸어', expect: { 'm0.qty': '2', 'm0.unit': 'L', 'm0.dilution': '500' } },
+  { text: '가상 약제 10리터를 500배로 뿌렸어', expect: { 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '500', memoHas: '10L(물 양인지 약 양인지 확인 필요)', warnHas: '물 양인지 약 양인지' } },
+  // '물'이라고 말했을 때만 물 양으로 기록하고, 배수나 사용량을 만들지 않는다
+  { text: '1동 토마토 가상곰팡이 액상 물 20리터에 500배로 뿌렸어', expect: { 'm0.qty': '', 'm0.dilution': '500', memoHas: '물 20L' } },
   { text: '3동 딸기 잿빛곰팡이 약 쳤어', expect: { intent: 'record', workDate: '2026-11-15', houses: ['3동'], crop: '딸기', stage: '작물관리', task: '병해충 방제', 'm0.kind': '농약', 'm0.type': '살균제', 'm0.name': '', 'm0.qty': '', 'm0.pest': '잿빛곰팡이병' } },
   { text: '오늘 날씨 어때?', expect: { intent: 'weather' } },
   { text: '파이썬 코딩 알려줘', expect: { intent: 'offtopic' } },
-  { text: '1동 토마토 곁순 제거했어요', expect: { intent: 'record', houses: ['1동'], crop: '토마토', stage: '작물관리', task: '유인·곁순 제거', mats: 0 } },
-  { text: '2동 방울토마토 담배가루이 방제, 가상가루이 수화제 50그램 물 50리터', expect: { houses: ['2동'], crop: '방울토마토', task: '병해충 방제', 'm0.kind': '농약', 'm0.type': '살충제', 'm0.name': '가상가루이 수화제', 'm0.qty': '50', 'm0.unit': 'g', 'm0.dilution': '1000', 'm0.pest': '담배가루이' } },
-  { text: '11월 12일 3동 딸기 가상 유박 10포대 샀어', expect: { workDate: '2026-11-12', houses: ['3동'], crop: '딸기', stage: '', 'm0.kind': '비료', 'm0.action': '구입', 'm0.type': '유기질(퇴비·유박)', 'm0.name': '가상 유박', 'm0.qty': '10', 'm0.unit': '포대' } },
-  { text: '그제 1동이랑 2동 환기했어', expect: { workDate: '2026-11-13', houses: ['1동', '2동'], crop: '토마토', task: '환기·온도관리', mats: 0 } },
+  { text: '1동 토마토 곁순 제거했어요', expect: { intent: 'record', houses: ['1동'], crop: '토마토', stage: '작물관리', task: '유인과 곁순 제거', mats: 0 } },
+  { text: '2동 방울토마토 담배가루이 방제, 가상가루이 수화제 50그램 물 50리터', expect: { houses: ['2동'], crop: '방울토마토', task: '병해충 방제', 'm0.kind': '농약', 'm0.type': '살충제', 'm0.name': '가상가루이 수화제', 'm0.qty': '50', 'm0.unit': 'g', 'm0.dilution': '', 'm0.pest': '담배가루이', memoHas: '물 50L' } },
+  { text: '11월 12일 3동 딸기 가상 유박 10포대 샀어', expect: { workDate: '2026-11-12', houses: ['3동'], crop: '딸기', stage: '', 'm0.kind': '비료', 'm0.action': '구입', 'm0.type': '유기질(퇴비와 유박)', 'm0.name': '가상 유박', 'm0.qty': '10', 'm0.unit': '포대' } },
+  { text: '그제 1동이랑 2동 환기했어', expect: { workDate: '2026-11-13', houses: ['1동', '2동'], crop: '토마토', task: '환기와 온도관리', mats: 0 } },
   { text: '3동 꿀벌 넣었어요', expect: { houses: ['3동'], crop: '딸기', stage: '작물관리', task: '꿀벌 투입', mats: 0 } },
-  { text: '딸기 수확했어요 30kg', expect: { houses: ['3동'], crop: '딸기', stage: '수확·출하', task: '수확', mats: 0, memoHas: '30kg' } },
-  { text: '1동 토마토 가상곰팡이 액상 100ml 1000배 잿빛곰팡이 방제', expect: { houses: ['1동'], task: '병해충 방제', 'm0.name': '가상곰팡이 액상', 'm0.qty': '100', 'm0.unit': 'mL', 'm0.dilution': '1000', 'm0.pest': '잿빛곰팡이병', 'm0.type': '살균제' } },
+  { text: '딸기 수확했어요 30kg', expect: { houses: ['3동'], crop: '딸기', stage: '수확과 출하', task: '수확', mats: 0, memoHas: '30kg' } },
+  // 11/16 변경: 살포 동사가 없어도 배수와 양이 같이 나오면 양의 대상을 확인한다(이전에는 100mL를 약 양으로 단정)
+  { text: '1동 토마토 가상곰팡이 액상 100ml 1000배 잿빛곰팡이 방제', expect: { houses: ['1동'], task: '병해충 방제', 'm0.name': '가상곰팡이 액상', 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '1000', 'm0.pest': '잿빛곰팡이병', 'm0.type': '살균제', memoHas: '100mL(물 양인지 약 양인지 확인 필요)' } },
+  // Codex 재검증 반례(11/16 6516511): 살포 동사 없는 '방제', 원액을 모른다고 한 말
+  { text: '가상 약제 4리터로 500배 방제했어', expect: { 'm0.kind': '농약', 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '500', memoHas: '4L(물 양인지 약 양인지 확인 필요)', warnHas: '물 양인지 약 양인지' } },
+  { text: '원액은 모르겠고 가상 약제 4리터를 500배로 뿌렸어', expect: { 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '500', memoHas: '4L(물 양인지 약 양인지 확인 필요)', warnHas: '물 양인지 약 양인지' } },
+  { text: '원액으로 2리터 500배 방제했어', expect: { 'm0.qty': '2', 'm0.unit': 'L', 'm0.dilution': '500' } },
+  // Codex 재검증(11/16 c89b46b): 양 뒤의 부정과 불확실
+  { text: '원액 2리터는 아니고 500배로 방제했어', expect: { 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '500', memoHas: '2L(아니라고', warnHas: '확실하지 않아' } },
+  { text: '원액 2리터인지 모르겠고 500배로 방제했어', expect: { 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '500', memoHas: '2L(아니라고' } },
+  { text: '원액 2리터가 아니라 물 2리터를 500배로 뿌렸어', expect: { 'm0.qty': '', 'm0.unit': '', 'm0.dilution': '500', memoHas: ['물 2L', '2L(아니라고'] } },
+  { text: '가상충 유제 20ml 맞는지 모르겠는데 진딧물 약 줬어', expect: { 'm0.qty': '', 'm0.unit': '' } },
+  { text: '원액은 없고 물 20리터에 500배로 뿌렸어', expect: { 'm0.qty': '', 'm0.dilution': '500', memoHas: '물 20L' } },
   { text: '2동 토마토 다코닐을 천배로 뿌렸어', expect: { houses: ['2동'], crop: '방울토마토', task: '병해충 방제', 'm0.kind': '농약', 'm0.name': '다코닐', 'm0.dilution': '1000' } },
   { text: '가상충 유제 두 병 샀어', expect: { houses: [], 'm0.kind': '농약', 'm0.action': '구입', 'm0.name': '가상충 유제', 'm0.qty': '2', 'm0.unit': '병', 'm0.type': '' } },
-  { text: '오늘 1동 토마토 웃거름 가상 복합비료 21-17-17 20kg 줬어', expect: { workDate: '2026-11-15', task: '웃거름(추비)', 'm0.kind': '비료', 'm0.type': '화학(복합·단비)', 'm0.name': '가상 복합비료 21-17-17', 'm0.qty': '20', 'm0.unit': 'kg' } },
+  { text: '오늘 1동 토마토 웃거름 가상 복합비료 21-17-17 20kg 줬어', expect: { workDate: '2026-11-15', task: '웃거름(추비)', 'm0.kind': '비료', 'm0.type': '화학(복합과 단비)', 'm0.name': '가상 복합비료 21-17-17', 'm0.qty': '20', 'm0.unit': 'kg' } },
   { text: '안녕하세요', expect: { intent: 'greet' } },
   { text: '음 그러니까 그거', expect: { intent: 'unknown' } },
   { text: '11월 일지 엑셀로 줘', expect: { intent: 'export' } },
-  { text: '3동 딸기 런너 제거했어요', expect: { houses: ['3동'], task: '적엽·런너 제거', mats: 0 } },
-  { text: '어제 2동 정식했어', expect: { workDate: '2026-11-14', houses: ['2동'], crop: '방울토마토', stage: '육묘·정식', task: '정식' } },
+  { text: '3동 딸기 런너 제거했어요', expect: { houses: ['3동'], task: '적엽과 런너 제거', mats: 0 } },
+  { text: '어제 2동 정식했어', expect: { workDate: '2026-11-14', houses: ['2동'], crop: '방울토마토', stage: '육묘와 정식', task: '정식' } },
   { text: '주식 추천해줘', expect: { intent: 'offtopic' } },
-  { text: '1동 토마토 흰가루병 살균제 가상곰팡이 액상 물 20리터에 20ml', expect: { 'm0.type': '살균제', 'm0.name': '가상곰팡이 액상', 'm0.qty': '20', 'm0.unit': 'mL', 'm0.dilution': '1000', 'm0.pest': '흰가루병' } },
-  { text: '3일 전에 3동 딸기 진딧물 살충제 가상충 유제 20ml 2000배', expect: { workDate: '2026-11-12', 'm0.type': '살충제', 'm0.pest': '진딧물', 'm0.dilution': '2000', 'm0.qty': '20' } },
+  { text: '1동 토마토 흰가루병 살균제 가상곰팡이 액상 물 20리터에 20ml', expect: { 'm0.type': '살균제', 'm0.name': '가상곰팡이 액상', 'm0.qty': '20', 'm0.unit': 'mL', 'm0.dilution': '', 'm0.pest': '흰가루병', memoHas: '물 20L' } },
+  { text: '3일 전에 3동 딸기 진딧물 살충제 가상충 유제 20ml 2000배', expect: { workDate: '2026-11-12', 'm0.type': '살충제', 'm0.pest': '진딧물', 'm0.dilution': '2000', 'm0.qty': '', memoHas: '20mL(물 양인지 약 양인지 확인 필요)' } }, // 11/16 변경: 동사 없어도 배수와 양이 같이 있으면 확인
   // v0.3 손해평가사 관점 평가 v1 테스트 문장 8개 (농사처방_시연앱_손해평가사관점_평가_v1.md Part 2)
-  { text: '3동 딸기 정식했어요. 설향 모종 3000주 심었어요', expect: { intent: 'record', houses: ['3동'], crop: '딸기', stage: '육묘·정식', task: '정식', mats: 0, variety: '설향', plant_count: '3000' } },
-  { text: '1동 토마토 수확 시작했어요. 오늘 첫 출하 20박스 공판장으로 보냈어요', expect: { intent: 'record', workDate: '2026-11-15', houses: ['1동'], crop: '토마토', stage: '수확·출하', task: '수확 개시', mats: 0, memoHas: ['출하량 20박스', '출하처 공판장'] } },
-  { text: '어제 강풍 때문에 3동 비닐이 찢어지고 딸기가 냉해 입었어요', expect: { intent: 'disaster', houses: ['3동'], crop: '딸기', 'd.accident_date': '2026-11-14', 'd.peril': '강풍·태풍, 냉해·동상해', 'd.facility_damage': '비닐 찢어짐', 'd.crop_symptom': '얼어서 시듦' } },
-  { text: '딸기 모종 3000주 구입했어요. 45만원', expect: { intent: 'record', houses: ['3동'], stage: '', mats: 1, 'm0.kind': '종묘(모종)', 'm0.action': '구입', 'm0.type': '모종', 'm0.qty': '3000', 'm0.unit': '주', memoHas: '금액 45만원' } },
-  { text: '2동 방울토마토 수확 끝났어요. 마지막 출하했어요', expect: { intent: 'record', houses: ['2동'], crop: '방울토마토', stage: '수확·출하', task: '수확 종료', mats: 0, memoHas: '마지막 출하' } },
-  { text: '1동 보온커튼 닫고 난방기 돌렸어요. 최저 5도', expect: { intent: 'record', houses: ['1동'], crop: '토마토', stage: '작물관리', task: '환기·온도관리', mats: 0, memoHas: '최저 5도' } },
-  { text: '3동 딸기 잿빛곰팡이 생겨서 병든 잎 따고 사진 찍어뒀어요', expect: { intent: 'record', houses: ['3동'], crop: '딸기', task: '적엽·런너 제거', mats: 0, memoHas: '잿빛곰팡이병 발생' } },
+  { text: '3동 딸기 정식했어요. 설향 모종 3000주 심었어요', expect: { intent: 'record', houses: ['3동'], crop: '딸기', stage: '육묘와 정식', task: '정식', mats: 0, variety: '설향', plant_count: '3000' } },
+  { text: '1동 토마토 수확 시작했어요. 오늘 첫 출하 20박스 공판장으로 보냈어요', expect: { intent: 'record', workDate: '2026-11-15', houses: ['1동'], crop: '토마토', stage: '수확과 출하', task: '수확 개시', mats: 0, memoHas: ['출하량 20박스', '출하처 공판장'] } },
+  { text: '어제 강풍 때문에 3동 비닐이 찢어지고 딸기가 냉해 입었어요', expect: { intent: 'disaster', houses: ['3동'], crop: '딸기', 'd.accident_date': '2026-11-14', 'd.peril': '강풍, 냉해', 'd.facility_damage': '비닐 찢어짐', 'd.crop_symptom': '얼어서 시듦' } }, // 11/16 변경: 원인은 말한 낱말 그대로(V-5)
+  // Codex 재검증(11/16 c7a7557): 말하지 않은 태풍, 묶음 이름을 원인에 넣지 않는다
+  { text: '어제 강풍으로 3동 비닐이 찢어졌어요', expect: { intent: 'disaster', 'd.peril': '강풍' } },
+  { text: '3동 딸기 멧돼지가 피해를 줬어요', expect: { intent: 'disaster', 'd.peril': '멧돼지' } },
+  { text: '어제 3동 딸기 저온 때문에 작물이 시들었어요', expect: { intent: 'disaster', 'd.peril': '저온' } },
+  // 11/16 변경: 구입 기록은 동을 자동으로 채우지 않는다(U-03, Codex 브라우저 재현)
+  { text: '딸기 모종 3000주 구입했어요. 45만원', expect: { intent: 'record', houses: [], stage: '', mats: 1, 'm0.kind': '종묘(모종)', 'm0.action': '구입', 'm0.type': '모종', 'm0.qty': '3000', 'm0.unit': '주', memoHas: '금액 45만원' } },
+  { text: '2동 방울토마토 수확 끝났어요. 마지막 출하했어요', expect: { intent: 'record', houses: ['2동'], crop: '방울토마토', stage: '수확과 출하', task: '수확 종료', mats: 0, memoHas: '마지막 출하' } },
+  { text: '1동 보온커튼 닫고 난방기 돌렸어요. 최저 5도', expect: { intent: 'record', houses: ['1동'], crop: '토마토', stage: '작물관리', task: '환기와 온도관리', mats: 0, memoHas: '최저 5도' } },
+  { text: '3동 딸기 잿빛곰팡이 생겨서 병든 잎 따고 사진 찍어뒀어요', expect: { intent: 'record', houses: ['3동'], crop: '딸기', task: '적엽과 런너 제거', mats: 0, memoHas: '잿빛곰팡이병 발생' } },
   { text: '우박 와서 1동 토마토 열매 상처 났어요. 사진 찍었어요', expect: { intent: 'disaster', houses: ['1동'], crop: '토마토', 'd.accident_date': '', 'd.peril': '우박', 'd.facility_damage': '', 'd.crop_symptom': '열매 상처' } },
 ];
 
@@ -712,6 +742,8 @@ function getVal(ext, key) {
   if (key === 'houses') return ext.houseIds.map((id) => TEST_PROFILE.houses.find((h) => h.id === id)?.name);
   if (key === 'mats') return ext.materials.length;
   if (key === 'memoHas') return ext.memo;
+  if (key === 'warnHas') return (ext.warnings || []).join(' / ');
+  if (key === 'guessedHas') return (ext.guessed || []).join(' / ');
   if (key.startsWith('d.')) return ext.disaster ? ext.disaster[key.slice(2)] : undefined;
   if (key.startsWith('m0.')) return ext.materials[0] ? ext.materials[0][key.slice(3)] : undefined;
   return ext[key];
@@ -724,7 +756,7 @@ export function runExtractTests({ quiet = false } = {}) {
     const fails = [];
     for (const [k, want] of Object.entries(c.expect)) {
       const got = getVal(ext, k);
-      const ok = k === 'memoHas' ? [].concat(want).every((w) => String(got || '').includes(w)) : JSON.stringify(got ?? '') === JSON.stringify(want);
+      const ok = k === 'memoHas' || k === 'warnHas' || k === 'guessedHas' ? [].concat(want).every((w) => String(got || '').includes(w)) : JSON.stringify(got ?? '') === JSON.stringify(want);
       if (!ok) fails.push(`${k}: 기대 ${JSON.stringify(want)} / 실제 ${JSON.stringify(got)}`);
     }
     return { text: c.text, pass: !fails.length, fails: fails.join(' | ') };

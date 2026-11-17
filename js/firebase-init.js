@@ -21,7 +21,7 @@ export async function getFirebase() {
   const db = firestore.getFirestore(app);
   const authInst = auth.getAuth(app);
   auth.useDeviceLanguage(authInst);
-  // TODO: App Check (reCAPTCHA Enterprise) 적용 - 봇 가입·메일 남용 방지 (운영비 견적 v1 7장)
+  // TODO: App Check (reCAPTCHA Enterprise) 적용 - 봇 가입, 메일 남용 방지 (운영비 견적 v1 7장)
   cached = { app, db, firestore, auth, authInst };
   return cached;
 }

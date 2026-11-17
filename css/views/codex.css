@@ -1,0 +1,33 @@
+.record-form,.accident-form{display:grid;gap:16px}.record-form fieldset,.accident-form fieldset{border:1px solid #dbe5da;border-radius:8px;padding:12px}.record-choice,.accident-choice{display:inline-flex;align-items:center;min-height:48px;margin-right:12px;gap:8px}.record-save,.accident-save{min-height:48px}.accident-options{display:flex;flex-wrap:wrap;gap:8px}.accident-options button{min-height:48px}.accident-checklist{border-top:1px solid #dbe5da;padding-top:16px}.accident-checklist h2{font-size:17px}.accident-checklist p{margin:8px 0}
+
+.record-only-management,.record-only-other,.record-only-planting,.record-only-seed,.record-only-pest,.accident-facility-detail{display:none}.record-form:has(#record-kind option[value="작물관리"]:checked) .record-only-management,.record-form:has(#record-kind option[value="정식"]:checked) .record-only-planting,.record-form:has(#record-kind option[value="모종 구입"]:checked) .record-only-seed,.record-form:has(#record-kind option[value="병해충 방제"]:checked) .record-only-pest,.record-form:has(#record-kind option[value="병해충 발견"]:checked) .record-only-pest,.accident-form:has(#accident-facility option[value="yes"]:checked) .accident-facility-detail{display:block}
+
+.record-kind-buttons{display:flex;flex-wrap:wrap;gap:8px}.record-kind-button{min-height:48px}.record-kind-button[aria-pressed="true"]{background:#d9ead8;border-color:#47774f;color:#173d20}
+
+.accident-report{min-height:48px}
+
+.accident-alert{min-height:48px}
+
+.accident-facility-button[aria-pressed="true"]{background:#d9ead8;border-color:#47774f;color:#173d20}
+
+.info-item{min-height:52px;text-align:left;padding:12px;display:flex;flex-direction:column;gap:4px}.info-item strong{font-size:17px}
+
+.field-screen .bd{font-size:20px}.field-screen h2{font-size:24px;margin-bottom:20px}.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field-button{min-height:64px;width:100%;padding:16px;border:1px solid #47774f;border-radius:12px;background:#fff;color:#173d20;font-size:22px;font-weight:700;margin-bottom:12px}.field-grid .field-button{min-height:96px;margin:0}.field-danger{background:#b3261e;color:#fff}.field-button:focus-visible{outline:3px solid #1c5f8c;outline-offset:2px}
+
+.record-terms{display:grid;gap:8px}.record-term-card{border:1px solid #7d9184;border-radius:12px;padding:12px;margin-top:8px}.record-term-card p{margin:8px 0}.record-term-card button{min-height:48px}
+
+.report-period{display:flex;gap:8px;margin:16px 0}.report-period button{min-height:48px}.report-period [aria-pressed="true"]{background:#d9ead8;color:#173d20}.report-table{overflow-x:auto}.report-table th,.report-table td{padding:8px;text-align:left;white-space:nowrap;border-bottom:1px solid #d5dfd6}
+
+.record-form:has(#record-kind option[value="병해충 발견"]:checked) .record-control-target,.record-form:has(#record-kind option[value="병해충 발견"]:checked) .record-pest-checkbox{display:none}
+
+.record-form:has(#record-kind option[value="다른 작업"]:checked) .record-only-other{display:block}
+
+.accident-form[data-acc-new="true"][data-step="1"] [data-acc-step]:not([data-acc-step="1"]){display:none}
+.accident-form[data-acc-new="true"][data-step="2"] [data-acc-step]:not([data-acc-step="2"]){display:none}
+.accident-form[data-acc-new="true"][data-step="3"] [data-acc-step]:not([data-acc-step="3"]){display:none}
+.accident-form[data-acc-new="true"][data-step="4"] [data-acc-step]:not([data-acc-step="4"]){display:none}
+.accident-form[data-acc-new="true"][data-step="5"] [data-acc-step]:not([data-acc-step="5"]){display:none}
+.accident-form[data-acc-new="true"][data-step="1"] .accident-back,.accident-form[data-acc-new="true"][data-step="5"] .accident-next{display:none}
+.accident-navigation button{min-height:48px}
+
+.card summary,.rd-fac summary{min-height:48px;cursor:pointer;align-items:center;font-size:16px;font-weight:700}

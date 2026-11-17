@@ -1,15 +1,15 @@
 // 이해(추출) 어댑터: config.agentMode 로 고른다.
 //  - 'rules': 규칙 기반 추출 (extract-rules.js). 지금 동작. AI 호출 0원
 //  - 'llm'  : Cloud Functions agent 엔드포인트 -> Vertex AI Gemini (gemini-3.1-flash-lite, 함수 호출 save_farm_log)
-//             아직 서버가 없어서 연결 자리만 있다. 실패·지연(5초)·한도 초과면 규칙 추출로 자동 폴백.
+//             아직 서버가 없어서 연결 자리만 있다. 실패, 지연(5초), 한도 초과면 규칙 추출로 자동 폴백.
 //
 // 서버 쪽 TODO (README "LLM 연결 TODO" 참고):
 //   Cloud Functions 2세대 asia-northeast3 `agent` (HTTPS, Firebase Auth ID 토큰 확인)
 //   -> 1인 하루 한도 확인 -> 입력 500자 자르기 -> Vertex AI generateContent
 //      (model = CONFIG.agentModel, tools = [{ functionDeclarations: [SAVE_FARM_LOG_DECL] }], maxOutputTokens 512)
-//   -> functionCall(save_farm_log) 인자를 서버에서 검증(동·작목이 내 농장에 있는지, 단위, 숫자 범위) 후 응답
+//   -> functionCall(save_farm_log) 인자를 서버에서 검증(동, 작목이 내 농장에 있는지, 단위, 숫자 범위) 후 응답
 //   응답 모양: { intent: 'record'|'offtopic'|'weather'|'export'|'list'|'greet'|'unknown', args?: save_farm_log 인자, reply?: string }
-//   API 키·서비스 계정 키는 절대 이 저장소에 넣지 않는다 (서버 런타임 서비스 계정 + Secret Manager).
+//   API 키, 서비스 계정 키는 절대 이 저장소에 넣지 않는다 (서버 런타임 서비스 계정 + Secret Manager).
 
 import { CONFIG } from '../config.js';
 import { extractRules, classifyIntent, parseCrop, stageOfTask, normUnit } from './extract-rules.js';
@@ -24,7 +24,7 @@ export const SAVE_FARM_LOG_DECL = {
       work_date: { type: 'STRING', description: '작업일 YYYY-MM-DD. 말하지 않았으면 비움(앱이 오늘로 채움)' },
       house_names: { type: 'ARRAY', items: { type: 'STRING' }, description: '하우스 동 이름. 농장 프로필의 동 이름 중에서만' },
       crop: { type: 'STRING', enum: ['토마토', '방울토마토', '딸기'] },
-      stage: { type: 'STRING', enum: ['사전준비', '경운·토양관리', '육묘·정식', '작물관리', '수확·출하', '정리'] },
+      stage: { type: 'STRING', enum: ['사전준비', '경운과 토양관리', '육묘와 정식', '작물관리', '수확과 출하', '정리'] },
       task: { type: 'STRING', description: '세부 작업명. 작목별 목록(constants.js TASKS_*) 중에서만' },
       materials: {
         type: 'ARRAY',
@@ -33,7 +33,7 @@ export const SAVE_FARM_LOG_DECL = {
           properties: {
             kind: { type: 'STRING', enum: ['농약', '비료', '종묘(모종)'] },
             action: { type: 'STRING', enum: ['구입', '사용'] },
-            type: { type: 'STRING', description: '농약: 살충제/살균제/살균살충제/제초제/생장조정제/기타, 비료: 유기질(퇴비·유박)/화학(복합·단비)/양액 비료/엽면시비·미량요소/토양개량제/기타' },
+            type: { type: 'STRING', description: '농약: 살충제/살균제/살균살충제/제초제/생장조정제/기타, 비료: 유기질(퇴비와 유박)/화학(복합과 단비)/양액 비료/엽면시비와 미량요소/토양개량제/기타' },
             name: { type: 'STRING', description: '제품명. 농민이 말한 그대로' },
             qty: { type: 'NUMBER' },
             unit: { type: 'STRING', enum: ['mL', 'L', 'g', 'kg', '병', '봉지', '포대', '톤', '주', '포기', '판'] },
@@ -79,7 +79,7 @@ export function fromFunctionArgs(args, ctx, text) {
   const task = args.task || '';
   const materials = (args.materials || []).map((m) => ({
     kind: ['농약', '비료', '종묘(모종)'].includes(m.kind) ? m.kind : '',
-    action: m.action === '구입' ? '구입' : '사용',
+    action: ['구입', '사용'].includes(m.action) ? m.action : '',
     type: m.type || '',
     name: m.name || '',
     qty: m.qty != null ? String(m.qty) : '',

@@ -18,8 +18,8 @@ const chipList = (list, sel, k, extraCls = '') => list.map((x) => {
 export const DEMO_TALKS = [
   { label: '칼슘제 엽면시비 (바로 확인 카드)', texts: ['어제 1동 토마토에 칼슘제 엽면시비 500배로 20리터 뿌렸어'] },
   { label: '딸기 잿빛곰팡이 방제 (되묻기)', texts: ['3동 딸기 잿빛곰팡이 약 쳤어'] },
-  { label: '강풍·냉해 재해 기록', texts: ['어제 강풍 때문에 3동 비닐이 찢어지고 딸기가 냉해 입었어요'] },
-  { label: '날씨·코딩 질문 (거절)', texts: ['오늘 날씨 어때?', '파이썬 코딩 알려줘'] },
+  { label: '강풍, 냉해 피해 기록', texts: ['어제 강풍 때문에 3동 비닐이 찢어지고 딸기가 냉해 입었어요'] },
+  { label: '날씨, 코딩 질문 (거절)', texts: ['오늘 날씨 어때?', '파이썬 코딩 알려줘'] },
 ];
 
 const MIC_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>';
@@ -47,7 +47,7 @@ function row(d, key, label, value, editor, opts) {
   const empty = value === '' || value == null;
   const editing = opts.active && opts.editKey === key;
   const tag = tagFor(d, key, empty && opts.required);
-  // hl: 날짜·동 번호·주수처럼 받아쓰기 오류가 잦은 값은 크게 강조 (눌러서 수정 가능)
+  // hl: 날짜, 동 번호, 주수처럼 받아쓰기 오류가 잦은 값은 크게 강조 (눌러서 수정 가능)
   return `<div class="cr${editing ? ' ed' : ''}${opts.hl ? ' hl' : ''}">
     <div class="crh" ${opts.active && editor ? attr({ act: 'agEdit', k: editing ? '' : key }) : ''}>
       <span class="k">${esc(label)}</span><span class="v">${empty ? '<span class="mut">빈칸</span>' : esc(value)} ${tag}</span>${opts.active && editor ? `<span class="lnk sm">${editing ? '닫기' : '고치기'}</span>` : ''}
@@ -67,7 +67,7 @@ export function confirmCard(d, S, opts = {}) {
   h += row(d, 'crop', '작목', d.crop, `<div class="chips">${chipList(CROPS, d.crop, 'crop')}</div>`, { ...o, required: true });
   const tasks = tasksFor(d.crop)[d.stage] || [];
   h += row(d, 'stage', '작업', d.stage ? d.stage + (d.task ? ' > ' + d.task : '') : '', `<div class="chips" style="margin-bottom:8px">${chipList(STAGES, d.stage, 'stage')}</div>${tasks.length ? `<div class="chips">${chipList(tasks, d.task, 'task')}</div>` : ''}`, { ...o, required: !(d.materials.length && d.materials.every((m) => m.action === '구입')) });
-  // 정식 카드: 품종·주수 (피해비율 분모인 주수, 인수 확인용 품종)
+  // 정식 카드: 품종, 주수 (피해비율 분모인 주수, 인수 확인용 품종)
   if (d.task === '정식') {
     h += row(d, 'variety', '품종', d.variety, `<input class="inp sm" placeholder="예: 설향" value="${esc(d.variety)}" ${attr({ in: 'ag', k: 'variety' })}>`, { ...o, required: false });
     h += row(d, 'plant_count', '주수', d.plant_count ? `${d.plant_count}주` : '', `<input class="inp sm" inputmode="numeric" placeholder="예: 3000" value="${esc(d.plant_count)}" ${attr({ in: 'ag', k: 'plant_count' })}>`, { ...o, required: false, hl: true });
@@ -121,7 +121,7 @@ export function disasterCard(d, S, opts = {}) {
   h += row(d, 'memo', '메모', d.memo, `<input class="inp sm" value="${esc(d.memo)}" ${attr({ in: 'ag', k: 'memo' })}>`, { ...o, required: false });
   const src = (d.sourceTexts || []).join(' / ');
   return `<div class="ccard dis${o.active ? '' : ' past'}">
-    <div class="row" style="margin-bottom:6px"><b>재해 기록 초안</b><span class="tag dis">재해</span><span class="sp"></span>${opts.saved ? '<span class="tag ac">저장됨</span>' : opts.stale ? '<span class="tag">수정 전</span>' : `<span class="tag">추출: ${esc(d.method || '규칙')}</span>`}</div>
+    <div class="row" style="margin-bottom:6px"><b>피해 기록 초안</b><span class="tag dis">재해</span><span class="sp"></span>${opts.saved ? '<span class="tag ac">저장됨</span>' : opts.stale ? '<span class="tag">수정 전</span>' : `<span class="tag">추출: ${esc(d.method || '규칙')}</span>`}</div>
     ${h}
     <p class="photo-note">${esc(PHOTO_NOTICE)}</p>
     <p class="src">원문: "${esc(src)}"${(d.answers || []).length ? `<br>답한 내용: ${esc(d.answers.join(" / "))}` : ""}</p>

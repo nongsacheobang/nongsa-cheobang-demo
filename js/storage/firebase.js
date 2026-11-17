@@ -48,13 +48,13 @@ export const firebaseStore = {
 
   async listRecords(uid, opts = {}) {
     await ensure();
-    const cons = [];
-    if (opts.from) cons.push(fs.where('workDate', '>=', opts.from));
-    if (opts.to) cons.push(fs.where('workDate', '<=', opts.to));
-    cons.push(fs.orderBy('workDate', 'desc'));
-    // TODO: 목록 화면은 limit(30) + startAfter 로 페이지 나누기. 엑셀은 기간 조건으로 전체 읽기.
-    const snap = await fs.getDocs(fs.query(recCol(uid), ...cons));
-    return snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+    // 기존 화면 형식과 계약 문서를 함께 읽는다. Firestore의 orderBy는 필드가 없는 문서를 제외한다.
+    const snap = await fs.getDocs(fs.query(recCol(uid)));
+    const rows = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    const date = r => r.work_date || r.workDate || '';
+    return rows.filter(r => (!opts.from || date(r) >= opts.from) && (!opts.to || date(r) <= opts.to))
+      .sort((a,b) => date(b).localeCompare(date(a)) || String(b.created_at || b.createdAt || '').localeCompare(String(a.created_at || a.createdAt || '')));
+
   },
 
   async getRecord(uid, id) {
@@ -65,28 +65,37 @@ export const firebaseStore = {
 
   async saveRecord(uid, rec) {
     await ensure();
+    const id = rec.record_id || rec.id;
+    if (rec.record_id) {
+      const ref = fs.doc(db, 'users', uid, 'records', id);
+      await fs.setDoc(ref, rec);
+      return rec;
+    }
     const now = new Date().toISOString();
-    if (rec.id) {
-      const ref = fs.doc(db, 'users', uid, 'records', rec.id);
+    if (id) {
+      const ref = fs.doc(db, 'users', uid, 'records', id);
       const prev = await fs.getDoc(ref);
       if (prev.exists()) {
-        const saved = { ...rec, createdAt: prev.data().createdAt, updatedAt: now };
+        const saved = { ...rec, id, createdAt: prev.data().createdAt, updatedAt: now };
         await fs.setDoc(ref, saved);
         return saved;
       }
     }
-    const ref = rec.id ? fs.doc(db, 'users', uid, 'records', rec.id) : fs.doc(recCol(uid));
+    const ref = id ? fs.doc(db, 'users', uid, 'records', id) : fs.doc(recCol(uid));
     const saved = { ...rec, id: ref.id, createdAt: rec.createdAt || now, updatedAt: rec.updatedAt || null };
     await fs.setDoc(ref, saved);
     return saved;
+
   },
 
   async saveRecordsBulk(uid, recs) {
     await ensure();
-    const batch = fs.writeBatch(db); // 한 번에 500건 제한
-    recs.slice(0, 500).forEach((r) => {
-      const ref = fs.doc(recCol(uid));
-      batch.set(ref, { ...r, id: ref.id });
+    if (recs.length > 500) throw new Error('한 번에 저장할 수 있는 기록은 500건까지입니다');
+    const batch = fs.writeBatch(db);
+    recs.forEach((r) => {
+      const id = r.record_id || r.id;
+      const ref = id ? fs.doc(db, 'users', uid, 'records', id) : fs.doc(recCol(uid));
+      batch.set(ref, r.record_id ? r : { ...r, id: ref.id });
     });
     await batch.commit();
   },
@@ -98,9 +107,11 @@ export const firebaseStore = {
 
   async deleteDemoRecords(uid) {
     await ensure();
-    const snap = await fs.getDocs(fs.query(recCol(uid), fs.where('demo', '==', true)));
+    const snap = await fs.getDocs(fs.query(recCol(uid)));
+    const demo = snap.docs.filter(d => { const r=d.data(); return r.is_demo === true || r.demo === true; });
+    if (demo.length > 500) throw new Error('한 번에 삭제할 수 있는 데모 기록은 500건까지입니다');
     const batch = fs.writeBatch(db);
-    snap.docs.forEach((d) => batch.delete(d.ref));
+    demo.forEach((d) => batch.delete(d.ref));
     await batch.commit();
   },
 

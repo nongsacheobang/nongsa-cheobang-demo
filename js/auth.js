@@ -33,6 +33,8 @@ export const auth = {
   // 앱 시작 시 호출. firebase 모드면 메일 링크로 들어온 경우 로그인 완료 처리
   async init() {
     if (CONFIG.auth === 'firebase') {
+      const session = this.getSession();
+      if (session?.provider === 'demo-account' && session.uid === 'demo' && session.demo === true && !new URL(location.href).searchParams.has('oobCode')) return session;
       const { getFirebase } = await import('./firebase-init.js');
       const fb = await getFirebase();
       const { auth: A, authInst } = fb;
@@ -44,7 +46,13 @@ export const auth = {
         history.replaceState(null, '', location.pathname + '#/home');
         return saveSession({ uid: cred.user.uid, email: cred.user.email, demo: false, provider: 'firebase' });
       }
-      // TODO: onAuthStateChanged 로 세션 복원 (지금은 localStorage 세션 사용)
+      // 로컬에 남은 세션이 아니라 Firebase가 복원한 인증 상태를 확인한다.
+      const user = await new Promise((resolve, reject) => {
+        let unsubscribe = () => {};
+        unsubscribe = A.onAuthStateChanged(authInst, value => { unsubscribe(); resolve(value); }, error => { unsubscribe(); reject(error); });
+      });
+      if (!user) { localStorage.removeItem(SESSION_KEY); return null; }
+      return saveSession({ uid: user.uid, email: user.email || '', demo: false, provider: 'firebase' });
     }
     return this.getSession();
   },
@@ -83,13 +91,13 @@ export const auth = {
     return saveSession({ uid: 'u_' + hash(email.toLowerCase()), email, demo: false, provider: 'demo-link' });
   },
 
-  // "데모 계정으로 둘러보기" (심사·시연용, 가상 데이터 자동 채움)
+  // "데모 계정으로 둘러보기" (심사, 시연용, 가상 데이터 자동 채움)
   async demoAccount() {
     return saveSession({ uid: 'demo', email: DEMO_EMAIL, demo: true, provider: 'demo-account' });
   },
 
   async signOut() {
-    if (CONFIG.auth === 'firebase') {
+    if (CONFIG.auth === 'firebase' && this.getSession()?.provider !== 'demo-account') {
       const { getFirebase } = await import('./firebase-init.js');
       const { auth: A, authInst } = await getFirebase();
       await A.signOut(authInst);

@@ -68,8 +68,8 @@ export function qtyText(m) {
 export function autoText(profile, r) {
   const names = houseNames(profile, r.houseIds);
   if (isDisaster(r)) {
-    // 예: "3동 딸기 재해(강풍·태풍), 시설 피해: 비닐 찢어짐, 작물 피해: 얼어서 시듦"
-    let d = [names, r.crop, `재해(${r.peril || '종류 미입력'})`].filter(Boolean).join(' ');
+    // 예: "3동 딸기 재해(강풍과 태풍), 시설 피해: 비닐 찢어짐, 작물 피해: 얼어서 시듦"
+    let d = [names, r.crop, `재해(${r.cause_text || (Array.isArray(r.peril) ? r.peril.join(', ') : r.peril) || '종류 미입력'})`].filter(Boolean).join(' ');
     if (r.facility_damage) d += `, 시설 피해: ${r.facility_damage}`;
     if (r.crop_symptom) d += `, 작물 피해: ${r.crop_symptom}`;
     if (r.continuing) d += ', 연속 재해';
@@ -92,21 +92,40 @@ export function detailOf(profile, r) {
 }
 
 // 필수 항목 빈칸 목록 (빈칸이어도 저장은 되고 "미완성" 표시)
-export function missingFields(r) {
+// 계약 v1 2-1의 5번: 대화 저장과 직접 입력 저장이 모두 이 판정 하나를 쓴다(js/contract.js).
+// profile을 주면 작목이 다른 동을 한 기록에 넣었는지도 본다(계약 C-6, S-7).
+export function missingFields(r, profile) {
   const a = [];
+  const ids = r.houseIds || [];
+  const mixed = () => {
+    const hs = profile?.houses || [];
+    return new Set(ids.map((id) => hs.find((h) => h.id === id)?.crop).filter(Boolean)).size > 1;
+  };
+  // 프로필에 없는 동(삭제된 동 등)이 섞여 있으면 미완성(계약 C-5, Codex 재검증)
+  const unknownHouse = () => !!profile && ids.some((id) => !(profile.houses || []).some((h) => h.id === id));
   if (isDisaster(r)) {
     if (!r.accident_date) a.push('사고일');
-    if (!r.peril) a.push('재해 종류');
-    if (!r.houseIds || !r.houseIds.length) a.push('피해 동');
-    if (!r.facility_damage) a.push('시설 피해');
+    if (!r.cause_text && !(Array.isArray(r.peril) ? r.peril.length : r.peril)) a.push('재해 종류');
+    if (!ids.length) a.push('피해 동');
+    if (!r.facility_damage || (Array.isArray(r.facility_damage) && !r.facility_damage.length)) a.push('시설 피해');
     if (!r.crop_symptom) a.push('작물 피해');
+    if (mixed()) a.push('작목이 다른 동');
+    if (unknownHouse()) a.push('확인 안 된 동');
     return a;
   }
   if (!r.workDate) a.push('작업일');
-  if (!r.houseIds || !r.houseIds.length) a.push('하우스 동');
+  // 구입 기록도 동을 자동으로 채우지 않는다. 비어 있으면 미완성(U-03, S-3)
+  if (!ids.length) a.push('하우스 동');
   if (!r.crop) a.push('작목');
   if (!r.stage) a.push('작업단계');
+  if (mixed()) a.push('작목이 다른 동');
+  if (unknownHouse()) a.push('확인 안 된 동');
+  if (r.task === '병해충 방제' && !(r.materials || []).length) a.push('방제 방법 또는 자재');
   (r.materials || []).forEach((m) => {
+    // 자재 종류(농약, 비료, 종묘)와 구입/사용이 비면 어느 장부에 들어갈지 모른다(A1)
+    if (!m.kind) a.push('자재 종류');
+    if (m.action !== '구입' && m.action !== '사용') a.push('자재 구입/사용');
+    if (!m.kind) return;
     if (!m.type) a.push(`${m.kind} 종류`);
     if (!m.name) a.push(`${m.kind} 제품명`);
     if (m.qty === '' || m.qty == null) a.push(`${m.kind} 양`);
