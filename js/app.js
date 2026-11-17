@@ -1165,6 +1165,7 @@ $app.addEventListener('click', async (e) => {
 $app.addEventListener('input', onInput);
 $app.addEventListener('change', onChange);
 $app.addEventListener('keydown', (e) => {
+  if (e.target.matches('.report-table') && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) { e.preventDefault(); e.target.scrollLeft += e.key === 'ArrowRight' ? 80 : -80; return; }
   if (e.key === 'Enter' && e.target.id === 'email') ACTIONS.sendLink();
   // 한글 조합 중(IME) Enter 는 무시
   if (e.key === 'Enter' && e.target.id === 'chatInput' && !e.isComposing && e.keyCode !== 229) {
