@@ -30,7 +30,7 @@ export function claimInput(profile, records, accidentId, houseId) {
     coverOnly, facilityDamage: Array.isArray(accident.facility_damage) ? accident.facility_damage.join(', ') : String(accident.facility_damage || ''),
     facilityAmount: policy.facility_sum_insured_krw ?? '', replacement: profile.insurance?.replacement_rider ?? null,
     coverageRatio: profile.insurance?.crop_coverage_ratio ?? null, planting, harvestStart,
-    harvestEnd: harvestEnd || policy.harvest_end_plan || '', accidentDate: accident.accident_date || '',
+    harvestEnd: harvestEnd || policy.harvest_end_plan || '', harvestEndActual: !!harvestEnd, accidentDate: accident.accident_date || '',
     alerts: alerts || [], alertDates, damageMin: '', damageMax: '', damageBands: [], estimates: [], repair: ''
   };
 }

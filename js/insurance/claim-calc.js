@@ -35,7 +35,7 @@ export function cropRange({ crop, basisCrop, area, insuredArea, insuredAmount, c
 }
 
 // 날짜와 작형의 불확실성을 후보로 남긴다. 특보 후보는 호출 측에서 같은 재해 종류와 지역을 확인해야 한다.
-export function progressCandidates({ crop, planting, accident, alertDates = [], harvestStart = '', harvestEnds = [] }) {
+export function progressCandidates({ crop, planting, accident, alertDates = [], harvestStart = '', harvestEnds = [], harvestEndActual = false }) {
   const day = value => {
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
     const n = Date.parse(value + 'T00:00:00Z');
@@ -52,22 +52,27 @@ export function progressCandidates({ crop, planting, accident, alertDates = [], 
   }
   const candidates = [];
   for (const date of [...new Set(dates)]) for (const inclusive of [0,1]) for (const standard of growth) {
-    const elapsed = day(date) - p + inclusive;
-    if (h !== null && day(date) >= h) {
-      const elapsedHarvest = day(date) - h + inclusive;
-      const durations = cropName === '딸기' ? [182] : harvestEnds.map(end => day(end) - h);
-      if (!durations.length) return { state: 'unknown_harvest_end' };
-      for (const duration of durations) {
-        const ratio = Math.max(0, Math.min(1, 1 - elapsedHarvest / duration));
-        // 약관 문구의 하한 적용 여부가 불확실하므로 양쪽을 후보로 둔다.
-        candidates.push({date, inclusive: !!inclusive, stage:'harvest', standard, ratio}, {date, inclusive: !!inclusive, stage:'harvest', standard, ratio:Math.max(.1,ratio)});
-      }
-    } else {
-      const ratio = .4 + .6 * Math.min(1, elapsed / standard);
-      candidates.push({date, inclusive: !!inclusive, stage:'growth', standard, ratio});
-      if (h === null && elapsed >= standard) {
-        // 시작일이 없어 수확 중 경과비율을 특정할 수 없다. 가능한 전체 범위를 남긴다.
-        candidates.push({date, inclusive: !!inclusive, stage:'harvest_unknown', standard, ratio:0}, {date, inclusive: !!inclusive, stage:'harvest_unknown', standard, ratio:1});
+    const d = day(date), elapsed = d - p + inclusive;
+    const assumed = h === null && d >= p + standard;
+    const start = h === null ? p + standard : h;
+    if (h === null || d < h) candidates.push({date, inclusive: !!inclusive, stage:'growth', standard, ratio:.4 + .6 * Math.min(1, elapsed / standard)});
+    if ((h !== null && d >= h) || assumed) {
+      const n = d - start + inclusive;
+      const stage = assumed ? 'harvest_unknown' : 'harvest';
+      if (cropName === '토마토') {
+        if (!harvestEnds.length) return {state:'unknown_harvest_end'};
+        const usable = harvestEnds.map(day).filter(end => end >= d && end > start);
+        if (!usable.length) return {state:'invalid_harvest_end'};
+        for (const end of usable) candidates.push({date,inclusive:!!inclusive,stage,standard,ratio:Math.max(0, 1 - n / (end - start + inclusive))});
+      } else {
+        const ratio = Math.max(0, 1 - n / 182);
+        let values = [ratio];
+        if (ratio < .1) {
+          if (harvestEndActual && harvestEnds.length) values = harvestEnds.map(end => day(end) - start + inclusive >= 182 ? .1 : ratio);
+          else if (d - start >= 182) values = [.1];
+          else values = [ratio,.1];
+        }
+        for (const value of values) candidates.push({date,inclusive:!!inclusive,stage,standard,ratio:value});
       }
     }
   }
