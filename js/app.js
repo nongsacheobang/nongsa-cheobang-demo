@@ -1006,7 +1006,7 @@ const ACTIONS = {
     try {
       const rec = {
         ...f,
-        weather: f.weather || missingWeather('미수집'),
+        weather: f.weather || (f.id ? null : missingWeather('미수집')),
         materials: f.materials.map((m) => ({ ...m, qty: String(m.qty ?? '').trim() })),
         detail: f.detailEdited ? f.detail : autoText(S.profile, f),
         author: f.author || S.profile.name,
