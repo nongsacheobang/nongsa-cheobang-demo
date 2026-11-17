@@ -507,7 +507,7 @@ function vExcel() {
     <div class="bd">
       <div class="fld"><label>기간</label>
         <div class="seg">${[['month', '이번 달'], ['all', '영농기간 전체'], ['custom', '직접 선택']].map(([v, l]) => `<button class="${p === v ? 'on' : ''}" ${attr({ act: 'excelPeriod', v })}>${l}</button>`).join('')}</div>
-        ${p === 'custom' ? `<div class="dates"><input class="inp" type="date" aria-label="시작일" value="${esc(from)}" data-in="xFrom"><input class="inp" type="date" aria-label="종료일" value="${esc(to)}" data-in="xTo"></div>` : ''}
+        ${p === 'custom' ? `<div class="dates"><label class="fld">시작일<input class="inp" type="date" value="${esc(from)}" data-in="xFrom"></label><label class="fld">종료일<input class="inp" type="date" value="${esc(to)}" data-in="xTo"></label></div>` : ''}
         <p class="mut" style="margin-top:6px">${esc(from)} ~ ${esc(to)}, 기록 ${recs.length}건, 자재 행 포함 ${rows.length}행, 피해 기록 ${drows.length}건</p></div>
       <div class="card">
         <h3>표준 영농기록장 양식 (농식품부 공익직불제)</h3>
