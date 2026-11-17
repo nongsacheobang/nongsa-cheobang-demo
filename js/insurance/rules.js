@@ -121,7 +121,7 @@ export const FACTORS = [
       if (!hs.length) return { state: UNKNOWN, reason: '동과 작물을 먼저 넣어 주세요', todo: { label: '농장 정보 입력', go: 'farm' } };
       const missing = hs.filter((h) => !works(ctx).some((r) => isTask(r, PLANTING) && onHouse(r, h) && dayNum(r.workDate) != null));
       const uncertain = missing.filter(h => works(ctx).some(r => isTask(r, PLANTING) && onHouse(r, h) && dayNum(r.workDate) == null));
-      if (uncertain.length) return { state: UNKNOWN, reason: `${uncertain.map(h => h.name).join(', ')} 정식 날짜를 확인해 주세요`, todo: { label: '정식일 확인하기', go: 'record/정식' } };
+      if (uncertain.length) return { state: UNKNOWN, progress: (hs.length - missing.length) / hs.length, reason: `${uncertain.map(h => h.name).join(', ')} 정식 날짜를 확인해 주세요`, todo: { label: '정식일 확인하기', go: 'record/정식' } };
       if (!missing.length) return { state: MET, reason: '모든 동의 정식일이 있어요', todo: null };
       return { state: UNMET, progress: (hs.length - missing.length) / hs.length, reason: `${missing.map((h) => h.name).join(', ')} 정식일이 없어요`, todo: { label: '정식일 기록하기', go: 'record/정식' } };
     },
@@ -136,7 +136,7 @@ export const FACTORS = [
       if (!hs.length) return { state: UNKNOWN, reason: '동과 작물을 먼저 넣어 주세요', todo: { label: '농장 정보 입력', go: 'farm' } };
       const missing = hs.filter(h => !hv.some(r => isTask(r, HARVEST_START) && onHouse(r, h) && dayNum(r.workDate) != null));
       const uncertain = missing.filter(h => hv.some(r => isTask(r, HARVEST_START) && onHouse(r, h) && dayNum(r.workDate) == null));
-      if (uncertain.length) return { state: UNKNOWN, reason: `${uncertain.map(h => h.name).join(', ')} 수확 개시 날짜를 확인해 주세요`, todo: { label: '수확 개시일 확인', go: 'record/수확 개시' } };
+      if (uncertain.length) return { state: UNKNOWN, progress: (hs.length - missing.length) / hs.length, reason: `${uncertain.map(h => h.name).join(', ')} 수확 개시 날짜를 확인해 주세요`, todo: { label: '수확 개시일 확인', go: 'record/수확 개시' } };
       if (!missing.length) return { state: MET, reason: '동마다 수확 개시일이 있어요', todo: null };
       return { state: UNMET, progress: (hs.length - missing.length) / hs.length, reason: `${missing.map(h => h.name).join(', ')} 수확 개시일이 없어요`, todo: { label: '수확 개시일 기록', go: 'record/수확 개시' } };
     },
