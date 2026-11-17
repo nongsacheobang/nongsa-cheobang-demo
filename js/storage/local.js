@@ -16,9 +16,10 @@ function read(key, fallback) {
 function readForWrite(key, fallback, valid) {
   const raw = localStorage.getItem(PFX + key);
   if (raw === null) return fallback;
+  const invalid = () => { const error = new Error('기기에 저장된 자료를 읽지 못해 변경하지 않았어요'); error.code = 'LOCAL_DATA_INVALID'; return error; };
   let value;
-  try { value = JSON.parse(raw); } catch (_) { throw new Error('저장된 자료를 읽지 못해 변경하지 않았어요'); }
-  if (!valid(value)) throw new Error('저장된 자료 형식을 확인할 수 없어 변경하지 않았어요');
+  try { value = JSON.parse(raw); } catch (_) { throw invalid(); }
+  if (!valid(value)) throw invalid();
   return value;
 }
 const recordsForWrite = uid => readForWrite('records:' + uid, [], Array.isArray);
