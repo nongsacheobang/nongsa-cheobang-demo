@@ -518,7 +518,8 @@ function vExcel() {
       <div class="card" style="background:#FAFAFA"><div class="mut">파일 이름</div><b style="font-size:13px;word-break:break-all">${esc(fileName(S.profile, from, to))}</b></div>
     </div>
     <div class="ftr">
-      <button class="big sm" style="margin:0" data-act="downloadXlsx" ${recs.length && !S.busy ? '' : 'disabled'}>${S.busy ? '만드는 중' : '엑셀 다운로드 (.xlsx)'}</button>
+      ${!recs.length ? '<p>이 기간에 기록이 없어요. 빈 양식으로 받을까요?</p>' : ''}
+      <button class="big sm" style="margin:0" data-act="downloadXlsx" ${!S.busy ? '' : 'disabled'}>${S.busy ? '만드는 중' : recs.length ? '엑셀 다운로드 (.xlsx)' : '빈 양식 받기'}</button>
       ${share ? `<button class="ghost" style="margin:8px 0 0" data-act="shareXlsx" ${recs.length ? '' : 'disabled'}>휴대폰 공유로 보내기</button>` : ''}
     </div></section>`;
 }
@@ -1067,7 +1068,7 @@ const ACTIONS = {
 async function makeXlsx(share) {
   const { from, to } = excelRange();
   const recs = excelRecords();
-  if (!recs.length) return toast('기간 안에 기록이 없어요');
+  if (from > to) return toast('시작일이 종료일보다 늦어요');
   const sheets = [...document.querySelectorAll('[data-sheet]')].map(el => el.checked);
   if (!sheets.some(Boolean)) return toast('시트를 하나 이상 골라 주세요');
   S.excel.sheets = sheets;
