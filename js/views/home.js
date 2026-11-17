@@ -53,10 +53,10 @@ export default {
         <div class="card"><h3>지금 할 일</h3>${todo}</div>
         ${r.gate_open ? '<button class="ghost" data-act="go" data-v="factors">왜 이 점수인가요?</button>' : '<button class="ghost" data-act="go" data-v="insurance/guide">가입 안내 보기</button>'}
         <div class="rd-quick">
-          <button class="big" data-act="go" data-v="record">기록 쓰기</button><button class="ghost" data-act="fieldEnter">현장 모드로 보기</button>
+          <button class="big" data-act="go" data-v="record">기록하기</button><button class="ghost" data-act="fieldEnter">현장 모드로 보기</button>
           <button class="big rd-acc" data-act="go" data-v="accident">사고 났어요</button>
         </div>
-        <div class="card"><h3>새 소식</h3><p class="mut">가상 예시예요</p>${DEMO_NEWS.filter(item=>isNewNews(item,readNews())).sort((a,b)=>(a[1]==='재해보험 변경'?0:1)-(b[1]==='재해보험 변경'?0:1)||b[3].localeCompare(a[3])).slice(0,2).map(item=>{const [id,category,title]=item;return `<p>${esc(category)}: ${esc(title)} ${isNewNews(item,readNews())?'새 소식':''}</p>`}).join('')}<button class="ghost" data-act="go" data-v="info">정보 보기</button></div><div class="card"><div class="kv"><span class="k">오늘 날씨</span><span class="v">${esc(weatherText(w))}</span></div>
+        <div class="card"><h3>새 소식</h3><p class="mut">가상 예시예요</p>${DEMO_NEWS.filter(item=>isNewNews(item,readNews())).sort((a,b)=>(a[1]==='재해보험 변경'?0:1)-(b[1]==='재해보험 변경'?0:1)||b[3].localeCompare(a[3])).slice(0,2).map(item=>{const [id,category,title]=item;return `<button class="ghost info-item" data-act="infoRead" data-v="${esc(id)}"><span>${esc(category)}</span><strong>${esc(title)}</strong><span>새 소식</span></button>`}).join('') || '<p>새 소식이 없어요</p>'}<button class="ghost" data-act="go" data-v="info">소식 모두 보기</button></div><div class="card"><div class="kv"><span class="k">오늘 날씨</span><span class="v">${esc(weatherText(w))}</span></div>
           <div class="kv"><span class="k">보험 정보</span><span class="v"><button class="lnk" data-act="go" data-v="insurance">보기</button></span></div></div>
         ${demo}
       </div></section>`;

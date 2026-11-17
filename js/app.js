@@ -146,7 +146,7 @@ function vLogin() {
     <p class="mut ctr" style="line-height:1.6">비밀번호 없이, 메일로 온 링크를 누르면 로그인돼요<br>(Firebase 이메일 링크 로그인)</p>
     ${demoNote}
     <div style="border-top:1px solid #EEE;margin:26px 0 16px"></div>
-    <button class="ghost" data-act="go" data-v="info">지원사업 정보 보기</button><button class="ghost" data-act="demoAccount">데모 계정으로 둘러보기</button>
+    <button class="ghost" data-act="go" data-v="info">지원사업 정보 보기</button><button class="ghost" data-act="demoAccount">데모로 시작하기</button>
     <p class="mut ctr">심사, 시연용 데모 계정은 바로 홈으로 이동</p>
   </div></section>`;
 }
