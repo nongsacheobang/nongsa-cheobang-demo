@@ -1,6 +1,6 @@
 // 서비스 워커: 정적 파일 캐시 (오프라인에서도 앱 화면이 열리게)
 // 파일을 바꾸면 CACHE 이름의 버전을 올린다.
-const CACHE = 'nongsa-cheobang-v0.4.174';
+const CACHE = 'nongsa-cheobang-v0.4.175';
 const ASSETS = [
   './',
   './index.html',

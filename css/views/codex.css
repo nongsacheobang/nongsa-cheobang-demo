@@ -46,3 +46,6 @@
 .accident-no-facility{display:none}.accident-facility-choice:has(#accident-facility option[value="no"]:checked) .accident-no-facility{display:block}
 
 .accident-receipt-count{display:none}.accident-checklist:has(#acc-check-receipt:checked) .accident-receipt-count{display:block}
+
+/* 기록 모아보기에서 뒤로 가기 터치 영역 확보 */
+.report-screen .hd .bk{width:52px;height:52px;flex:none}
