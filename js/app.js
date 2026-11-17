@@ -520,8 +520,9 @@ function vExcel() {
       <div class="card" style="background:#FAFAFA"><div class="mut">파일 이름</div><b style="font-size:13px;word-break:break-all">${esc(fileName(S.profile, from, to))}</b></div>
     </div>
     <div class="ftr">
+      <p id="excel-sheet-hint" role="status" ${S.excel.sheets.some(Boolean) ? 'hidden' : ''}>시트를 하나 이상 골라 주세요</p>
       ${from > to ? '<p role="alert">시작일이 종료일보다 늦어요</p>' : !recs.length ? '<p>이 기간에 기록이 없어요. 빈 양식으로 받을까요?</p>' : ''}
-      <button class="big sm" style="margin:0" data-act="downloadXlsx" ${!S.busy && from <= to ? '' : 'disabled'}>${S.busy ? '만드는 중' : recs.length ? '엑셀 다운로드 (.xlsx)' : '빈 양식 받기'}</button>
+      <button class="big sm" style="margin:0" data-act="downloadXlsx" ${!S.busy && from <= to && S.excel.sheets.some(Boolean) ? '' : 'disabled'}>${S.busy ? '만드는 중' : recs.length ? '엑셀 다운로드 (.xlsx)' : '빈 양식 받기'}</button>
       ${share ? `<button class="ghost" style="margin:8px 0 0" data-act="shareXlsx" ${recs.length ? '' : 'disabled'}>휴대폰 공유로 보내기</button>` : ''}
     </div></section>`;
 }
@@ -1101,7 +1102,7 @@ async function makeXlsx(share) {
 function onInput(e) {
   const el = e.target;
   if (S.route === 'claim') { updateClaimSource(el, S.claim?.input); updateClaimButton(); }
-  if (el.dataset.sheet !== undefined) { S.excel.sheets[Number(el.dataset.sheet)] = el.checked; return; }
+  if (el.dataset.sheet !== undefined) { S.excel.sheets[Number(el.dataset.sheet)] = el.checked; const selected = S.excel.sheets.some(Boolean), button = document.querySelector('[data-act="downloadXlsx"]'), hint = document.getElementById('excel-sheet-hint'), range = excelRange(); if (button) button.disabled = S.busy || range.from > range.to || !selected; if (hint) hint.hidden = selected; return; }
   const k = el.dataset.in;
   if (!k) return;
   const v = el.value;
