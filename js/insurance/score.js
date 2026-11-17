@@ -158,7 +158,7 @@ export function runReadinessTests() {
   const co = computeReadiness(cropOnly);
   check('작물만 피해 + 특보 없음은 경고', st(co, 'R-15') === UNMET && co.warnings.some((w) => w.id === 'R-15'), co.warnings.map((w) => w.id));
   cropOnly.alerts = [{ date: '2026-11-16', kind: '한파주의보' }];
-  check('작물만 피해라도 특보 있으면 경고 없음', st(computeReadiness(cropOnly), 'R-15') === MET, 0);
+  check('작물만 피해와 특보 이력은 조건 확인 필요', st(computeReadiness(cropOnly), 'R-15') === UNKNOWN, 0);
 
   // 사고 접수 늦음, 사진 없음
   const late = JSON.parse(JSON.stringify(SCENARIOS.da));
