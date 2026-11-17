@@ -37,3 +37,6 @@
 .tabs{height:70px}
 
 .claim-band{flex:none;padding:8px 14px;background:#fff1c2;color:#543d00;text-align:center;font-size:16px;font-weight:700;line-height:1.4}
+.record-spray-note{display:none}.record-form:has(#record-kind option[value="병해충 방제"]:checked) .record-spray-note{display:block}
+.home-b-bar{gap:6px}.home-b-bar h1{min-width:0}.home-b-bar .ghost{width:auto;margin:0;padding:6px 9px;white-space:nowrap}.home-b .bd>h2{font-size:20px;margin:4px 0 10px}.home-b .bd>.big{margin:0 0 8px}.home-b-weather{padding:8px 0}.home-b-score{margin:0 0 10px}.home-b-score .rd-notice{margin:6px 0}.home-b-score>.ghost{margin:4px 0}.home-b-todo h3{margin:0 0 4px}
+.home-b .bd{padding-top:8px}.home-b .rd-sig{padding:8px;margin-bottom:4px}.home-b-weather{padding:4px 0}.home-b-score>.ghost{margin:0}.home-b-todo{padding:10px}.home-b-todo .rd-todo{margin-top:4px}

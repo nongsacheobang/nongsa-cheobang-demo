@@ -18,8 +18,8 @@ export function signalCard(r, esc) {
       <p class="rd-sig-label">${esc(r.signal.label)}</p>
       <p class="rd-sig-sub">보험 가입 정보를 확인하면 준비도를 볼 수 있어요</p></div>`;
   }
-  return `<div class="rd-sig ${esc(r.signal.color)}" role="status" aria-label="준비도 ${r.score}점, ${esc(r.signal.label)}">
-    <p class="rd-sig-cap">준비도</p>
+  return `<div class="rd-sig ${esc(r.signal.color)}" role="status" aria-label="기록 준비도 ${r.score}점, ${esc(r.signal.label)}">
+    <p class="rd-sig-cap">기록 준비도</p>
     <p class="rd-sig-score"><b>${r.score}</b><span>점</span></p>
     <p class="rd-sig-label">${esc(r.signal.label)}</p>
     <p class="rd-sig-sub">${esc(r.stage.label)}</p></div>`;
@@ -34,34 +34,34 @@ export default {
     if (!r) return '<section class="scr"><div class="bd"><p class="empty">불러오는 중</p></div></section>';
     const why = explainChange(S.readinessPrev, r);
     const warn = r.warnings.map((f) => `<div class="rd-warn"><b>${esc(f.title)}</b><p>${esc(f.reason)}</p></div>`).join('');
-    const todo = r.todo.length
-      ? r.todo.map((t) => `<button class="rd-todo" data-act="go" data-v="${esc(t.go)}"><span>${esc(t.label)}</span><small>${esc(t.title)}</small></button>`).join('')
+    const openDamage = (ctx.records || []).filter(x=>x.type==='disaster' && !x.closed).sort((a,b)=>String(b.accident_date||b.workDate||'').localeCompare(String(a.accident_date||a.workDate||'')))[0];
+    const todos = openDamage ? [{id:'open_damage',label:'피해 기록 확인하기',title:'사고 때 할 일',go:'accident/'+openDamage.id},...r.todo] : r.todo;
+    const todo = todos.length
+      ? todos.slice(0,1).map((t) => `<button class="rd-todo" data-act="go" data-v="${esc(t.go)}"><span>${esc(t.label)}</span><small>${esc(t.title)}</small></button>`).join('')
       : '<p class="mut">지금 할 일이 없어요. 기록을 꾸준히 남겨 주세요.</p>';
+    const notice = p.settings?.disclaimer_seen_at ? `<details class="rd-notice"><summary>이 점수는 기록 상태만 보여줘요. 안내 보기</summary><p>${esc(r.notice)}</p></details>` : `<div class="rd-notice"><p>${esc(r.notice)}</p><button type="button" class="ghost" data-act="homeNoticeSeen">확인했어요</button></div>`;
     const w = S.todayWx;
     const demo = ctx.session?.demo
       ? `<div class="card rd-demo"><h3>시연 시나리오</h3><p class="mut">가상 데이터로 바꿔요. 지금 기록은 지워져요.</p>
           <div class="chips">${Object.entries(DEMO_SCENARIOS).map(([k, label]) => `<button class="chip" data-act="homeScenario" data-v="${k}">${esc(label)}</button>`).join('')}</div></div>`
       : '';
-    return `<section class="scr">
-      <div class="hd"><h1>${esc(p.farmName || '내 농장')}</h1><button class="ic" data-act="go" data-v="me" aria-label="내 농장">내</button></div>
+    const news = DEMO_NEWS.filter(item=>isNewNews(item,readNews())).sort((a,b)=>(a[1]==='재해보험 변경'?0:1)-(b[1]==='재해보험 변경'?0:1)||b[3].localeCompare(a[3]));
+    const first = news[0];
+    const date = new Intl.DateTimeFormat('ko-KR',{month:'long',day:'numeric',weekday:'long',timeZone:'Asia/Seoul'}).format(new Date());
+    return `<section class="scr home-b">
+      <div class="hd home-b-bar"><h1>${esc(p.farmName || '내 농장')}</h1><button class="ghost" data-act="fieldEnter">현장 모드</button><button class="ghost" data-act="go" data-v="accident">사고 났어요</button></div>
       <div class="bd">
-        ${signalCard(r, esc)}
-        ${!r.gate_open && salesPeriodNotice(todayStr()) ? `<p class="mut">${esc(salesPeriodNotice(todayStr()))}</p>` : ''}
-        ${why ? `<p class="rd-why">${esc(why)}</p>` : ''}
-        <p class="rd-notice">${esc(r.notice)}</p>
-        ${warn}
-        <div class="card"><h3>지금 할 일</h3>${todo}</div>
-        ${r.gate_open ? '<button class="ghost" data-act="go" data-v="factors">왜 이 점수인가요?</button>' : '<button class="ghost" data-act="go" data-v="insurance/guide">가입 안내 보기</button>'}
-        <div class="rd-quick">
-          <button class="big" data-act="go" data-v="record">기록하기</button><button class="ghost" data-act="fieldEnter">현장 모드로 보기</button>
-          <button class="big rd-acc" data-act="go" data-v="accident">사고 났어요</button>
-        </div>
-        <div class="card"><h3>새 소식</h3><p class="mut">가상 예시예요</p>${DEMO_NEWS.filter(item=>isNewNews(item,readNews())).sort((a,b)=>(a[1]==='재해보험 변경'?0:1)-(b[1]==='재해보험 변경'?0:1)||b[3].localeCompare(a[3])).slice(0,2).map(item=>{const [id,category,title]=item;return `<button class="ghost info-item" data-act="infoRead" data-v="${esc(id)}"><span>${esc(category)}</span><strong>${esc(title)}</strong><span>새 소식</span></button>`}).join('') || '<p>새 소식이 없어요</p>'}<button class="ghost" data-act="go" data-v="info">소식 모두 보기</button></div><div class="card"><div class="kv"><span class="k">오늘 날씨</span><span class="v">${esc(weatherText(w))}</span></div>
-          <div class="kv"><span class="k">보험 정보</span><span class="v"><button class="lnk" data-act="go" data-v="insurance">보기</button></span></div></div>
+        <p class="mut">${esc(date)}, ${esc((p.houses||[]).filter(h=>!h.hidden&&h.crop).length)}동</p><h2>오늘 한 일을 기록해 볼까요?</h2>
+        <button class="big" data-act="go" data-v="record">기록하기</button>
+        <div class="home-b-weather">오늘 날씨 ${esc(weatherText(w))}</div>
+        <div class="home-b-score">${signalCard(r,esc)}<p>피해가 나면 확인하는 기록(정식일, 관리, 출하)을 얼마나 남겼는지예요</p>${why?`<p class="rd-why">${esc(why)}</p>`:''}${notice}${warn}${r.gate_open?'<button class="ghost" data-act="go" data-v="factors">자세히 보기</button>':'<button class="ghost" data-act="go" data-v="insurance/guide">가입 안내 보기</button>'}</div>
+        <div class="card home-b-todo"><h3>지금 할 일</h3>${todo}${todos.length>1?`<button class="ghost" data-act="go" data-v="factors">${todos.length-1}개 더</button>`:''}</div>
+        <div class="card"><h3>새 소식</h3><p class="mut">가상 예시예요</p>${first?`<button class="ghost info-item" data-act="infoRead" data-v="${esc(first[0])}"><span>${esc(first[1])}</span><strong>${esc(first[2])}</strong></button>`:'<p>새 소식이 없어요</p>'}<button class="ghost" data-act="go" data-v="info">${news.length>1?`${news.length-1}건 더`:'소식 보기'}</button></div>
         ${demo}
       </div></section>`;
   },
   actions: {
+    async homeNoticeSeen(el,ctx) { if (el.disabled) return; el.disabled=true; try { ctx.S.profile=await ctx.store.saveProfile(ctx.session.uid,{...ctx.profile,settings:{...(ctx.profile.settings||{}),disclaimer_seen_at:new Date().toISOString()}}); ctx.rerender(); } catch { el.disabled=false; ctx.toast('안내 확인을 저장하지 못했어요'); } },
     async homeScenario(el, ctx) {
       const key = el.dataset.v;
       if (!ctx.session?.demo || ctx.session.uid !== 'demo' || !ctx.profile?.demo || !Object.hasOwn(DEMO_SCENARIOS,key)) { ctx.toast('시연 계정에서만 바꿀 수 있어요'); return; }

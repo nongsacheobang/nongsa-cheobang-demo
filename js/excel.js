@@ -111,7 +111,7 @@ export function buildReadinessRows(readiness, today) {
   const summary = [
     ['고지', readiness.notice],
     ['기준일', today || ''],
-    ['준비도', readiness.score == null ? '' : readiness.score],
+    ['기록 준비도', readiness.score == null ? '' : readiness.score],
     ['신호등', readiness.signal?.label || ''],
     ['농사 단계', readiness.stage?.label || ''],
     ['경고', readiness.warnings.map((w) => w.title).join(', ')],
@@ -132,7 +132,7 @@ export function buildReportSheetRows(profile, records, readiness, today) {
 
 export async function buildWorkbook(profile, session, records, readiness = null, selectedSheets = [true, true, true, !!readiness], reportRecords = records) {
   if (!Array.isArray(selectedSheets) || selectedSheets.length !== 4 || !selectedSheets.some(Boolean)) throw new Error('시트를 하나 이상 골라 주세요');
-  if (selectedSheets[3] && !readiness) throw new Error('준비도 보고서를 만들 수 없어요');
+  if (selectedSheets[3] && !readiness) throw new Error('기록 모아보기를 만들 수 없어요');
   const XLSX = await import(XLSX_URL);
   const rows = buildSheet1Rows(profile, records);
 
@@ -206,7 +206,7 @@ export async function buildWorkbook(profile, session, records, readiness = null,
   if (readiness && selectedSheets[3]) {
     const ws4 = XLSX.utils.aoa_to_sheet(buildReportSheetRows(profile, reportRecords, readiness, todayStr()));
     ws4['!cols'] = [10, 12, 30, 10, 8, 50, 60, 20].map((w) => ({ wch: w }));
-    XLSX.utils.book_append_sheet(wb, ws4, '준비도 보고서');
+    XLSX.utils.book_append_sheet(wb, ws4, '기록 모아보기');
   }
   wb.Props = { Title: '표준 영농기록장', Author: session?.email || '', CreatedDate: new Date() };
   const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });

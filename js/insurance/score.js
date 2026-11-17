@@ -8,9 +8,9 @@ import { evaluateAll, MET, UNMET, NA, UNKNOWN, planted, latestDisaster, HARVEST_
 export const NOTICE = '보험금 지급을 보장하지 않으며, 손해평가, 손해사정이 아닙니다.';
 
 export const SIGNALS = {
-  ready: { key: 'ready', label: '준비됨', color: 'green' },
-  partial: { key: 'partial', label: '보완 필요', color: 'yellow' },
-  risk: { key: 'risk', label: '위험', color: 'red' },
+  ready: { key: 'ready', label: '기록이 잘 쌓였어요', color: 'green' },
+  partial: { key: 'partial', label: '기록을 더 하면 좋아요', color: 'yellow' },
+  risk: { key: 'risk', label: '기록이 적어요', color: 'red' },
   gate: { key: 'gate', label: '가입이 먼저예요', color: 'gray' },
 };
 
@@ -42,7 +42,7 @@ export function computeReadiness(ctx) {
   const recordedDate = r => { const time = (r.availableAt || r.createdAt) && new Date(r.availableAt || r.createdAt); return time && Number.isFinite(time.getTime()) ? new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(time) : r.workDate; };
   const firstDate = predicate => records.filter(predicate).map(recordedDate).filter(d => daysBetween(d, ctx.today) != null && daysBetween(d, ctx.today) >= 0).sort()[0];
   const triggers = { 'R-05': currentHarvestRecords(ctx).map(recordedDate).filter(d => daysBetween(d, ctx.today) != null && daysBetween(d, ctx.today) >= 0).sort()[0], 'R-06': firstDate(r => r.task === '정식'), 'R-07': firstDate(r => r.task === '정식'), 'R-08': firstDate(r => !!r.pest_seen && daysBetween(r.workDate, ctx.today) != null && daysBetween(r.workDate, ctx.today) >= 0 && daysBetween(r.workDate, ctx.today) <= 30), 'R-10': firstDate(r => r.task === '정식') };
-  for (const f of factors) { const age = daysBetween(triggers[f.id], ctx.today); if (f.state !== MET && f.state !== NA && !(f.id === 'R-08' && Number(f.progress) > 0) && age != null && age >= 0 && age < 7) { f.pending = true; f.basis += ' 새 항목은 첫 7일 동안 점수에서 제외하는 앱 기준이에요.'; } }
+  for (const f of factors) { const age = daysBetween(triggers[f.id], ctx.today); if (f.weight !== 'info' && f.state !== MET && f.state !== NA && !(f.id === 'R-08' && Number(f.progress) > 0) && age != null && age >= 0 && age < 7) { f.pending = true; f.basis += ' 새 항목은 첫 7일 동안 점수에서 제외하는 앱 기준이에요.'; } }
   const stage = stageOf(ctx);
   const gates = factors.filter((f) => f.weight === 'gate');
   const warnings = factors.filter((f) => f.weight === 'warn' && f.state === UNMET);
@@ -61,12 +61,20 @@ export function computeReadiness(ctx) {
   }
 
   // 낮추는 요인(부족, 모름, 경고)을 위에, 올리는 요인(충족)을 아래에
-  const weightOf = (f) => (f.weight === 'gate' ? 1000 : f.weight === 'warn' ? 500 : f.weight);
+  const weightOf = (f) => (f.weight === 'gate' ? 1000 : f.weight === 'warn' ? 500 : f.weight === 'info' ? 0 : f.weight);
   const lowering = factors.filter((f) => f.state === UNMET || f.state === UNKNOWN).sort((a, b) => weightOf(b) - weightOf(a));
   const raising = factors.filter((f) => f.state === MET);
   // 지금 할 일: 사고 직후면 사고 대응 요인 먼저, 그다음 가중치 큰 순서로 3개
   const pri = (f) => (stage.key === 'accident' && f.group === '사고 대응' ? 10000 : 0) + weightOf(f);
   const todo = lowering.filter((f) => f.todo).sort((a, b) => pri(b) - pri(a)).slice(0, 3).map((f) => ({ id: f.id, label: f.todo.label, go: f.todo.go, title: f.title }));
+
+  const activeHouses = (ctx.profile?.houses || []).filter(h => !h.hidden && h.crop);
+  const unresolved = activeHouses.filter(h => {
+    const actions = records.filter(r => (r.houseIds || []).includes(h.id) && r.task === '하우스 점검' && (String(r.memo || '').includes('피복, 골조 점검, 문제 발견') || String(r.memo || '') === '수리'));
+    actions.sort((a,b) => String(b.workDate || '').localeCompare(String(a.workDate || '')) || String(b.createdAt || b.availableAt || '').localeCompare(String(a.createdAt || a.availableAt || '')) || Number(String(b.memo || '').includes('문제 발견')) - Number(String(a.memo || '').includes('문제 발견')));
+    return actions.length && String(actions[0].memo || '').includes('문제 발견');
+  });
+  if (unresolved.length) { const repairTodo = {id:'facility_repair',label:'수리했어요 기록하기',go:'field',title:unresolved.map(h=>h.name).join(', ') + ' 점검 문제'}; if (stage.key === 'accident') todo.push(repairTodo); else todo.unshift(repairTodo); }
 
   return {
     gate_open: gateOpen,
@@ -86,7 +94,7 @@ export function computeReadiness(ctx) {
 export function explainChange(prev, cur) {
   if (!prev || prev.score == null || cur.score == null) return '';
   const diff = cur.score - prev.score;
-  if (cur.stage?.key === 'accident' && prev.stage?.key !== 'accident' && diff < 0) return `사고 대응 항목이 새로 생겼어요. 준비도 ${diff}점`;
+  if (cur.stage?.key === 'accident' && prev.stage?.key !== 'accident') return diff < 0 ? `사고 대응 항목이 새로 생겼어요. 준비도 ${diff}점` : '사고 대응 항목이 새로 생겼어요';
   if (!diff) return '';
   const before = new Map(prev.factors.map((f) => [f.id, f]));
   const credit = f => !f || f.pending || f.state === NA ? 0 : f.state === MET ? 1 : Math.max(0, Math.min(1, Number(f.progress) || 0));

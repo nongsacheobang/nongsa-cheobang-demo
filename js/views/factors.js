@@ -4,7 +4,7 @@
 
 import { signalCard, STATE_LABEL } from './home.js';
 
-const WEIGHT_TEXT = (w) => (w === 'gate' ? '꼭 필요' : w === 'warn' ? '경고' : `${w}점`);
+const WEIGHT_TEXT = (w) => (w === 'gate' ? '꼭 필요' : w === 'warn' ? '경고' : w === 'info' ? '점수 제외' : `${w}점`);
 
 function row(f, esc) {
   const cls = f.state === 'met' ? 'ok' : f.weight === 'warn' && f.state === 'unmet' ? 'bad' : f.state === 'na' ? 'na' : 'low';
@@ -19,7 +19,7 @@ function row(f, esc) {
 export default {
   route: 'factors',
   tab: 'coverage',
-  title: '준비도 요인',
+  title: '기록 준비도 요인',
   render(ctx) {
     const { esc, readiness: r } = ctx;
     if (!r) return '<section class="scr"><div class="bd"><p class="empty">불러오는 중</p></div></section>';
@@ -28,12 +28,12 @@ export default {
     return `<section class="scr">
       <div class="hd"><button class="bk" data-act="back" aria-label="뒤로">&lt;</button><h1>왜 이 점수인가요?</h1></div>
       <div class="bd">
-        ${signalCard(r, esc)}
-        <p class="rd-notice">${esc(r.notice)}</p>
+        ${signalCard(r, esc)}<p>피해가 나면 확인하는 기록(정식일, 관리, 출하)을 얼마나 남겼는지예요</p>
+        ${ctx.profile?.settings?.disclaimer_seen_at ? `<details class="rd-notice"><summary>이 점수는 기록 상태만 보여줘요. 안내 보기</summary><p>${esc(r.notice)}</p></details>` : `<div class="rd-notice"><p>${esc(r.notice)}</p><button class="ghost" data-act="homeNoticeSeen">확인했어요</button></div>`}
         <div class="card"><h3>확인하거나 보완할 것 ${r.lowering.length}개</h3>${order(r.lowering).map((f) => row(f, esc)).join('') || '<p class="mut">없어요</p>'}</div>
         <div class="card"><h3>점수를 올린 것 ${r.raising.length}개</h3>${order(r.raising).map((f) => row(f, esc)).join('') || '<p class="mut">아직 없어요</p>'}</div>
         ${na.length ? `<div class="card"><h3>지금은 해당 없음 ${na.length}개</h3><p class="mut">${na.map((f) => esc(f.title)).join(', ')}</p></div>` : ''}
-        <button class="ghost" data-act="go" data-v="report">준비도 보고서 보기</button><p class="mut ctr">점수 기준은 시험용 임시값이에요. 전문가 검토 뒤 바뀔 수 있어요.</p>
+        <button class="ghost" data-act="go" data-v="report">기록 모아보기</button><p class="mut ctr">점수 기준은 시험용 임시값이에요. 전문가 검토 뒤 바뀔 수 있어요.</p>
       </div></section>`;
   },
   actions: {},

@@ -158,13 +158,13 @@ export const FACTORS = [
     basis: '평소 해야 할 관리를 하지 않아 생긴 손해는 보상하지 않을 수 있어요. 14일에 2건은 앱 기준이에요',
     evaluate(ctx) {
       if (!planted(ctx)) return { state: NA, reason: '정식 전이에요', todo: null };
-      const n = works(ctx).filter((r) => r.stage === '작물관리' && within(r.workDate, ctx.today, 14)).length;
+      const n = works(ctx).filter((r) => r.stage === '작물관리' && r.task !== PEST_CONTROL && within(r.workDate, ctx.today, 14)).length;
       if (n >= 2) return { state: MET, reason: `최근 2주 관리 기록 ${n}건`, todo: null };
-      return { state: UNMET, reason: `최근 2주 관리 기록이 ${n}건이에요(2건 이상 권장)`, todo: { label: '관리 기록하기', go: 'record/작물관리' } };
+      return { state: UNMET, reason: n === 0 ? '최근 2주 관리 기록이 없어요. 하셨다면 남겨 두세요' : `최근 2주 관리 기록이 ${n}건이에요. 2건은 앱 기준이에요`, todo: { label: '관리 기록하기', go: 'record/작물관리' } };
     },
   },
   {
-    id: 'R-08', group: '관리', weight: 10, title: '병해충 발견 뒤 방제',
+    id: 'R-08', group: '관리', weight: 'info', title: '병해충 발견 뒤 방제',
     basis: '병해충 피해와 방제 기록은 구분해요. 7일은 앱 기준이며 방제 기록이 보상을 뜻하지 않아요',
     evaluate(ctx) {
       const seen = works(ctx).filter((r) => r.pest_seen && within(r.workDate, ctx.today, 30));
@@ -172,7 +172,7 @@ export const FACTORS = [
       const late = seen.filter((s) => !(s.houseIds || []).length || !(s.houseIds || []).every(id => works(ctx).some((r) => isTask(r, PEST_CONTROL) && (r.houseIds || []).includes(id) && (!r.control_target || r.control_target === s.pest_seen) && (() => { const d = daysBetween(s.workDate, r.workDate); return d != null && d >= 0 && d <= 7; })())));
       if (!late.length) return { state: MET, reason: '병해충을 본 뒤 7일 안에 방제했어요', todo: null };
       const previouslyAddressed = late.length < seen.length;
-      return { state: UNMET, progress: previouslyAddressed ? 1 : 0, reason: previouslyAddressed ? '이전에 대응한 기록은 점수에 반영했어요. 새로 발견한 병해충의 방제 기록을 확인해 주세요' : '병해충을 본 뒤 방제 기록이 없어요', todo: { label: '방제 기록하기', go: 'record/병해충 방제' } };
+      return { state: UNMET, progress: previouslyAddressed ? 1 : 0, reason: previouslyAddressed ? '새로 발견한 병해충의 방제 기록을 확인해 주세요. 이 항목은 점수에 반영하지 않아요' : '병해충을 본 뒤 방제 기록이 없어요', todo: { label: '방제 기록하기', go: 'record/병해충 방제' } };
     },
   },
   {
@@ -192,7 +192,7 @@ export const FACTORS = [
       // 동별로 본다(기획안 v02 3-2). 작물이 있는 동마다 최근 30일 사진이 있어야 충족(Codex 반례 11/16)
       const houses = cropHouses(ctx);
       if (!houses.length) return { state: UNKNOWN, reason: '동과 작물을 먼저 넣어 주세요', todo: { label: '농장 정보 입력', go: 'farm' } };
-      const noPhoto = houses.filter((h) => !works(ctx).some((r) => onHouse(r, h) && Number(r.photo_count) > 0 && within(r.workDate, ctx.today, 30)));
+      const noPhoto = houses.filter((h) => !works(ctx).some((r) => onHouse(r, h) && r.task !== PEST_CONTROL && Number(r.photo_count) > 0 && within(r.workDate, ctx.today, 30)));
       if (!noPhoto.length) return { state: MET, reason: '동마다 최근 한 달 안에 작물 사진이 있어요', todo: null };
       return { state: UNMET, progress: (houses.length - noPhoto.length) / houses.length, reason: `${noPhoto.map((h) => h.name).join(', ')} 최근 한 달 작물 사진이 없어요`, todo: { label: '사진과 함께 기록', go: 'record/작물관리' } };
     },
