@@ -1,6 +1,6 @@
 // 서비스 워커: 정적 파일 캐시 (오프라인에서도 앱 화면이 열리게)
 // 파일을 바꾸면 CACHE 이름의 버전을 올린다.
-const CACHE = 'nongsa-cheobang-v0.4.66';
+const CACHE = 'nongsa-cheobang-v0.4.67';
 const ASSETS = [
   './',
   './index.html',
@@ -96,10 +96,10 @@ self.addEventListener('fetch', (e) => {
   if (same && !ASSETS.some((asset) => new URL(asset, self.registration.scope).href === url.href)) return;
 
   // 정적 파일: 캐시 먼저 보여주고 뒤에서 갱신 (stale-while-revalidate)
-  const cache = caches.open(CACHE);
-  const hit = cache.then(c => c.match(req));
+  const cache = caches.open(CACHE).catch(() => null);
+  const hit = cache.then(c => c ? c.match(req).catch(() => null) : null);
   const net = Promise.all([cache, hit]).then(([c, cached]) => fetch(req, { cache: 'no-cache' }).then(async res => {
-    if (res && (res.ok || res.type === 'opaque')) await c.put(req, res.clone()).catch(() => {});
+    if (c && res && (res.ok || res.type === 'opaque')) await c.put(req, res.clone()).catch(() => {});
     return res;
   }).catch(() => cached));
   e.waitUntil(net.then(() => {}));
