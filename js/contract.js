@@ -139,7 +139,7 @@ export function toViewKey(p) {
 }
 
 // 바뀐 칸을 칸 단위 경로로 (자재는 materials[i].필드). 자재 하나만 고쳐도 다른 칸 표시는 남는다(V-2)
-const SKIP_DIFF = ['updated_at', 'edited_fields', 'needs_confirm', 'missing_fields', 'status', 'is_backfill', 'ask_count', 'plots'];
+const SKIP_DIFF = ['updated_at', 'edited_fields', 'needs_confirm', 'missing_fields', 'status', 'is_backfill', 'ask_count', 'plots', 'edit_history'];
 export function changedPaths(oldDoc, newDoc) {
   const out = [];
   const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
@@ -289,6 +289,7 @@ export function fromRecordDoc(doc) {
     createdAt: doc.created_at || null,
     availableAt: doc.available_at || null,
     updatedAt: doc.updated_at || null,
+    editHistory: Array.isArray(doc.edit_history) ? doc.edit_history.map(item => ({ at: item.at, fields: [...(item.fields || [])] })) : [],
   };
   if (!st.type) delete st.type;
   if (doc.variety) st.variety = doc.variety;
@@ -324,6 +325,8 @@ export function mergeForUpdate(oldDoc, editedState, ctx = {}) {
   // 카드의 [맞아요]처럼 값은 그대로 두고 확인만 한 칸 (V-2)
   const confirmed = (ctx.confirmedFields || []).map((k) => toDocPath(k, fresh.materials));
   out.edited_fields = [...new Set([...(oldDoc.edited_fields || []), ...changed])];
+  // 이전 수정 횟수와 각 수정 시점의 변경 항목을 보존한다. 원본 값은 기존 기록과 분리해 바꾸지 않는다.
+  out.edit_history = [...(Array.isArray(oldDoc.edit_history) ? oldDoc.edit_history : []), ...(changed.length ? [{ at: now, fields: changed }] : [])];
   // 정확히 그 칸이 바뀐 경우만 뺀다. 자재가 통째로 바뀌거나 빠지면(materials[i]) 그 자재의 표시만 뺀다
   const hit = (p, c) => p === c || p.startsWith(c + '.') || p.startsWith(c + '[');
   out.needs_confirm = (oldDoc.needs_confirm || []).filter((p) => !changed.some((c) => hit(p, c)) && !confirmed.includes(p));
