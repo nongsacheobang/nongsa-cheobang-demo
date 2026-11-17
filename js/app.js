@@ -567,7 +567,7 @@ function vMe() {
         ? '<button class="ghost" data-act="removeDemo">가상 데모 일지 지우기</button>'
         : '<button class="ghost" data-act="addDemo">가상 데모 일지 넣기 (20건)</button>') : ''}
       ${S.installEvt ? '<button class="ghost" data-act="install">홈 화면에 설치</button>' : ''}
-      <button class="ghost danger" data-act="logout">로그아웃</button>
+      <button class="ghost danger" data-act="logout">로그아웃</button><div id="logout-confirm" hidden role="alert"><p>로그아웃할까요?</p><button class="ghost" data-act="logoutCancel">계속 사용하기</button><button class="ghost danger" data-act="logoutConfirm">로그아웃하기</button></div>
       <p class="mut ctr" style="margin-top:10px">농사 처방 v${APP_VERSION}, 저장소 ${esc(CONFIG.storage)}, 로그인 ${esc(CONFIG.auth)}, 날씨 ${esc(CONFIG.weather)}</p>
     </div></section>`;
 }
@@ -733,8 +733,9 @@ const ACTIONS = {
     await reload({ resetPrev: true });
     go('home');
   },
-  async logout() {
-    if (!confirm('로그아웃할까요?')) return;
+  logout() { const box = document.getElementById('logout-confirm'); if (box) box.hidden = false; },
+  logoutCancel() { const box = document.getElementById('logout-confirm'); if (box) box.hidden = true; },
+  async logoutConfirm() {
     await auth.signOut();
     S.store = await getStore();
     S.agent = null;
