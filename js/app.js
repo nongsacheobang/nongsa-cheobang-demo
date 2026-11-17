@@ -1185,8 +1185,14 @@ async function start() {
   }
   if (S.session?.demo && S.session.provider === 'demo-account') S.store = await getDemoStore();
   if (S.session) {
-    S.profile = await S.store.getProfile(S.session.uid);
-    await reload();
+    try {
+      S.profile = await S.store.getProfile(S.session.uid);
+      await reload();
+    } catch (e) {
+      console.error(e);
+      $app.innerHTML = '<section class="scr"><div class="bd"><h1>기록을 불러오지 못했어요</h1><p>저장된 자료를 확인할 수 없어 화면을 열지 않았어요. 자료를 지우지 말고 관리자에게 알려 주세요.</p></div></section>';
+      return;
+    }
   }
   S.todayWx = await getWeather(todayStr(), S.profile);
   render();

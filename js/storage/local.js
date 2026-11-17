@@ -4,14 +4,6 @@
 
 const PFX = 'nc:';
 
-function read(key, fallback) {
-  try {
-    const v = localStorage.getItem(PFX + key);
-    return v ? JSON.parse(v) : fallback;
-  } catch (e) {
-    return fallback;
-  }
-}
 // 기존 자료를 갱신할 때는 읽기 오류나 잘못된 형식을 빈 자료로 바꾸지 않는다.
 function readForWrite(key, fallback, valid) {
   const raw = localStorage.getItem(PFX + key);
@@ -43,7 +35,7 @@ export const localStore = {
   name: 'local',
 
   async getProfile(uid) {
-    return read('profile:' + uid, null);
+    return profileForWrite(uid);
   },
 
   async saveProfile(uid, profile) {
@@ -56,7 +48,7 @@ export const localStore = {
 
   // opts.from/opts.to: 'YYYY-MM-DD' (포함). 작업일 내림차순, 같은 날은 작성 시각 내림차순
   async listRecords(uid, opts = {}) {
-    let list = read('records:' + uid, []);
+    let list = recordsForWrite(uid);
     if (opts.from) list = list.filter((r) => dateOf(r) >= opts.from);
     if (opts.to) list = list.filter((r) => dateOf(r) <= opts.to);
     list.sort((a, b) => (dateOf(b).localeCompare(dateOf(a))) || createdOf(b).localeCompare(createdOf(a)));
@@ -64,7 +56,7 @@ export const localStore = {
   },
 
   async getRecord(uid, id) {
-    return read('records:' + uid, []).find((r) => idOf(r) === id) || null;
+    return recordsForWrite(uid).find((r) => idOf(r) === id) || null;
   },
 
   // id가 없으면 새로 만들고, 있으면 수정. createdAt은 처음 저장 시각을 유지, updatedAt은 수정할 때만 갱신
