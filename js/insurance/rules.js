@@ -115,17 +115,18 @@ export const FACTORS = [
   },
   {
     id: 'R-06', group: '재배 기록', weight: 5, title: '모종 구입 증빙',
-    basis: '재배 일정을 확인할 때 모종 구입 내역을 볼 수 있어요',
+    basis: '재배 일정을 확인할 때 모종 구입 내역, 정식 사진이나 출하 기록을 볼 수 있어요',
     evaluate(ctx) {
-      if (!planted(ctx)) return { state: NA, reason: '정식 전이에요', todo: null };
-      const ok = works(ctx).some((r) => (r.materials || []).some((m) => m.kind === SEED && m.action === '구입') || (isTask(r, PLANTING) && Number(r.photo_count) > 0));
-      if (ok) return { state: MET, reason: '모종 구입 기록이나 정식 사진이 있어요', todo: null };
+      const shipped = works(ctx).some((r) => isTask(r, '출하'));
+      if (!planted(ctx) && !shipped) return { state: NA, reason: '정식 전이에요', todo: null };
+      const ok = shipped || works(ctx).some((r) => (r.materials || []).some((m) => m.kind === SEED && m.action === '구입') || (isTask(r, PLANTING) && Number(r.photo_count) > 0));
+      if (ok) return { state: MET, reason: '모종 구입 기록, 정식 사진이나 출하 기록이 있어요', todo: null };
       return { state: UNMET, reason: '모종 구입 영수증이나 정식 사진이 없어요', todo: { label: '모종 구입 기록', go: 'record/모종 구입' } };
     },
   },
   {
     id: 'R-07', group: '관리', weight: 15, title: '꾸준한 관리 기록',
-    basis: '평소 해야 할 관리를 하지 않아 생긴 손해는 보상하지 않을 수 있어요',
+    basis: '평소 해야 할 관리를 하지 않아 생긴 손해는 보상하지 않을 수 있어요. 14일에 2건은 앱 기준이에요',
     evaluate(ctx) {
       if (!planted(ctx)) return { state: NA, reason: '정식 전이에요', todo: null };
       const n = works(ctx).filter((r) => r.stage === '작물관리' && within(r.workDate, ctx.today, 14)).length;
@@ -135,7 +136,7 @@ export const FACTORS = [
   },
   {
     id: 'R-08', group: '관리', weight: 10, title: '병해충 발견 뒤 방제',
-    basis: '병해충으로 생긴 손해는 보상하지 않을 수 있어요. 빨리 막는 것이 중요해요',
+    basis: '병해충 피해와 방제 기록은 구분해요. 7일은 앱 기준이며 방제 기록이 보상을 뜻하지 않아요',
     evaluate(ctx) {
       const seen = works(ctx).filter((r) => r.pest_seen && within(r.workDate, ctx.today, 30));
       if (!seen.length) return { state: NA, reason: '최근 병해충 발견 기록이 없어요', todo: null };
@@ -146,7 +147,7 @@ export const FACTORS = [
   },
   {
     id: 'R-09', group: '시설', weight: 10, title: '하우스 점검과 보수',
-    basis: '하우스가 낡거나 고장 나서 생긴 손해는 보상하지 않을 수 있어요',
+    basis: '하우스가 낡거나 고장 나서 생긴 손해는 보상하지 않을 수 있어요. 90일은 앱 기준이에요',
     evaluate(ctx) {
       const ok = works(ctx).some((r) => FACILITY_CHECK_TASKS.includes(r.task) && within(r.workDate, ctx.today, 90));
       if (ok) return { state: MET, reason: '최근 3개월 안에 하우스 점검 기록이 있어요', todo: null };
@@ -155,7 +156,7 @@ export const FACTORS = [
   },
   {
     id: 'R-10', group: '관리', weight: 5, title: '생육 사진',
-    basis: '피해 전 작물 상태를 보여 줄 수 있어요',
+    basis: '피해 전 작물 상태를 보여 줄 수 있어요. 30일은 앱 기준이에요',
     evaluate(ctx) {
       if (!planted(ctx)) return { state: NA, reason: '정식 전이에요', todo: null };
       // 동별로 본다(기획안 v02 3-2). 작물이 있는 동마다 최근 30일 사진이 있어야 충족(Codex 반례 11/16)
@@ -206,7 +207,7 @@ export const FACTORS = [
   },
   {
     id: 'R-14', group: '사고 대응', weight: 5, title: '기상특보와 사고일이 맞음',
-    basis: '사고일에 우리 지역에 기상특보가 있었다면 재해를 보여 주는 근거가 돼요',
+    basis: '사고일 무렵의 기상특보는 참고 자료예요. 전후 1일은 앱 기준이며 실제 발효 기간은 따로 확인해요',
     evaluate(ctx) {
       const d = latestDisaster(ctx);
       if (!d) return { state: NA, reason: '사고 기록이 없어요', todo: null };
