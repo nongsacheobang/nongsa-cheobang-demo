@@ -102,8 +102,8 @@ export function buildDemoRecords(profile = DEMO_PROFILE, author = '김데모', e
 // 오늘 기준 며칠 전으로 만든다. (가) 가입만, 기록 없음 (나) 정식, 관리, 점검, 사진 (다) (나) + 강풍 사고 대응
 // 모든 값은 가상. 화면의 시연 버튼(11/19 M-04)에서 고른다.
 export const DEMO_SCENARIOS = {
-  ga: '(가) 위험',
-  na: '(나) 준비됨',
+  ga: '(가) 기록이 적어요',
+  na: '(나) 기록이 잘 쌓였어요',
   da: '(다) 사고 직후',
 };
 
