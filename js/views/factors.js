@@ -23,15 +23,18 @@ export default {
   render(ctx) {
     const { esc, readiness: r } = ctx;
     if (!r) return '<section class="scr"><div class="bd"><p class="empty">불러오는 중</p></div></section>';
-    const na = r.factors.filter((f) => f.state === 'na');
+    const na = r.factors.filter((f) => f.state === 'na' && f.weight !== 'info');
+    const info = r.factors.filter(f => f.weight === 'info');
+    const lowering = r.lowering.filter(f => f.weight !== 'info'), raising = r.raising.filter(f => f.weight !== 'info');
     const order = list => r.stage?.key === 'accident' ? [...list].sort((a,b) => (a.group === '사고 대응' ? 0 : 1) - (b.group === '사고 대응' ? 0 : 1)) : list;
     return `<section class="scr">
       <div class="hd"><button class="bk" data-act="back" aria-label="뒤로">&lt;</button><h1>왜 이 점수인가요?</h1></div>
       <div class="bd">
         ${signalCard(r, esc)}<p>피해가 나면 확인하는 기록(정식일, 관리, 출하)을 얼마나 남겼는지예요</p>
         ${ctx.profile?.settings?.disclaimer_seen_at ? `<details class="rd-notice"><summary>이 점수는 기록 상태만 보여줘요. 안내 보기</summary><p>${esc(r.notice)}</p></details>` : `<div class="rd-notice"><p>${esc(r.notice)}</p><button class="ghost" data-act="homeNoticeSeen">확인했어요</button></div>`}
-        <div class="card"><h3>확인하거나 보완할 것 ${r.lowering.length}개</h3>${order(r.lowering).map((f) => row(f, esc)).join('') || '<p class="mut">없어요</p>'}</div>
-        <div class="card"><h3>점수를 올린 것 ${r.raising.length}개</h3>${order(r.raising).map((f) => row(f, esc)).join('') || '<p class="mut">아직 없어요</p>'}</div>
+        <div class="card"><h3>확인하거나 보완할 것 ${lowering.length}개</h3>${order(lowering).map((f) => row(f, esc)).join('') || '<p class="mut">없어요</p>'}</div>
+        <div class="card"><h3>점수를 올린 것 ${raising.length}개</h3>${order(raising).map((f) => row(f, esc)).join('') || '<p class="mut">아직 없어요</p>'}</div>
+        ${info.length ? `<div class="card"><h3>점수에 넣지 않는 안내</h3>${info.map(f => row(f, esc)).join('')}</div>` : ''}
         ${na.length ? `<div class="card"><h3>지금은 해당 없음 ${na.length}개</h3><p class="mut">${na.map((f) => esc(f.title)).join(', ')}</p></div>` : ''}
         <button class="ghost" data-act="go" data-v="report">기록 모아보기</button><p class="mut ctr">점수 기준은 시험용 임시값이에요. 전문가 검토 뒤 바뀔 수 있어요.</p>
       </div></section>`;
