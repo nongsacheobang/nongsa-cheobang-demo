@@ -74,7 +74,7 @@ export function computeReadiness(ctx) {
     actions.sort((a,b) => String(b.workDate || '').localeCompare(String(a.workDate || '')) || String(b.createdAt || b.availableAt || '').localeCompare(String(a.createdAt || a.availableAt || '')) || Number(String(b.memo || '').includes('문제 발견')) - Number(String(a.memo || '').includes('문제 발견')));
     return actions.length && String(actions[0].memo || '').includes('문제 발견');
   });
-  if (unresolved.length) { const repairTodo = {id:'facility_repair',label:'수리했어요 기록하기',go:'field',title:unresolved.map(h=>h.name).join(', ') + ' 점검 문제'}; if (stage.key === 'accident') todo.push(repairTodo); else todo.unshift(repairTodo); }
+  if (unresolved.length) { const repairTodo = {id:'facility_repair',label:unresolved[0].name+' 수리했어요 기록하기',go:'field',houseId:unresolved[0].id,title:unresolved[0].name + ' 점검 문제'}; if (stage.key === 'accident') todo.push(repairTodo); else todo.unshift(repairTodo); }
 
   return {
     gate_open: gateOpen,
