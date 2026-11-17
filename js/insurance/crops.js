@@ -41,3 +41,10 @@ export const CROP_INSURANCE = {
 export function cropInsurance(crop) {
   return CROP_INSURANCE[crop] || { item: null, facility_crop: null, standard_grow_days: null, prep_cost_coef: null, status: '대상 작물이 아니에요' };
 }
+
+// 2026년에 확인된 판매 일정만 표시하며, 이후 연도의 일정을 추측하지 않는다.
+export function salesPeriodNotice(today) {
+  return today >= '2026-02-19' && today <= '2026-11-27'
+    ? '2026년 원예시설 가입 기간은 11월 27일까지예요. 판매가 일찍 끝날 수 있으니 농축협에 확인해 주세요.'
+    : '';
+}

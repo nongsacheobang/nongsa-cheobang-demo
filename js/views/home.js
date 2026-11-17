@@ -3,6 +3,8 @@
 // 보험금 액수와 지급 여부는 말하지 않는다(U-11).
 
 import { explainChange } from '../insurance/score.js';
+import { salesPeriodNotice } from '../insurance/crops.js';
+import { todayStr } from '../records.js';
 import { DEMO_SCENARIOS, buildDemoScenario } from '../demo.js';
 import { weatherText } from '../weather.js';
 import { DEMO_NEWS, readNews, isNewNews } from './info.js';
@@ -14,7 +16,7 @@ export function signalCard(r, esc) {
   if (!r.gate_open) {
     return `<div class="rd-sig gray" role="status">
       <p class="rd-sig-label">${esc(r.signal.label)}</p>
-      <p class="rd-sig-sub">하우스 보험과 작물 보험에 가입해야 준비도를 볼 수 있어요</p></div>`;
+      <p class="rd-sig-sub">보험 가입 정보를 확인하면 준비도를 볼 수 있어요</p></div>`;
   }
   return `<div class="rd-sig ${esc(r.signal.color)}" role="status" aria-label="보험금 받을 준비도 ${r.score}점, ${esc(r.signal.label)}">
     <p class="rd-sig-cap">보험금 받을 준비도</p>
@@ -44,6 +46,7 @@ export default {
       <div class="hd"><h1>${esc(p.farmName || '내 농장')}</h1><button class="ic" data-act="go" data-v="me" aria-label="내 농장">내</button></div>
       <div class="bd">
         ${signalCard(r, esc)}
+        ${!r.gate_open && salesPeriodNotice(todayStr()) ? `<p class="mut">${esc(salesPeriodNotice(todayStr()))}</p>` : ''}
         ${why ? `<p class="rd-why">${esc(why)}</p>` : ''}
         <p class="rd-notice">${esc(r.notice)}</p>
         ${warn}

@@ -2,7 +2,8 @@
 // profile.insurance: facility_insured, crop_insured(참, 거짓, null=모름), year, insured_area_m2, fire_rider, no_flood_rider, coop_name
 // 가입을 권유하거나 상품을 파는 화면이 아니다. 공식 창구(가입한 지역 농축협) 안내만 한다.
 
-import { PRODUCT, cropInsurance } from '../insurance/crops.js';
+import { PRODUCT, cropInsurance, salesPeriodNotice } from '../insurance/crops.js';
+import { todayStr } from '../records.js';
 
 const TRI = [['yes', '가입했어요', true], ['no', '안 했어요', false], ['unk', '몰라요', null]];
 const triKey = (v) => (v === true ? 'yes' : v === false ? 'no' : 'unk');
@@ -28,6 +29,7 @@ function guide(ctx) {
     <div class="hd"><button class="bk" data-act="go" data-v="insurance" aria-label="뒤로">&lt;</button><h1>가입 안내</h1></div>
     <div class="bd">
       <div class="card"><h3>${esc(PRODUCT.name)}</h3>
+        ${salesPeriodNotice(todayStr()) ? `<p>${esc(salesPeriodNotice(todayStr()))}</p>` : ''}
         <p>대부분은 시설물과 작물을 함께 가입해요. 유리온실에서 재배하는 작물의 단독 가입 여부는 농축협에서 확인해 주세요.</p>
         <p>보장하는 재해: ${esc(PRODUCT.covered_perils.join(', '))}</p>
         </div>
