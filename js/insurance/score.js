@@ -70,7 +70,7 @@ export function computeReadiness(ctx) {
 
   const activeHouses = (ctx.profile?.houses || []).filter(h => !h.hidden && h.crop);
   const unresolved = activeHouses.map(h => {
-    const actions = records.filter(r => (r.houseIds || []).includes(h.id) && r.task === '하우스 점검' && (String(r.memo || '').includes('피복, 골조 점검, 문제 발견') || String(r.memo || '') === '수리'));
+    const actions = records.filter(r => (r.houseIds || []).includes(h.id) && r.task === '하우스 점검' && (r.house_check_result === 'problem' || String(r.memo || '').includes('피복, 골조 점검, 문제 발견') || String(r.memo || '') === '수리'));
     actions.sort((a,b) => String(b.workDate || '').localeCompare(String(a.workDate || '')) || String(b.createdAt || b.availableAt || '').localeCompare(String(a.createdAt || a.availableAt || '')) || Number(String(b.memo || '').includes('문제 발견')) - Number(String(a.memo || '').includes('문제 발견')));
     return actions.length && (actions[0].house_check_result === 'problem' || String(actions[0].memo || '').includes('문제 발견')) ? { ...h, foundRecordId: actions[0].id || null } : null;
   }).filter(Boolean);
@@ -86,6 +86,7 @@ export function computeReadiness(ctx) {
     raising,
     warnings,
     todo,
+    repairTodos: unresolved.map(h => ({houseId: h.id, foundRecordId: h.foundRecordId})),
     notice: NOTICE,
   };
 }
