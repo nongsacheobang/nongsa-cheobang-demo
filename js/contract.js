@@ -224,6 +224,8 @@ export function toRecordDoc(state, ctx = {}) {
   if (state.photo_count != null && state.photo_count !== '') doc.photo_count = toNum(state.photo_count);
   if (state.pest_seen) doc.pest_seen = String(state.pest_seen);
   if (state.control_target) doc.control_target = String(state.control_target);
+  if (['ok', 'problem'].includes(state.house_check_result)) doc.house_check_result = state.house_check_result;
+  if (state.repair_of) doc.repair_of = String(state.repair_of);
   if (state.plant_count != null && state.plant_count !== '') doc.plant_count = toNum(state.plant_count);
   if (disaster) {
     doc.accident_date = state.accident_date || '';
@@ -296,6 +298,8 @@ export function fromRecordDoc(doc) {
   if (doc.photo_count != null) st.photo_count = doc.photo_count;
   if (doc.pest_seen) st.pest_seen = doc.pest_seen;
   if (doc.control_target) st.control_target = doc.control_target;
+  if (['ok', 'problem'].includes(doc.house_check_result)) st.house_check_result = doc.house_check_result;
+  if (doc.repair_of) st.repair_of = doc.repair_of;
   if (doc.plant_count != null) st.plant_count = doc.plant_count;
   if (doc.type === 'disaster') {
     st.accident_date = doc.accident_date || '';
