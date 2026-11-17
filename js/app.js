@@ -131,7 +131,7 @@ function layout(inner, route) {
     ? `<nav class="tabs">${TABS.map(([t, l]) => `<button class="${t === tab ? 'on' : ''}" ${attr({ act: 'go', v: TAB_HOME[t] })}><i></i>${l}${t === 'info' && newsCount ? ` <span aria-label="새 소식 ${newsCount}개">${newsCount > 9 ? '9+' : newsCount}</span>` : ''}</button>`).join('')}</nav>`
     : '';
   const badge = isDemoView() ? '<div class="demo-badge">가상 데이터로 보는 중이에요</div>' : '';
-  return `${badge}${inner}<div class="toast" id="toast"></div>${tabs}`;
+  return `${badge}${inner}<div class="toast" id="toast" role="status" aria-live="polite"></div>${tabs}`;
 }
 
 // ---------- 화면: 로그인 ----------
@@ -1076,6 +1076,7 @@ async function makeXlsx(share) {
   const sheets = [...document.querySelectorAll('[data-sheet]')].map(el => el.checked);
   if (!sheets.some(Boolean)) return toast('시트를 하나 이상 골라 주세요');
   S.excel.sheets = sheets;
+  let resultMessage = '';
   S.busy = true;
   renderKeep();
   try {
@@ -1086,12 +1087,13 @@ async function makeXlsx(share) {
     else downloadBlob(blob, name);
     S.lastExport = { name, size: blob.size, rows: buildSheet1Rows(S.profile, recs).length, at: new Date().toISOString() };
     window.__lastExport = S.lastExport;
-    toast('다 만들었어요');
+    resultMessage = '다 만들었어요';
   } catch (e) {
-    if (e.name !== 'AbortError') toast('엑셀을 만들지 못했어요: ' + e.message);
+    if (e.name !== 'AbortError') resultMessage = '엑셀을 만들지 못했어요: ' + e.message;
   } finally {
     S.busy = false;
     renderKeep();
+    if (resultMessage) toast(resultMessage);
   }
 }
 
