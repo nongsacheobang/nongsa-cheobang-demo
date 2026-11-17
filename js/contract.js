@@ -232,7 +232,8 @@ export function toRecordDoc(state, ctx = {}) {
     doc.continuing = !!state.continuing;
     doc.cause_text = state.cause_text || '';
     doc.mitigation_note = state.mitigation_note || '';
-    doc.checklist = Object.fromEntries(['photo','reported','damage','alerts','mitigation'].map(k => [k, state.checklist?.[k] === true]));
+    if (state.receipt_photo_count != null && state.receipt_photo_count !== '') doc.receipt_photo_count = toNum(state.receipt_photo_count);
+    doc.checklist = Object.fromEntries(['photo','reported','damage','alerts','receipt','mitigation'].map(k => [k, state.checklist?.[k] === true]));
     doc.peril = state.peril || '';
     if (state.peril_source === 'manual') doc.peril_source = 'manual';
     if (state.peril_group) doc.peril_group = state.peril_group;
@@ -307,7 +308,8 @@ export function fromRecordDoc(doc) {
     st.continuing = !!doc.continuing;
     st.cause_text = doc.cause_text || '';
     st.mitigation_note = doc.mitigation_note || '';
-    st.checklist = Object.fromEntries(['photo','reported','damage','alerts','mitigation'].map(k => [k, doc.checklist?.[k] === true]));
+    if (doc.receipt_photo_count != null) st.receipt_photo_count = doc.receipt_photo_count;
+    st.checklist = Object.fromEntries(['photo','reported','damage','alerts','receipt','mitigation'].map(k => [k, doc.checklist?.[k] === true]));
     st.peril = doc.peril || '';
     if (doc.peril_source === 'manual') st.peril_source = 'manual';
     if (doc.peril_group) st.peril_group = doc.peril_group;

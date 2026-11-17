@@ -44,3 +44,5 @@
 .field-accident .accident-form{font-size:20px}.field-accident .accident-form button,.field-accident .accident-choice{min-height:64px}.field-accident .accident-form legend{font-size:20px}
 
 .accident-no-facility{display:none}.accident-facility-choice:has(#accident-facility option[value="no"]:checked) .accident-no-facility{display:block}
+
+.accident-receipt-count{display:none}.accident-checklist:has(#acc-check-receipt:checked) .accident-receipt-count{display:block}

@@ -7,6 +7,6 @@ export function accidentChecklist(record, profile) {
   const day=n=>new Date(t+n*86400000).toISOString().slice(0,10);
   const demoAlerts=valid?demoAlertItems(record,profile,day(-1),day(1)):null;
   const checked=record?.checklist||{};
-  const items={photo:!!checked.photo||Number(record?.photo_count)>0,reported:!!checked.reported||!!record?.reported_at,damage:!!checked.damage||!!record?.houseIds?.length&&!!record?.crop_symptom,alerts:!!checked.alerts||demoAlerts!==null,mitigation:!!checked.mitigation||!!record?.mitigation_note};
+  const items={photo:!!checked.photo||Number(record?.photo_count)>0,reported:!!checked.reported||!!record?.reported_at,damage:!!checked.damage||!!record?.houseIds?.length&&!!record?.crop_symptom,alerts:!!checked.alerts||demoAlerts!==null,receipt:!!checked.receipt||Number(record?.receipt_photo_count)>0,mitigation:!!checked.mitigation||!!record?.mitigation_note};
   return {items,demoAlerts,remaining:Object.values(items).filter(x=>!x).length};
 }
