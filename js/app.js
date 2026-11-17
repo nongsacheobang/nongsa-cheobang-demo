@@ -127,7 +127,7 @@ function layout(inner, route) {
   const tab = TAB_OF[route] || tabOf(route);
   const newsCount = newNewsCount();
   const tabs = tab && route !== 'field'
-    ? `<nav class="tabs">${TABS.map(([t, l]) => `<button class="${t === tab ? 'on' : ''}" ${attr({ act: 'go', v: TAB_HOME[t] })}><i></i>${l}${t === 'info' && newsCount ? ` <span aria-label="새 소식 ${newsCount}개">${newsCount}</span>` : ''}</button>`).join('')}</nav>`
+    ? `<nav class="tabs">${TABS.map(([t, l]) => `<button class="${t === tab ? 'on' : ''}" ${attr({ act: 'go', v: TAB_HOME[t] })}><i></i>${l}${t === 'info' && newsCount ? ` <span aria-label="새 소식 ${newsCount}개">${newsCount > 9 ? '9+' : newsCount}</span>` : ''}</button>`).join('')}</nav>`
     : '';
   const badge = isDemoView() ? '<div class="demo-badge">가상 데이터로 보는 중이에요</div>' : '';
   return `${badge}${inner}<div class="toast" id="toast"></div>${tabs}`;
