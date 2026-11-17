@@ -275,7 +275,7 @@ function ensureForm(id) {
   if (!S.form.area) S.form.area = { value: '', unit: '㎡' };
   S.wxEdit = false;
   S.detailEditing = !!S.form.detailEdited;
-  if (!S.form.weather) loadFormWeather();
+  if (!id && !S.form.weather) loadFormWeather();
   return S.form;
 }
 
