@@ -1,6 +1,6 @@
 // 서비스 워커: 정적 파일 캐시 (오프라인에서도 앱 화면이 열리게)
 // 파일을 바꾸면 CACHE 이름의 버전을 올린다.
-const CACHE = 'nongsa-cheobang-v0.4.49';
+const CACHE = 'nongsa-cheobang-v0.4.50';
 const ASSETS = [
   './',
   './index.html',
@@ -75,10 +75,15 @@ self.addEventListener('fetch', (e) => {
   const cdn = CDN_CACHE.some((p) => req.url.startsWith(p));
   if (!same && !cdn) return; // Firebase, 날씨 프록시 등은 캐시하지 않음
 
-  // 화면 이동은 네트워크 우선 (새 버전 반영), 실패 시 캐시
+  // 앱 진입 화면만 처리한다. 같은 출처의 다른 경로는 API나 개인 응답일 수 있다.
+  const scope = new URL(self.registration.scope);
+  const appEntry = same && (url.pathname === scope.pathname || url.pathname === new URL('./index.html', scope).pathname);
+  if (req.mode === 'navigate' && !appEntry) return;
+
+  // 앱 화면 이동은 네트워크 우선, 실패 시 캐시를 사용한다.
   if (req.mode === 'navigate') {
     e.respondWith(fetch(req).then((res) => {
-      if (res.ok) {
+      if (res.ok && !url.search) {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put('./index.html', copy));
       }
