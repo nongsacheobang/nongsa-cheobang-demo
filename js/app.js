@@ -22,6 +22,7 @@ import { latestDisaster } from './insurance/rules.js';
 import { getAlerts } from './weather/alerts.js';
 import { demoAlertItems } from './weather/alert-check.js';
 import { newNewsCount, resetDemoNews } from './views/info.js';
+import { updateClaimSource, updateClaimButton } from './views/claim.js';
 
 // 브라우저 콘솔에서 규칙 추출 단위 테스트: ncAgentTests()
 window.ncAgentTests = () => runExtractTests();
@@ -434,6 +435,7 @@ function vDetail() {
       ${m.pest ? `<div class="kv"><span class="k">대상 병해충</span><span class="v">${esc(m.pest)}</span></div>` : ''}</div>`;
   });
   h += `<div class="card"><h3>세부작업내용</h3><p style="line-height:1.5">${esc(detailOf(S.profile, r))}</p>${r.memo ? `<p class="mut" style="margin-top:6px">메모: ${esc(r.memo)}</p>` : ''}</div>`;
+  if (CONFIG.features.claimCalc && S.session?.demo && S.session.uid === 'demo' && S.profile?.demo && r.demo) h += `<button class="ghost" ${attr({ act: 'claimOpen', v: r.id })}>약관 산식으로 계산해 보기</button>`;
   if (r.source_text) h += `<div class="card"><h3>대화 원문</h3><p style="line-height:1.5">"${esc(r.source_text)}"</p>${r.chat_answers ? `<p class="mut" style="margin-top:6px">되묻기에 답한 내용: ${esc(r.chat_answers)}</p>` : ""}<p class="mut" style="margin-top:6px">입력 방식: ${r.input_mode === 'chat-handoff' ? '대화 후 직접 입력' : '대화'}, 추출 ${esc(r.extract_method || '규칙')}</p></div>`;
   const editLabel = field => ({work_date:'작업일',plots:'작업한 동',crop:'작물',stage:'생육 단계',task:'작업',memo:'메모',detail:'세부 작업',detail_edited:'세부 작업',weather:'날씨',photo_count:'사진 수'})[field] || (field.startsWith('materials[') ? '자재 정보' : '기록 항목');
   if (r.editHistory?.length) h += `<div class="card"><h3>수정 이력</h3>${r.editHistory.map(entry => `<p>${esc(fmtDateTime(entry.at))}: ${esc([...new Set(entry.fields.map(editLabel))].join(', '))}</p>`).join('')}</div>`;
@@ -603,6 +605,7 @@ function render() {
   }
   if (S.route !== r) {
     if (S.route === 'accident' && r !== 'accident') S.accidentDraft = null;
+    if (S.route === 'claim' && r !== 'claim') S.claim = null;
     if (r !== 'write') S.form = r === 'saved' ? S.form : null;
     if (r !== 'setup') { S.setup = null; S.setupErr = ''; }
   }
@@ -611,6 +614,7 @@ function render() {
   // 화면 모듈이 있으면 기존 화면보다 우선(예: 홈은 home.js 준비도 화면)
   const mod = getView(r);
   $app.innerHTML = layout(mod ? mod.render(viewCtx()) : VIEWS[r](), r);
+  if (r === 'claim') { $app.querySelectorAll('label:has([data-claim-source]) input, label:has([data-claim-source]) select').forEach(el => updateClaimSource(el, S.claim?.input)); updateClaimButton(); }
   if (r === 'chat' && !S.keepScroll) {
     const b = document.getElementById('chatBd');
     if (b) b.scrollTop = b.scrollHeight;
@@ -1094,6 +1098,7 @@ async function makeXlsx(share) {
 // 입력값 (다시 그리지 않고 상태만 갱신해 커서 유지)
 function onInput(e) {
   const el = e.target;
+  if (S.route === 'claim') { updateClaimSource(el, S.claim?.input); updateClaimButton(); }
   if (el.dataset.sheet !== undefined) { S.excel.sheets[Number(el.dataset.sheet)] = el.checked; return; }
   const k = el.dataset.in;
   if (!k) return;
@@ -1120,6 +1125,7 @@ function onInput(e) {
 
 function onChange(e) {
   const el = e.target;
+  if (S.route === 'claim') { updateClaimSource(el, S.claim?.input); updateClaimButton(); }
   const k = el.dataset.in;
   if (k === 'date') {
     S.form.workDate = el.value || todayStr();

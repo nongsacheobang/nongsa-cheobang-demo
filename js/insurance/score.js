@@ -5,7 +5,7 @@
 
 import { evaluateAll, MET, UNMET, NA, UNKNOWN, planted, latestDisaster, HARVEST_TASKS, currentHarvestRecords, daysBetween } from './rules.js';
 
-export const NOTICE = '보험금 지급을 보장하지 않습니다. 약관 요건과 증빙을 얼마나 갖췄는지 보여 주는 점검입니다. 지급 여부와 금액은 보험사의 손해평가로 정해집니다.';
+export const NOTICE = '보험금 지급을 보장하지 않으며, 손해평가, 손해사정이 아닙니다.';
 
 export const SIGNALS = {
   ready: { key: 'ready', label: '준비됨', color: 'green' },

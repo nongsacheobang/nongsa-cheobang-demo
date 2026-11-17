@@ -1,4 +1,4 @@
-// M-04 홈: 보험금 받을 준비도 [Aside 담당]
+// M-04 홈: 준비도 [Aside 담당]
 // 신호등, 점수, 고지(U-12), 바뀐 이유, 경고, 지금 할 일 3개, 빠른 이동, 시연 시나리오(데모 계정)
 // 보험금 액수와 지급 여부는 말하지 않는다(U-11).
 
@@ -18,8 +18,8 @@ export function signalCard(r, esc) {
       <p class="rd-sig-label">${esc(r.signal.label)}</p>
       <p class="rd-sig-sub">보험 가입 정보를 확인하면 준비도를 볼 수 있어요</p></div>`;
   }
-  return `<div class="rd-sig ${esc(r.signal.color)}" role="status" aria-label="보험금 받을 준비도 ${r.score}점, ${esc(r.signal.label)}">
-    <p class="rd-sig-cap">보험금 받을 준비도</p>
+  return `<div class="rd-sig ${esc(r.signal.color)}" role="status" aria-label="준비도 ${r.score}점, ${esc(r.signal.label)}">
+    <p class="rd-sig-cap">준비도</p>
     <p class="rd-sig-score"><b>${r.score}</b><span>점</span></p>
     <p class="rd-sig-label">${esc(r.signal.label)}</p>
     <p class="rd-sig-sub">${esc(r.stage.label)}</p></div>`;

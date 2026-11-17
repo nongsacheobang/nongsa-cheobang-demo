@@ -2,6 +2,7 @@
 // Codex가 새 화면을 더할 때는 handoff로 요청하거나, 이 파일의 자기 줄만 고친다.
 import { registerView } from './registry.js';
 import report from './report.js';
+import claim from './claim.js';
 import premium from './premium.js';
 import field from './field.js';
 import coverage from './coverage.js';
@@ -14,5 +15,5 @@ import record from './record.js'; // M-06 Codex
 import accident from './accident.js'; // M-07 Codex
 
 export function registerAllViews(reservedActions = []) {
-  for (const v of [home, factors, farm, insurance, record, accident, coverage, info, field, report, premium]) registerView(v, { reservedActions });
+  for (const v of [home, factors, farm, insurance, record, accident, coverage, info, field, report, premium, claim]) registerView(v, { reservedActions });
 }

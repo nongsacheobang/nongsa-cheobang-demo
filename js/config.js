@@ -34,6 +34,7 @@ export const CONFIG = {
     pwa: true,
     demoData: true,
     premiumCalc: false,
+    claimCalc: true, // 접근은 가상 시연 계정으로 제한
   },
 
   // Firebase 웹 설정 (프로젝트 nongsacheobang 권한 받은 뒤 콘솔 > 프로젝트 설정 > 웹 앱에서 복사)

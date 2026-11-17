@@ -33,7 +33,7 @@ export default {
         <div class="card"><h3>확인하거나 보완할 것 ${r.lowering.length}개</h3>${order(r.lowering).map((f) => row(f, esc)).join('') || '<p class="mut">없어요</p>'}</div>
         <div class="card"><h3>점수를 올린 것 ${r.raising.length}개</h3>${order(r.raising).map((f) => row(f, esc)).join('') || '<p class="mut">아직 없어요</p>'}</div>
         ${na.length ? `<div class="card"><h3>지금은 해당 없음 ${na.length}개</h3><p class="mut">${na.map((f) => esc(f.title)).join(', ')}</p></div>` : ''}
-        <button class="ghost" data-act="go" data-v="report">준비도 보고서 보기</button><p class="mut ctr">점수 기준은 시험용 임시값이에요. 손해평가사 검토 뒤 바뀔 수 있어요.</p>
+        <button class="ghost" data-act="go" data-v="report">준비도 보고서 보기</button><p class="mut ctr">점수 기준은 시험용 임시값이에요. 전문가 검토 뒤 바뀔 수 있어요.</p>
       </div></section>`;
   },
   actions: {},

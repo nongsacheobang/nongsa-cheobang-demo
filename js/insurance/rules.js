@@ -214,7 +214,7 @@ export const FACTORS = [
   },
   {
     id: 'R-12', group: '사고 대응', weight: 5, title: '피해 사진',
-    basis: '손해평가를 위해 고치기 전에 사진을 찍어 두세요. 결과에 이견이 있으면 설명을 들은 날부터 7일 안에 서류나 사진을 내고 재평가를 요청할 수 있어요',
+    basis: '보험사 현장 조사를 위해 고치기 전에 사진을 찍어 두세요. 결과에 이견이 있으면 설명을 들은 날부터 7일 안에 서류나 사진을 내고 재평가를 요청할 수 있어요',
     evaluate(ctx) {
       const d = latestDisaster(ctx);
       if (!d) return { state: NA, reason: '사고 기록이 없어요', todo: null };

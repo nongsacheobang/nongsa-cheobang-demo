@@ -111,7 +111,7 @@ export function buildReadinessRows(readiness, today) {
   const summary = [
     ['고지', readiness.notice],
     ['기준일', today || ''],
-    ['보험금 받을 준비도', readiness.score == null ? '' : readiness.score],
+    ['준비도', readiness.score == null ? '' : readiness.score],
     ['신호등', readiness.signal?.label || ''],
     ['농사 단계', readiness.stage?.label || ''],
     ['경고', readiness.warnings.map((w) => w.title).join(', ')],

@@ -135,13 +135,21 @@ export function buildDemoScenario(key, today = new Date()) {
   ];
   if (key === 'na') return { profile, records: grow, alerts: [] };
   if (key === 'da') {
+    // 계산 장면만 토마토 세 동으로 구성한다. 위험 시나리오는 한 동을 유지한다.
+    profile.houses = profile.houses.map(h => ({ ...h, crop: '토마토', area_m2: 660 }));
+    profile.insurance.insured_area_m2 = 1980;
+    profile.insurance.houses = profile.houses.map(h => ({ house_id: h.id, insured_area_m2: 660, crop_sum_insured_krw: 9900000, crop_basis: '토마토', facility_sum_insured_krw: 15000000, harvest_end_plan: `${base.getFullYear()+1}-05-31` }));
+    profile.insurance.crop_coverage_ratio = null;
+    profile.insurance.replacement_rider = true;
+    const cropRecords = grow.filter(r => !(r.task === '정식' && r.houseIds.includes('h3'))).map(r => ({ ...r, crop: '토마토', task: r.task === '보온(커튼과 난방)' ? '환기와 온도관리' : r.task }));
+    cropRecords.push(W(73, ['h3'], '토마토', '육묘와 정식', '정식'), W(72, ['h3'], '토마토', '육묘와 정식', '정식'));
     const acc = {
-      type: 'disaster', workDate: ago(1), accident_date: ago(1), continuing: false, houseIds: ['h3'], crop: '딸기',
+      type: 'disaster', workDate: ago(1), accident_date: ago(1), continuing: false, houseIds: ['h3'], crop: '토마토',
       cause_text: '밤새 바람이 세게 불어서 비닐이 찢어졌어요', peril: [], facility_damage: '비닐 찢어짐', crop_symptom: '잎과 줄기 상함',
       reported_at: ago(0), photo_count: 4, closed: false, memo: '', source_text: '밤새 바람이 세게 불어서 비닐이 찢어졌어요', author: profile.name, createdAt: at(1), updatedAt: null, demo: true,
-      alert_check: { source: 'demo', sigungu: '가상군', from: ago(2), to: ago(0), items: [{ date: ago(1), kind: '강풍주의보' }] },
+      alert_check: { source: 'demo', sigungu: '가상군', from: ago(2), to: ago(0), items: [{ date: ago(2), kind: '강풍주의보' }] },
     };
-    return { profile, records: [...grow, acc], alerts: [{ date: ago(1), kind: '강풍주의보' }] };
+    return { profile, records: [...cropRecords, acc], alerts: [{ date: ago(2), kind: '강풍주의보' }] };
   }
   throw new Error('없는 시연 시나리오: ' + key);
 }
