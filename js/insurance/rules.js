@@ -169,7 +169,7 @@ export const FACTORS = [
     evaluate(ctx) {
       const seen = works(ctx).filter((r) => r.pest_seen && within(r.workDate, ctx.today, 30));
       if (!seen.length) return { state: NA, reason: '최근 병해충 발견 기록이 없어요', todo: null };
-      const late = seen.filter((s) => !works(ctx).some((r) => isTask(r, PEST_CONTROL) && (() => { const d = daysBetween(s.workDate, r.workDate); return d != null && d >= 0 && d <= 7; })()));
+      const late = seen.filter((s) => !works(ctx).some((r) => isTask(r, PEST_CONTROL) && (s.houseIds || []).length > 0 && (s.houseIds || []).every(id => (r.houseIds || []).includes(id)) && (!r.control_target || r.control_target === s.pest_seen) && (() => { const d = daysBetween(s.workDate, r.workDate); return d != null && d >= 0 && d <= 7; })()));
       if (!late.length) return { state: MET, reason: '병해충을 본 뒤 7일 안에 방제했어요', todo: null };
       const previouslyAddressed = late.length < seen.length;
       return { state: UNMET, progress: previouslyAddressed ? 1 : 0, reason: previouslyAddressed ? '이전에 대응한 기록은 점수에 반영했어요. 새로 발견한 병해충의 방제 기록을 확인해 주세요' : '병해충을 본 뒤 방제 기록이 없어요', todo: { label: '방제 기록하기', go: 'record/병해충 방제' } };
