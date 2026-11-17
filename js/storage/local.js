@@ -14,7 +14,7 @@ function readForWrite(key, fallback, valid) {
   if (!valid(value)) throw invalid();
   return value;
 }
-const recordsForWrite = uid => readForWrite('records:' + uid, [], Array.isArray);
+const recordsForWrite = uid => readForWrite('records:' + uid, [], value => Array.isArray(value) && value.every(item => item !== null && typeof item === 'object' && !Array.isArray(item)));
 const profileForWrite = uid => readForWrite('profile:' + uid, null, value => value !== null && typeof value === 'object' && !Array.isArray(value));
 
 function write(key, value) {
