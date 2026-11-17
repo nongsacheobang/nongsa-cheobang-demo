@@ -37,12 +37,12 @@ input,textarea,select{font-family:inherit}
 .tag.demo{background:#F0F0F0;color:#444;border-color:#999}
 .li{display:flex;width:100%;gap:10px;align-items:center;padding:11px 0;border:0;border-bottom:1px solid #EEE;background:transparent;text-align:left;color:inherit;font:inherit;cursor:pointer}
 .li:last-child{border-bottom:none}
-.li .dt{width:46px;text-align:center;flex:none}
+.li .dt{width:64px;text-align:center;flex:none}
 .li .dt b{display:block;font-size:18px}
-.li .dt span{font-size:11px;color:var(--t3)}
+.li .dt span{font-size:16px;color:var(--t3)}
 .li .ct{flex:1;min-width:0}
-.li .ct .li-title,.li .ct .s{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.li .ct .s{font-size:12px;color:var(--t3);margin-top:2px}
+.li .ct .li-title,.li .ct .s{display:block;white-space:normal;overflow-wrap:anywhere}
+.li .ct .s{font-size:16px;color:var(--t3);margin-top:2px}
 .li .tags{display:flex;flex-direction:column;gap:3px;align-items:flex-end}
 .ph{background:repeating-linear-gradient(45deg,#EEE,#EEE 6px,#E4E4E4 6px,#E4E4E4 12px);border:1px dashed #BBB;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:12px}
 .fld{margin-bottom:16px}
@@ -110,7 +110,7 @@ table.xl .cl{background:#F7F7F7;color:var(--t3);text-align:center}
 .flt .chip{flex:none}
 .fab{position:absolute;right:18px;bottom:80px;width:auto;padding:14px 18px;border-radius:28px;margin:0;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .err{color:var(--danger);font-size:13px;margin-top:6px}
-.month{font-size:12px;color:var(--t3);padding:12px 0 2px;font-weight:600}
+.month{font-size:16px;color:var(--t3);padding:12px 0 2px;font-weight:600}
 .empty{padding:28px 0;text-align:center;color:var(--t3)}
 .dates{display:flex;gap:8px;margin-top:8px}
 .dates .inp{flex:1;padding:9px;font-size:14px}
@@ -201,3 +201,6 @@ button.hbc{border-left:4px solid var(--ac)}
 
 /* 기본 터치 영역 */
 .scr button,.tabs button{min-height:48px}
+
+/* 일지 목록은 작은 화면에서 내용이 잘리지 않게 줄을 바꾼다. */
+.li .tag{font-size:16px}
