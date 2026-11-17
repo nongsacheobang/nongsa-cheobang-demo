@@ -187,8 +187,8 @@ button.hbc{border-left:4px solid var(--ac)}
 .rd-todo{display:flex;flex-direction:column;align-items:flex-start;width:100%;min-height:48px;padding:10px 12px;margin-top:8px;border:1px solid var(--ac);border-radius:10px;background:var(--ac-l);color:var(--ac-d);text-align:left}
 .rd-todo span{font-weight:700}
 .rd-todo small{color:#333;font-size:12px}
-.rd-quick{display:flex;gap:8px;margin:10px 0}
-.rd-quick .big{flex:1;margin:0}
+.rd-quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}
+.rd-quick .big{width:100%;margin:0}.rd-quick .ghost{grid-column:1 / -1;grid-row:2;margin:0}
 .rd-quick .rd-acc{background:#C62828}
 .rd-fac{border-top:1px solid var(--ln);padding:10px 0}
 .rd-fac:first-of-type{border-top:0}
