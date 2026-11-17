@@ -200,7 +200,7 @@ export const FACTORS = [
       const p = [d.cause_text, ...(Array.isArray(d.peril) ? d.peril : [d.peril])].filter(Boolean).join(', ');
       if (!p) return { state: UNKNOWN, reason: '피해 원인을 적어 주세요', todo: { label: '원인 적기', go: `accident/${d.id}` } };
       if (PEST_WORDS.test(p) && !COVERED_WORDS.test(p)) return { state: UNMET, reason: `"${p}"는 병해충 피해로 보여요. 보상하지 않을 수 있어요`, todo: { label: '가입한 농축협에 확인', go: 'insurance' } };
-      if (COVERED_WORDS.test(p)) return { state: MET, reason: `"${p}"는 약관의 재해 종류에 나오는 말이에요. 가입한 농축협에 확인하세요`, todo: null };
+      if (COVERED_WORDS.test(p)) return { state: UNKNOWN, reason: `"${p}"에 대한 보장 여부는 계약과 사고 내용에 따라 달라요. 가입한 농축협에 확인하세요`, todo: { label: '가입한 농축협에 확인', go: 'insurance' } };
       return { state: UNKNOWN, reason: `"${p}"가 보장하는 재해인지 확인이 필요해요`, todo: { label: '가입한 농축협에 확인', go: 'insurance' } };
     },
   },

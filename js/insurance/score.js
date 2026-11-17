@@ -137,7 +137,7 @@ export function runReadinessTests() {
   check('(나) 바뀐 이유가 보임', /\+\d+점/.test(explainChange(ga, na)), explainChange(ga, na));
 
   const da = computeReadiness(SCENARIOS.da);
-  check('(다) 사고 대응 요인 충족', ['R-11', 'R-12', 'R-13', 'R-14'].every((id) => st(da, id) === MET), da.factors.filter((f) => f.group === '사고 대응').map((f) => f.id + f.state));
+  check('(다) 사고 대응 요인 충족', ['R-11', 'R-12', 'R-14'].every((id) => st(da, id) === MET) && st(da, 'R-13') === UNKNOWN, da.factors.filter((f) => f.group === '사고 대응').map((f) => f.id + f.state));
   check('(다) 사고 직후 단계', da.stage.key === 'accident', da.stage);
   check('(다) 준비됨', da.signal.key === 'ready', { s: da.score, sig: da.signal.key });
 
