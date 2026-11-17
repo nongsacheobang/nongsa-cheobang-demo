@@ -157,7 +157,7 @@ export const FACTORS = [
   },
   {
     id: 'R-09', group: '시설', weight: 10, title: '하우스 점검과 보수',
-    basis: '하우스가 낡거나 고장 나서 생긴 손해는 보상하지 않을 수 있어요. 90일은 앱 기준이에요',
+    basis: '출입문과 골조 부식, 피복 상태를 점검하고 사고 뒤 수리와 복구 내용도 기록해요. 노후와 구조적 결함, 복구 지연으로 늘어난 손해는 약관에서 제한될 수 있어요. 90일은 앱 기준이에요',
     evaluate(ctx) {
       const ok = works(ctx).some((r) => FACILITY_CHECK_TASKS.includes(r.task) && within(r.workDate, ctx.today, 90));
       if (ok) return { state: MET, reason: '최근 3개월 안에 하우스 점검 기록이 있어요', todo: null };
@@ -179,7 +179,7 @@ export const FACTORS = [
   },
   {
     id: 'R-11', group: '사고 대응', weight: 10, title: '사고 바로 접수',
-    basis: '피해가 나면 지체 없이 알려야 해요. 3일 이내는 앱의 임시 점검 기준이며 약관상 기한이 아니에요',
+    basis: '사고가 나면 지체 없이 가입한 농축협에 알려요. 늦으면 늘어난 손해는 보상하지 않을 수 있어요. 3일 이내는 앱 기준이며 약관상 기한이 아니에요',
     evaluate(ctx) {
       const d = latestDisaster(ctx);
       if (!d) return { state: NA, reason: '사고 기록이 없어요', todo: null };
