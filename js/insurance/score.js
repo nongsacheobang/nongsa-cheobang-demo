@@ -24,6 +24,9 @@ export function stageOf(ctx) {
   const ins = ctx.profile?.insurance || {};
   if ((ins.facility_type !== 'glass_only' && ins.facility_insured !== true) || ins.crop_insured !== true) return { key: 'before_insurance', label: '가입 전' };
   const harvests = currentHarvestRecords(ctx);
+  if (harvests.length && !harvests.some(r => daysBetween(r.workDate, ctx.today) != null)) return { key: 'unknown', label: '날짜 확인 필요' };
+  const plantings = (ctx.records || []).filter(r => r.type !== 'disaster' && r.task === '정식');
+  if (!harvests.length && plantings.length && !plantings.some(r => daysBetween(r.workDate, ctx.today) != null)) return { key: 'unknown', label: '날짜 확인 필요' };
   const houses = (ctx.profile?.houses || []).filter(h => h.crop && !h.hidden);
   const ended = h => harvests.some(r => r.task === '수확 종료' && (r.houseIds || []).includes(h.id));
   if (houses.length && houses.every(ended)) return { key: 'season_end', label: '작기 끝' };
