@@ -147,8 +147,9 @@ export const FACTORS = [
     evaluate(ctx) {
       const shipped = works(ctx).some((r) => isTask(r, '출하'));
       if (!planted(ctx) && !shipped) return { state: NA, reason: '정식 전이에요', todo: null };
-      const ok = shipped || works(ctx).some((r) => (r.materials || []).some((m) => m.kind === SEED && m.action === '구입') || (isTask(r, PLANTING) && Number(r.photo_count) > 0));
-      if (ok) return { state: MET, reason: '모종 구입 기록, 정식 사진이나 출하 기록이 있어요', todo: null };
+      const evidence = works(ctx).filter(r => isTask(r, '출하') || (r.materials || []).some(m => m.kind === SEED && m.action === '구입') || (isTask(r, PLANTING) && Number(r.photo_count) > 0));
+      if (evidence.some(r => dayNum(r.workDate) != null)) return { state: MET, reason: '모종 구입 기록, 정식 사진이나 출하 기록이 있어요', todo: null };
+      if (evidence.length) return { state: UNKNOWN, reason: '증빙 기록의 날짜를 확인해 주세요', todo: { label: '기록 확인하기', go: 'list' } };
       return { state: UNMET, reason: '모종 구입 영수증이나 정식 사진이 없어요', todo: { label: '모종 구입 기록', go: 'record/모종 구입' } };
     },
   },
