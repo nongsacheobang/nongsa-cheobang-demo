@@ -130,7 +130,7 @@ export function buildReportSheetRows(profile, records, readiness, today) {
   return [...rr.summary, ['동별 작기 기간'], ['동', '시작일', '종료일', '기준'], ...report.periods.map(p => [p.name, p.start, p.end, p.basis === 'recent' ? '정식 기록 없음, 최근 180일' : '정식 30일 전부터']), [], READINESS_HEADERS, ...rr.factors, [], ['작기 요약'], ['동', '작물', '면적', '주수', '정식일', '수확 개시', '수확 종료'], ...report.houses.map(h => [h.name,h.crop,h.area,h.plants,h.planted,h.harvest,h.ended]), [], ['2026 약관 작물 참고값', 'NH농협손해보험 원예시설 약관, 점수 계산에 사용하지 않음'], ['작물', '표준생장일수', '표준수확일수', '준비기생산비계수'], ...report.cropReferences.map(c => [c.crop,c.grow,c.harvest,c.prep]), [], ['빠진 기록'], ...report.missing.map(f => [f.id,f.title,f.todo.label]), [], ['피해 기록'], ['사고일', '원인', '시설 피해', '작물 피해', '직접 선택한 재해 종류'], ...report.damage.map(d => [d.accident_date||'',d.cause_text||(Array.isArray(d.peril)?d.peril.join(', '):d.peril)||'',(Array.isArray(d.facility_damage)?d.facility_damage.join(', '):d.facility_damage)||'',d.crop_symptom||'',Array.isArray(d.peril)?d.peril.join(', '):'']), [], ['작업 기록 수'], ...Object.entries(report.counts)];
 }
 
-export async function buildWorkbook(profile, session, records, readiness = null, selectedSheets = [true, true, true, !!readiness]) {
+export async function buildWorkbook(profile, session, records, readiness = null, selectedSheets = [true, true, true, !!readiness], reportRecords = records) {
   if (!Array.isArray(selectedSheets) || selectedSheets.length !== 4 || !selectedSheets.some(Boolean)) throw new Error('시트를 하나 이상 골라 주세요');
   if (selectedSheets[3] && !readiness) throw new Error('준비도 보고서를 만들 수 없어요');
   const XLSX = await import(XLSX_URL);
@@ -204,7 +204,7 @@ export async function buildWorkbook(profile, session, records, readiness = null,
   if (selectedSheets[1]) XLSX.utils.book_append_sheet(wb, ws2, '증빙정보');
   if (selectedSheets[2]) XLSX.utils.book_append_sheet(wb, ws3, '피해 기록');
   if (readiness && selectedSheets[3]) {
-    const ws4 = XLSX.utils.aoa_to_sheet(buildReportSheetRows(profile, records, readiness, todayStr()));
+    const ws4 = XLSX.utils.aoa_to_sheet(buildReportSheetRows(profile, reportRecords, readiness, todayStr()));
     ws4['!cols'] = [10, 12, 30, 10, 8, 50, 60, 20].map((w) => ({ wch: w }));
     XLSX.utils.book_append_sheet(wb, ws4, '준비도 보고서');
   }
