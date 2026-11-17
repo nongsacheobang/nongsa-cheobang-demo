@@ -194,7 +194,7 @@ export const FACTORS = [
   },
   {
     id: 'R-12', group: '사고 대응', weight: 5, title: '피해 사진',
-    basis: '손해평가 때 피해 모습을 보여 줄 수 있어요. 고치기 전에 찍어 두세요',
+    basis: '손해평가를 위해 고치기 전에 사진을 찍어 두세요. 결과에 이견이 있으면 설명을 들은 날부터 7일 안에 서류나 사진을 내고 재평가를 요청할 수 있어요',
     evaluate(ctx) {
       const d = latestDisaster(ctx);
       if (!d) return { state: NA, reason: '사고 기록이 없어요', todo: null };
@@ -230,7 +230,7 @@ export const FACTORS = [
   },
   {
     id: 'R-15', group: '사고 대응', weight: 'warn', title: '하우스 피해 없이 작물만 피해',
-    basis: '하우스 피해 없이 작물만 상한 경우 기상특보, 재배 포기 등 조건을 확인해요',
+    basis: '약관의 시설작물 손해 요건은 시설 직접 피해, 시설 피해 없이 작물 피해율 70% 이상으로 전체 재배 포기, 기상특보 관련 재해, 조수해, 일조량 부족 인정 시군의 피해 중 해당 조건을 확인해요. 실제 적용은 가입한 농축협에 확인하세요',
     evaluate(ctx) {
       const d = latestDisaster(ctx);
       if (!d) return { state: NA, reason: '사고 기록이 없어요', todo: null };
