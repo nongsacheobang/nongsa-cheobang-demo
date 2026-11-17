@@ -23,10 +23,11 @@ export function stageOf(ctx) {
   if (d && !d.closed) return { key: 'accident', label: '사고 직후' };
   const ins = ctx.profile?.insurance || {};
   if ((ins.facility_type !== 'glass_only' && ins.facility_insured !== true) || ins.crop_insured !== true) return { key: 'before_insurance', label: '가입 전' };
-  const recs = (ctx.records || []).filter((r) => r.type !== 'disaster');
   const harvests = currentHarvestRecords(ctx);
-  if (harvests.some((r) => r.task === '수확 종료')) return { key: 'season_end', label: '작기 끝' };
-  if (harvests.some((r) => HARVEST_TASKS.includes(r.task))) return { key: 'harvest', label: '수확 중' };
+  const houses = (ctx.profile?.houses || []).filter(h => h.crop && !h.hidden);
+  const ended = h => harvests.some(r => r.task === '수확 종료' && (r.houseIds || []).includes(h.id));
+  if (houses.length && houses.every(ended)) return { key: 'season_end', label: '작기 끝' };
+  if (harvests.some(r => HARVEST_TASKS.includes(r.task) && r.task !== '수확 종료' && (!houses.length || (r.houseIds || []).some(id => houses.some(h => h.id === id && !ended(h)))))) return { key: 'harvest', label: '수확 중' };
   if (planted(ctx)) return { key: 'growing', label: '생육 중' };
   return { key: 'before_planting', label: '정식 전' };
 }
