@@ -12,6 +12,18 @@ function read(key, fallback) {
     return fallback;
   }
 }
+// 기존 자료를 갱신할 때는 읽기 오류나 잘못된 형식을 빈 자료로 바꾸지 않는다.
+function readForWrite(key, fallback, valid) {
+  const raw = localStorage.getItem(PFX + key);
+  if (raw === null) return fallback;
+  let value;
+  try { value = JSON.parse(raw); } catch (_) { throw new Error('저장된 자료를 읽지 못해 변경하지 않았어요'); }
+  if (!valid(value)) throw new Error('저장된 자료 형식을 확인할 수 없어 변경하지 않았어요');
+  return value;
+}
+const recordsForWrite = uid => readForWrite('records:' + uid, [], Array.isArray);
+const profileForWrite = uid => readForWrite('profile:' + uid, null, value => value !== null && typeof value === 'object' && !Array.isArray(value));
+
 function write(key, value) {
   localStorage.setItem(PFX + key, JSON.stringify(value));
 }
@@ -35,7 +47,7 @@ export const localStore = {
 
   async saveProfile(uid, profile) {
     const now = new Date().toISOString();
-    const prev = read('profile:' + uid, null);
+    const prev = profileForWrite(uid);
     const next = { ...profile, createdAt: prev?.createdAt || now, updatedAt: now };
     write('profile:' + uid, next);
     return next;
@@ -56,7 +68,7 @@ export const localStore = {
 
   // id가 없으면 새로 만들고, 있으면 수정. createdAt은 처음 저장 시각을 유지, updatedAt은 수정할 때만 갱신
   async saveRecord(uid, rec) {
-    const list = read('records:' + uid, []);
+    const list = recordsForWrite(uid);
     // 계약 모양은 시각과 못 바꿈 값을 contract.js가 이미 정했다. 그대로 넣거나 바꾼다
     if (isDoc(rec)) {
       const i = list.findIndex((r) => idOf(r) === rec.record_id);
@@ -79,17 +91,17 @@ export const localStore = {
   },
 
   async saveRecordsBulk(uid, recs) {
-    const list = read('records:' + uid, []);
+    const list = recordsForWrite(uid);
     recs.forEach((r) => list.push(isDoc(r) ? r : { ...r, id: r.id || newId() }));
     write('records:' + uid, list);
   },
 
   async deleteRecord(uid, id) {
-    write('records:' + uid, read('records:' + uid, []).filter((r) => idOf(r) !== id));
+    write('records:' + uid, recordsForWrite(uid).filter((r) => idOf(r) !== id));
   },
 
   async deleteDemoRecords(uid) {
-    write('records:' + uid, read('records:' + uid, []).filter((r) => !demoOf(r)));
+    write('records:' + uid, recordsForWrite(uid).filter((r) => !demoOf(r)));
   },
 
   async clearAll(uid) {
