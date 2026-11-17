@@ -20,7 +20,7 @@ function guide(ctx) {
       <div class="card"><h3>${esc(PRODUCT.name)}</h3>
         <p>하우스(농업용시설물)를 먼저 가입해야 작물(시설작물)을 가입할 수 있어요.</p>
         <p>보장하는 재해: ${esc(PRODUCT.covered_perils.join(', '))}</p>
-        <p class="mut">${esc(PRODUCT.min_payout_note)}</p></div>
+        </div>
       <div class="card"><h3>내 작물</h3>${crops.map((c) => `<div class="kv"><span class="k">${esc(c)}</span><span class="v">${esc(cropInsurance(c).status)}</span></div>`).join('') || '<p class="mut">농장 정보에서 작물을 먼저 넣어 주세요</p>'}</div>
       <div class="card"><h3>어디서 가입하나요?</h3><p>가까운 지역 농축협이나 품목농협에서 가입해요. 가입 시기는 작물마다 달라요.</p>
         <p class="mut">이 앱은 보험을 팔거나 가입을 대신하지 않아요.</p></div>
