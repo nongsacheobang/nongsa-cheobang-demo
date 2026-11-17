@@ -68,6 +68,7 @@ async function proxyWeather(date, location) {
 }
 
 export async function getWeather(date, location) {
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date) return missingWeather('날짜를 확인해 주세요');
   if (CONFIG.weather === 'proxy') return proxyWeather(date, location);
   return mockWeather(date);
 }
