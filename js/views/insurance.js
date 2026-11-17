@@ -18,7 +18,7 @@ function guide(ctx) {
     <div class="hd"><button class="bk" data-act="go" data-v="insurance" aria-label="뒤로">&lt;</button><h1>가입 안내</h1></div>
     <div class="bd">
       <div class="card"><h3>${esc(PRODUCT.name)}</h3>
-        <p>하우스(농업용시설물)를 먼저 가입해야 작물(시설작물)을 가입할 수 있어요.</p>
+        <p>대부분은 시설물과 작물을 함께 가입해요. 유리온실에서 재배하는 작물의 단독 가입 여부는 농축협에서 확인해 주세요.</p>
         <p>보장하는 재해: ${esc(PRODUCT.covered_perils.join(', '))}</p>
         </div>
       <div class="card"><h3>내 작물</h3>${crops.map((c) => `<div class="kv"><span class="k">${esc(c)}</span><span class="v">${esc(cropInsurance(c).status)}</span></div>`).join('') || '<p class="mut">농장 정보에서 작물을 먼저 넣어 주세요</p>'}</div>
