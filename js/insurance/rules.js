@@ -119,7 +119,9 @@ export const FACTORS = [
     evaluate(ctx) {
       const hs = cropHouses(ctx);
       if (!hs.length) return { state: UNKNOWN, reason: '동과 작물을 먼저 넣어 주세요', todo: { label: '농장 정보 입력', go: 'farm' } };
-      const missing = hs.filter((h) => !works(ctx).some((r) => isTask(r, PLANTING) && onHouse(r, h)));
+      const missing = hs.filter((h) => !works(ctx).some((r) => isTask(r, PLANTING) && onHouse(r, h) && dayNum(r.workDate) != null));
+      const uncertain = missing.filter(h => works(ctx).some(r => isTask(r, PLANTING) && onHouse(r, h) && dayNum(r.workDate) == null));
+      if (uncertain.length) return { state: UNKNOWN, reason: `${uncertain.map(h => h.name).join(', ')} 정식 날짜를 확인해 주세요`, todo: { label: '정식일 확인하기', go: 'record/정식' } };
       if (!missing.length) return { state: MET, reason: '모든 동의 정식일이 있어요', todo: null };
       return { state: UNMET, progress: (hs.length - missing.length) / hs.length, reason: `${missing.map((h) => h.name).join(', ')} 정식일이 없어요`, todo: { label: '정식일 기록하기', go: 'record/정식' } };
     },
