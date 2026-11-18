@@ -23,7 +23,10 @@ export default {
   actions: {
     async farmSave(el, ctx) {
       const val = (id) => (document.getElementById(id)?.value ?? '').trim();
-      const num = (s) => (s === '' ? null : Number.isFinite(Number(s)) && Number(s) >= 0 ? Number(s) : null);
+      const valid = (s, max = Infinity) => s === '' || (/^(?:\d+)(?:\.\d+)?$/.test(s) && Number.isFinite(Number(s)) && Number(s) > 0 && Number(s) <= max);
+      const invalid = (ctx.profile.houses || []).some((_, i) => !valid(val(`farmArea${i}`), 100000) || !valid(val(`farmFacilityArea${i}`)) || !valid(val(`farmCount${i}`)));
+      if (invalid) { ctx.toast('면적과 주수를 확인해 주세요'); return; }
+      const num = (s) => s === '' ? null : Number(s);
       const houses = (ctx.profile.houses || []).map((h, i) => ({ ...h, area_m2: num(val(`farmArea${i}`)), facility_area_m2: num(val(`farmFacilityArea${i}`)), plant_count: num(val(`farmCount${i}`)) }));
       const location = val('farmLoc') || ctx.profile.location;
       ctx.S.profile = await ctx.store.saveProfile(ctx.session.uid, { ...ctx.profile, location, houses });

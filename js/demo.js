@@ -142,9 +142,9 @@ export function buildDemoScenario(key, today = new Date()) {
     profile.insurance.crop_coverage_ratio = null;
     profile.insurance.replacement_rider = true;
     const cropRecords = grow.filter(r => !(r.task === '정식' && r.houseIds.includes('h3'))).map(r => ({ ...r, crop: '토마토', task: r.task === '보온(커튼과 난방)' ? '환기와 온도관리' : r.task }));
-    cropRecords.push(W(73, ['h3'], '토마토', '육묘와 정식', '정식'), W(72, ['h3'], '토마토', '육묘와 정식', '정식'));
+    cropRecords.push(W(73, ['h3'], '토마토', '육묘와 정식', '정식'));
     const acc = {
-      type: 'disaster', workDate: ago(1), accident_date: ago(1), continuing: false, houseIds: ['h3'], crop: '토마토',
+      type: 'disaster', workDate: ago(1), accident_date: ago(1), accident_time: '02:00', continuing: false, houseIds: ['h3'], crop: '토마토',
       cause_text: '밤새 바람이 세게 불어서 비닐이 찢어졌어요', peril: ['강풍'], peril_source: 'manual', facility_damage: '비닐 찢어짐', crop_symptom: '잎과 줄기 상함',
       reported_at: ago(0), photo_count: 4, closed: false, memo: '', source_text: '밤새 바람이 세게 불어서 비닐이 찢어졌어요', author: profile.name, createdAt: at(1), updatedAt: null, demo: true,
       alert_check: { source: 'demo', sigungu: '가상군', from: ago(2), to: ago(0), items: [{ date: ago(2), kind: '강풍주의보' }] },

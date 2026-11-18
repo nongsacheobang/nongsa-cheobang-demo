@@ -222,13 +222,14 @@ export function toRecordDoc(state, ctx = {}) {
   if (state.variety) doc.variety = state.variety;
   // 준비도 요인용 필드(기획안 v02 4장). 사진은 MVP에서 개수만(원본은 기기에, D2-06)
   if (state.photo_count != null && state.photo_count !== '') doc.photo_count = toNum(state.photo_count);
-  if (state.pest_seen) doc.pest_seen = String(state.pest_seen);
+  doc.pest_seen = state.pest_seen == null ? '' : String(state.pest_seen);
   if (state.control_target) doc.control_target = String(state.control_target);
   if (['ok', 'problem'].includes(state.house_check_result)) doc.house_check_result = state.house_check_result;
   if (state.repair_of) doc.repair_of = String(state.repair_of);
   if (state.plant_count != null && state.plant_count !== '') doc.plant_count = toNum(state.plant_count);
   if (disaster) {
     doc.accident_date = state.accident_date || '';
+    doc.accident_time = state.accident_time || '';
     doc.continuing = !!state.continuing;
     doc.cause_text = state.cause_text || '';
     doc.mitigation_note = state.mitigation_note || '';
@@ -305,6 +306,7 @@ export function fromRecordDoc(doc) {
   if (doc.plant_count != null) st.plant_count = doc.plant_count;
   if (doc.type === 'disaster') {
     st.accident_date = doc.accident_date || '';
+    st.accident_time = doc.accident_time || '';
     st.continuing = !!doc.continuing;
     st.cause_text = doc.cause_text || '';
     st.mitigation_note = doc.mitigation_note || '';

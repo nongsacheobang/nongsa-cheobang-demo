@@ -54,7 +54,7 @@ export function buildSheet1Rows(profile, records) {
 const SHEET2_HEADERS = [
   '기록ID', '작업일', '시트1 행 번호', '작성시각', '수정시각', '사후입력 여부', '작성자', '작성자 이메일',
   '농장 위치', '하늘상태', '최저기온(℃)', '최고기온(℃)', '강수량(mm)', '날씨 출처', '미완성 항목', '영수증 사진 링크', '가상(데모) 데이터',
-  '입력 방식', '원문 발화',
+  '입력 방식', '원문 발화', '사진 수', '병해충 발견', '방제 대상',
 ];
 
 // 입력 방식: 직접 / 대화(규칙|AI) / 대화 후 직접 입력(규칙|AI)  (입력 항목표 v0.2 "추출 방식")
@@ -98,7 +98,7 @@ export function buildDisasterRows(profile, records) {
     cells: [
       r.id, r.accident_date || '', r.createdAt || '', isBackfill(r) ? 'Y' : 'N', r.cause_text || (Array.isArray(r.peril) ? r.peril.join(', ') : r.peril) || '', plotsText(profile, r.houseIds), r.crop || '',
       (Array.isArray(r.facility_damage) ? r.facility_damage.join(', ') : r.facility_damage) || '', r.crop_symptom || '', r.continuing ? 'Y' : 'N', r.memo || '', r.source_text || '',
-      inputModeText(r), r.author || '', r.demo ? 'Y' : 'N', Array.isArray(r.peril) ? r.peril.join(', ') : '',
+      inputModeText(r), r.author || '', r.demo ? 'Y' : 'N', Array.isArray(r.peril) ? r.peril.join(', ') : '', r.reported_at || '', r.photo_count ?? '', r.closed ? 'Y' : 'N',
     ],
   }));
 }
@@ -172,6 +172,7 @@ export async function buildWorkbook(profile, session, records, readiness = null,
       r.demo ? 'Y' : 'N',
       inputModeText(r),
       r.source_text || null,
+      r.photo_count ?? null, r.pest_seen || null, r.control_target || null,
     ]);
   });
   const ws2 = XLSX.utils.aoa_to_sheet(aoa2);

@@ -93,6 +93,11 @@ export const auth = {
 
   // "데모 계정으로 둘러보기" (심사, 시연용, 가상 데이터 자동 채움)
   async demoAccount() {
+    if (CONFIG.auth === 'firebase' && this.getSession()?.provider === 'firebase') {
+      const { getFirebase } = await import('./firebase-init.js');
+      const { auth: A, authInst } = await getFirebase();
+      await A.signOut(authInst);
+    }
     return saveSession({ uid: 'demo', email: DEMO_EMAIL, demo: true, provider: 'demo-account' });
   },
 

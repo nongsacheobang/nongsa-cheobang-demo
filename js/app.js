@@ -392,21 +392,21 @@ function vList() {
     body += li(r);
   }
   const filters = [['all', '전체'], ...S.profile.houses.map((h) => [h.id, h.name]), ['inc', '미완성만']];
-  return `<section class="scr">
+  return `<section class="scr" data-screen-id="S-REC-LIST">
     <div class="hd"><h1>일지</h1><button class="lnk" data-act="go" data-v="excel">엑셀 내보내기</button></div>
     <div class="bd">
       <div class="flt">${filters.map(([v, l]) => `<button class="chip${f === v ? ' on' : ''}" ${attr({ act: 'listFilter', v })}>${esc(l)}</button>`).join('')}</div>
       <div class="card" style="padding:4px 14px 8px">${body || '<p class="empty">기록이 없어요</p>'}</div>
       <div style="height:60px"></div>
     </div>
-    <button class="big sm fab" data-act="newRecord">+ 일지 쓰기</button>
+    <button class="big sm fab" data-act="newRecord" data-spec-id="B-REC-LIST-04">+ 일지 쓰기</button>
   </section>`;
 }
 
 // ---------- 화면: 일지 상세 ----------
 function vDetail() {
   const r = S.records.find((x) => x.id === S.param);
-  if (!r) return `<section class="scr"><div class="hd"><button class="bk" data-act="go" data-v="list">&lt;</button><h1>일지 상세</h1></div><div class="bd"><p class="empty">기록을 찾을 수 없어요</p></div></section>`;
+  if (!r) return `<section class="scr" data-screen-id="S-REC-DETAIL"><div class="hd"><button class="bk" data-act="go" data-v="list">&lt;</button><h1>일지 상세</h1></div><div class="bd"><p class="empty">기록을 찾을 수 없어요</p></div></section>`;
   const mis = missingFields(r);
   if (isDisaster(r)) return vDisasterDetail(r, mis);
   const ed = CONFIG.features.editDelete;
@@ -441,8 +441,8 @@ function vDetail() {
   if (r.editHistory?.length) h += `<div class="card"><h3>수정 이력</h3>${r.editHistory.map(entry => `<p>${esc(fmtDateTime(entry.at))}: ${esc([...new Set(entry.fields.map(editLabel))].join(', '))}</p>`).join('')}</div>`;
   h += `<div class="card" style="background:#FAFAFA"><p class="mut" style="line-height:1.6">작성 ${esc(fmtDateTime(r.createdAt))}, ${r.updatedAt ? '수정 ' + esc(fmtDateTime(r.updatedAt)) : '수정 없음'}, 작성자 ${esc(r.author || '')}${isBackfill(r) ? ', 사후입력' : ''}${r.demo ? ', 가상 데이터' : ''} (엑셀 시트2)</p></div>`;
   if (ed) h += `<button class="ghost danger" ${attr({ act: 'deleteRecord', v: r.id })}>삭제</button>`;
-  return `<section class="scr">
-    <div class="hd"><button class="bk" data-act="go" data-v="list" aria-label="뒤로">&lt;</button><h1>일지 상세</h1>${ed ? `<button class="lnk" ${attr({ act: 'editRecord', v: r.id })}>수정</button>` : ''}</div>
+  return `<section class="scr" data-screen-id="S-REC-DETAIL">
+    <div class="hd"><button class="bk" data-act="go" data-v="list" data-spec-id="B-REC-DETAIL-04" aria-label="뒤로">&lt;</button><h1>일지 상세</h1>${ed ? `<button class="lnk" ${attr({ act: 'editRecord', v: r.id })}>수정</button>` : ''}</div>
     <div class="bd">${h}</div></section>`;
 }
 

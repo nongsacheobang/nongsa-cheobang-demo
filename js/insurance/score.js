@@ -5,6 +5,9 @@
 
 import { evaluateAll, MET, UNMET, NA, UNKNOWN, planted, latestDisaster, HARVEST_TASKS, currentHarvestRecords, daysBetween } from './rules.js';
 
+// 게이트2 결정 뒤 이 설정에서 부분 점수와 유예 기준을 조정한다.
+export const SCORE_RULES = Object.freeze({ housePartialCredit: true, newFactorGraceDays: 7 });
+
 export const NOTICE = '보험금 지급을 보장하지 않으며, 손해평가, 손해사정이 아닙니다.';
 
 export const SIGNALS = {
@@ -15,6 +18,7 @@ export const SIGNALS = {
 };
 
 const ORDER = ['ready', 'partial', 'risk'];
+const factorCredit = f => f.state === MET ? 1 : (!SCORE_RULES.housePartialCredit && ['R-04', 'R-05', 'R-10'].includes(f.id)) ? 0 : Math.max(0, Math.min(1, Number(f.progress) || 0));
 const lower = (k) => ORDER[Math.min(ORDER.indexOf(k) + 1, ORDER.length - 1)];
 
 // 농사 단계 (3-4)
@@ -37,18 +41,21 @@ export function stageOf(ctx) {
 
 export function computeReadiness(ctx) {
   const factors = evaluateAll(ctx);
+  for (const factor of factors) {
+    if (SCORE_RULES.housePartialCredit && ['R-04', 'R-05', 'R-10'].includes(factor.id)) factor.basis += ' 동별 기록은 재배 동 수에 대한 충족 동 비율로 점수에 반영하는 앱 기준이에요.';
+  }
   const records = (ctx.records || []).filter(r => r.type !== 'disaster');
   // 사후 입력은 작업일이 아니라 실제 입력일부터 유예한다. 입력 시각이 없는 옛 기록만 작업일을 쓴다.
   const recordedDate = r => { const time = (r.availableAt || r.createdAt) && new Date(r.availableAt || r.createdAt); return time && Number.isFinite(time.getTime()) ? new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(time) : r.workDate; };
   const firstDate = predicate => records.filter(predicate).map(recordedDate).filter(d => daysBetween(d, ctx.today) != null && daysBetween(d, ctx.today) >= 0).sort()[0];
   const triggers = { 'R-05': currentHarvestRecords(ctx).map(recordedDate).filter(d => daysBetween(d, ctx.today) != null && daysBetween(d, ctx.today) >= 0).sort()[0], 'R-06': firstDate(r => r.task === '정식'), 'R-07': firstDate(r => r.task === '정식'), 'R-08': firstDate(r => !!r.pest_seen && daysBetween(r.workDate, ctx.today) != null && daysBetween(r.workDate, ctx.today) >= 0 && daysBetween(r.workDate, ctx.today) <= 30), 'R-10': firstDate(r => r.task === '정식') };
-  for (const f of factors) { const age = daysBetween(triggers[f.id], ctx.today); if (f.weight !== 'info' && f.state !== MET && f.state !== NA && !(f.id === 'R-08' && Number(f.progress) > 0) && age != null && age >= 0 && age < 7) { f.pending = true; f.basis += ' 새 항목은 첫 7일 동안 점수에서 제외하는 앱 기준이에요.'; } }
+  for (const f of factors) { const age = daysBetween(triggers[f.id], ctx.today); if (f.weight !== 'info' && f.state !== MET && f.state !== NA && !(f.id === 'R-08' && Number(f.progress) > 0) && age != null && age >= 0 && age < SCORE_RULES.newFactorGraceDays) { f.pending = true; f.basis += ` 새 항목은 첫 ${SCORE_RULES.newFactorGraceDays}일 동안 점수에서 제외하는 앱 기준이에요.`; } }
   const stage = stageOf(ctx);
   const gates = factors.filter((f) => f.weight === 'gate');
   const warnings = factors.filter((f) => f.weight === 'warn' && f.state === UNMET);
   const scored = factors.filter((f) => typeof f.weight === 'number' && f.state !== NA && !f.pending);
   const total = scored.reduce((s, f) => s + f.weight, 0);
-  const got = scored.reduce((s, f) => s + f.weight * (f.state === MET ? 1 : Math.max(0, Math.min(1, Number(f.progress) || 0))), 0);
+  const got = scored.reduce((s, f) => s + f.weight * factorCredit(f), 0);
   const score = total ? Math.round((got / total) * 100) : 0;
 
   const gateOpen = gates.every((g) => g.state === MET || g.state === NA);
@@ -82,6 +89,7 @@ export function computeReadiness(ctx) {
   if (unresolved.length) { const repairTodo = {id:'facility_repair',label:unresolved[0].name+' 수리했어요 기록하기',go:'field',houseId:unresolved[0].id,foundRecordId:unresolved[0].foundRecordId,title:unresolved[0].name + ' 점검 문제'}; if (stage.key === 'accident') todo.push(repairTodo); else todo.unshift(repairTodo); }
 
   return {
+    seasonStarts: Object.fromEntries(activeHouses.map(h => [h.id, records.filter(r => r.task === '정식' && (r.houseIds || []).includes(h.id) && daysBetween(r.workDate, ctx.today) != null && daysBetween(r.workDate, ctx.today) >= 0).map(r => r.workDate).sort().at(-1) || ''])),
     gate_open: gateOpen,
     score: gateOpen ? score : null,
     signal,
@@ -101,9 +109,10 @@ export function explainChange(prev, cur) {
   if (!prev || prev.score == null || cur.score == null) return '';
   const diff = cur.score - prev.score;
   if (cur.stage?.key === 'accident' && prev.stage?.key !== 'accident') return diff < 0 ? `사고 대응 항목이 새로 생겼어요. 준비도 ${diff}점` : '사고 대응 항목이 새로 생겼어요';
+  if (diff < 0 && Object.entries(cur.seasonStarts || {}).some(([id, day]) => day && prev.seasonStarts?.[id] && day > prev.seasonStarts[id])) return '새 작기가 시작돼 이번 작기 기록으로 다시 셉니다';
   if (!diff) return '';
   const before = new Map(prev.factors.map((f) => [f.id, f]));
-  const credit = f => !f || f.pending || f.state === NA ? 0 : f.state === MET ? 1 : Math.max(0, Math.min(1, Number(f.progress) || 0));
+  const credit = f => !f || f.pending || f.state === NA ? 0 : factorCredit(f);
   const turned = cur.factors.filter((f) => typeof f.weight === 'number' && (diff > 0 ? credit(f) > credit(before.get(f.id)) : credit(f) < credit(before.get(f.id))));
   const what = turned.map((f) => f.title).slice(0, 2).join(', ');
   return `${what || '기록이 바뀌어서'} ${diff > 0 ? '+' : ''}${diff}점`;
