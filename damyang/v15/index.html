@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    const desktopPreview = new URLSearchParams(location.search).has('atlas') && matchMedia('(min-width: 900px)');
+    function fitAppFrame() {
+      document.documentElement.classList.toggle('phone-layout', !desktopPreview || !desktopPreview.matches);
+    }
+    fitAppFrame();
+    if (desktopPreview) desktopPreview.addEventListener('change', fitAppFrame);
+  </script>
+  <meta name="theme-color" content="#1E5B3D">
+  <title>농사처방 · 담양 농장 홈</title>
+  <link rel="icon" href="assets/mark.png">
+  <link rel="stylesheet" href="shell.css">
+  <link rel="stylesheet" href="flow.css">
+  <link rel="stylesheet" href="home-v02.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="farm-demo-v07.css">
+  <link rel="stylesheet" href="mall.css">
+  <link rel="stylesheet" href="app-type.css">
+  <link rel="stylesheet" href="app-frame.css">
+  <script defer src="shop-model.js"></script>
+  <script defer src="mall.js"></script>
+  <script defer src="journal-samples.js"></script>
+  <script defer src="flow.js"></script>
+  <script defer src="shell.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-area">본문으로 건너뛰기</a>
+  <aside id="sidebar" class="rail" aria-label="농장 메뉴"></aside>
+  <div class="workspace">
+    <header id="bar" class="shellbar"></header>
+    <main id="main-area" tabindex="-1"></main>
+  </div>
+  <nav id="mobile-nav" class="mobilebar" aria-label="농장 메뉴"></nav>
+  <dialog id="switcher" aria-labelledby="choose-house"></dialog>
+  <div id="live-region" class="sr" role="status" aria-live="polite"></div>
+  <noscript>이 클릭 목업을 사용하려면 브라우저에서 자바스크립트를 켜 주세요.</noscript>
+</body>
+</html>

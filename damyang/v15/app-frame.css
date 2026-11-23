@@ -1,0 +1,124 @@
+/* One viewport for every route. Only the content pane scrolls between the bars. */
+:is(html.phone-layout, html.atlas-screen) {
+  --app-inset: 20px;
+  --app-top: 16px;
+  --app-bar-height: 56px;
+  --app-tab-height: 64px;
+}
+html.phone-layout { background: #edf1ee; }
+
+.phone-layout body {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  width: min(100%, 430px);
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  margin: 0 auto;
+  overflow: hidden;
+  isolation: isolate;
+  background: #fff;
+  box-shadow: 0 0 0 1px #233b2d14, 0 8px 32px #233b2d0b;
+}
+
+.phone-layout #sidebar,
+.phone-layout .desktop-title { display: none; }
+
+.phone-layout .workspace {
+  display: grid;
+  grid-template-rows: calc(var(--app-bar-height) + env(safe-area-inset-top)) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  container-type: inline-size;
+}
+
+.phone-layout #bar {
+  height: 100%;
+  padding: env(safe-area-inset-top) max(var(--app-inset), env(safe-area-inset-right)) 0 max(var(--app-inset), env(safe-area-inset-left));
+  border-bottom: 1px solid var(--farm-edge, #d6dfd7);
+}
+
+.phone-layout #main-area {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+  --ff-stick-top: 0px;
+}
+.phone-layout #main-area::-webkit-scrollbar { display: none; }
+
+.phone-layout #main-area > :is(.orchard-home, .ff-screen, .utility-page, .mall-screen) {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: var(--app-top) max(var(--app-inset), env(safe-area-inset-right)) 24px max(var(--app-inset), env(safe-area-inset-left));
+}
+
+.phone-layout body[data-screen=settings] .utility-page > h1,
+.phone-layout .mall-screen .mall-home-head { min-height: 44px; display: flex; align-items: center; }
+
+.phone-layout #mobile-nav {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  height: calc(var(--app-tab-height) + env(safe-area-inset-bottom));
+  min-height: 0;
+  padding: 4px env(safe-area-inset-right) calc(4px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
+  border-top: 1px solid var(--farm-edge, #d6dfd7);
+}
+
+.phone-layout #switcher { max-width: min(390px, calc(100% - 40px)); }
+
+.phone-layout.large-text .farm-dashboard { margin-top: 10px; }
+.phone-layout.large-text .farm-intro { padding-block: 14px; }
+.phone-layout.large-text .farm-readiness { padding-block: 13px; }
+.phone-layout.large-text .farm-today { margin-top: 14px; }
+.phone-layout.large-text .home-weather { padding-block: 10px; }
+
+@media (max-width: 899px) {
+  html.atlas-screen { background: #edf1ee; }
+  .atlas-screen body { max-width: 430px; margin: 0 auto; background: white; }
+  .atlas-screen .shell { height: 100vh; height: 100dvh; min-height: 0; }
+  .atlas-screen .shell > .body {
+    display: grid;
+    grid-template-rows: calc(var(--app-bar-height) + env(safe-area-inset-top)) minmax(0, 1fr) auto;
+    min-height: 0;
+  }
+  .atlas-screen #top {
+    min-height: 0; height: 100%;
+    padding: env(safe-area-inset-top) var(--app-inset) 0;
+  }
+  .atlas-screen #content {
+    min-width: 0; min-height: 0; overflow: auto; scrollbar-width: none;
+    padding: var(--app-top) var(--app-inset) 24px;
+  }
+  .atlas-screen #content::-webkit-scrollbar { display: none; }
+  .atlas-screen #content[data-compose] { padding-top: 0; }
+  .atlas-screen #content:has(> .mall-screen) { padding: 0; }
+  .atlas-screen #content > .mall-screen { padding: var(--app-top) var(--app-inset) 24px; }
+  .atlas-screen [data-screen=settings] .mast > .kicker { display: none; }
+  .atlas-screen [data-screen=settings] .mast > h1 {
+    display: flex; align-items: center; margin-top: 0; min-height: 44px;
+  }
+  .atlas-screen #farm-dock { position: static; border: 0; }
+  .atlas-screen #farm-dock #actions:not(:empty) { border-top: 1px solid var(--line); }
+  .atlas-screen #mobile-nav {
+    height: calc(var(--app-tab-height) + env(safe-area-inset-bottom));
+    padding: 4px 0 calc(4px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line);
+  }
+  .atlas-screen #mobile-nav .rootnav { height: 100%; gap: 0; }
+  .atlas-screen #mobile-nav .menu-item { justify-content: center; }
+}
+
+@media (max-height: 850px) {
+  .phone-layout.large-text { --app-top: 8px; }
+  .phone-layout.large-text .farm-dashboard { margin-top: 8px; }
+  .phone-layout.large-text .home-weather { padding-block: 8px; }
+  .phone-layout.large-text .farm-readiness { padding-block: 9px; }
+  .phone-layout.large-text .farm-today { margin-top: 9px; }
+  .phone-layout.large-text .orchard-home .entry-row { padding-top: 9px; }
+  .phone-layout.large-text .entry-action { margin-top: 4px; }
+  .phone-layout.large-text .orchard-home .home-cta { padding-top: 7px; }
+}
