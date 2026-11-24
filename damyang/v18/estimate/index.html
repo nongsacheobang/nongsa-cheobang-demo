@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1e5b3d">
+  <title>보험금 예상 범위 · 농사처방</title>
+  <link rel="icon" href="../assets/mark.png">
+  <script src="../farm-nav.js"></script>
+  <script src="visit.js"></script>
+  <link rel="stylesheet" href="insurance.css">
+  <script src="../field-mode.js"></script>
+  <link rel="stylesheet" href="../field-mode.css">
+  <link rel="stylesheet" href="../farm-nav.css">
+  <link rel="stylesheet" href="app-dock.css">
+  <script defer src="amount-model.js"></script>
+  <script defer src="estimate.js"></script>
+  <script defer src="result.js"></script>
+<script src="../example-type.js"></script>
+</head>
+<body>
+  <div class="insurance-viewport">
+  <header class="top">
+    <div class="bar">
+      <span class="brand"><img src="../assets/mark.png" alt="" width="29" height="29">농사처방</span>
+      <span class="area">재해보험</span>
+      <span class="example">시연용 예시</span>
+    </div>
+  </header>
+  <main>
+    <nav class="example-nav" aria-label="보험 예시 이동">
+      <a class="calendar-return" href="../index.html#home"><span aria-hidden="true">‹</span> 농장 홈</a>
+      <a class="calendar-return" id="calendar-return" href="../atlas/insurance.html?p=67">보장 달력 보기 <span aria-hidden="true">›</span></a>
+    </nav>
+    <div class="tabs" role="tablist" aria-label="예상할 보험금 선택">
+      <button type="button" role="tab" data-tab="crop" id="tab-crop" aria-controls="result" aria-selected="true">작물 보험금</button>
+      <button type="button" role="tab" data-tab="facility" id="tab-facility" aria-controls="result" aria-selected="false" tabindex="-1">시설물 보험금</button>
+    </div>
+    <section id="result" role="tabpanel" aria-labelledby="tab-crop">
+      <div class="hero">
+        <div class="result-card">
+          <div class="result-heading">
+            <img id="object" src="../assets/crop-hero.webp" alt="" width="2061" height="763">
+            <div class="heading-copy">
+              <p class="scope">가상 토마토 3동 <span>·</span> 11월 16일 강풍</p>
+              <h1 id="estimate-title">토마토 보험금 예상 범위</h1>
+            </div>
+            <span class="image-note">시연 이미지</span>
+          </div>
+          <p id="amount" class="amount" aria-live="polite" aria-atomic="true"></p>
+          <div id="range-card" class="range-card" aria-hidden="true" hidden></div>
+        </div>
+        <div class="notes">
+          <p id="summary-line"></p>
+          <p>실제 농가 기록과 연결되지 않은 화면안입니다.</p>
+          <p class="notice">보험금 지급을 보장하지 않으며, 손해평가, 손해사정이 아닙니다.</p>
+        </div>
+        <p id="change-note" class="change-note" role="status"></p>
+      </div>
+      <div class="conditions">
+        <h2 id="facts-title">계산에 쓴 조건</h2>
+        <dl class="facts" id="facts"></dl>
+        <details id="evidence">
+          <summary><span id="evidence-title">왜 이 범위인가요?</span><span class="chevron" aria-hidden="true"></span></summary>
+          <div id="evidence-body"></div>
+        </details>
+        <button class="primary" type="button" id="edit">계산 조건 바꾸기</button>
+      </div>
+    </section>
+  </main>
+  </div>
+  <nav id="mobile-nav" class="farm-tabbar" aria-label="농장 메뉴" hidden></nav>
+  <dialog id="editor"></dialog>
+  <noscript>예상 범위와 조건 편집을 보려면 브라우저에서 자바스크립트를 켜 주세요.</noscript>
+</body>
+</html>
