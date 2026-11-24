@@ -1,0 +1,145 @@
+/* The live farm demo and its editable screens share the same type scale. */
+:root {
+  font-size: 100%;
+  --app-copy: 1rem;
+  --app-meta: .875rem;
+  --app-tab: .8125rem;
+  --app-heading: 1.25rem;
+  --app-price: 1.5rem;
+}
+
+html.large-text,
+html.large {
+  font-size: 125%;
+}
+
+body {
+  font-size: var(--app-copy);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:is(#main-area, #content, #switcher, #actions) :is(h1, h2, legend),
+#main-area .ff-labelrow label {
+  font-size: var(--app-heading);
+  line-height: 1.35;
+  font-weight: 650;
+  letter-spacing: -.035em;
+}
+
+:is(#main-area, #content, #switcher, #actions) :is(
+  button, .primary-link, .entry-action, .setting-row, .solid, .secondary,
+  .setting-link, .receipt-link, .supply-link, .ff-btn, .ff-shop-text-link, .ff-jtabs > strong,
+  .mall-primary, .mall-soft, .mall-text-link, summary
+) {
+  font-size: var(--app-copy);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+:is(#main-area, #content) :is(input, select, textarea) {
+  font-size: var(--app-copy);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:is(#main-area, #content) :is(
+  .record-memo, .ff-memo, .ff-entry-text > span, .record-copy strong,
+  .journal-entry > p, .observation-row p, .ff-lead, .intro-story > p,
+  .sub, .tile small, .ff-choice, .ff-line dd, .receipt-facts dd
+) {
+  font-size: var(--app-copy);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:is(#main-area, #content, #switcher) :is(
+  small, figcaption, .record-meta, .record-time, .record-scope, .ff-entry-text > strong,
+  .ff-cal-count, .weekday, .ff-calendar > b, .kicker, .eyebrow, .ff-kicker, .ff-context,
+  .ff-note, .ff-notice, .notice, .ff-error, .ff-muted, .caption, .image-credit,
+  .observation-time, .context-source, .scope label, .scope-season > span, .ff-scope > span,
+  .repair-note, .required-notice, .disclaimer, .access-status, .ff-line dt, .receipt-facts dt,
+  .ff-scope label, .scope-trigger, .ff-pic span, .scope-season strong, .journal-toolbar > p,
+  .ff-cost-result > p, .repair-range > p, .total-note,
+  .mall-fiction, .mall-category, .mall-footnote, .mall-date, .mall-status,
+  .mall-tool > span, .mall-counter,
+  .mall-cart-row p, .mall-line p
+) {
+  font-size: var(--app-meta);
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+:is(#main-area, #content) :is(.sticky, .ff-alert strong, .notice.saved) {
+  font-size: var(--app-copy);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+#main-area .farm-readiness .row-label,
+#main-area .weather-location span,
+#main-area .weather-range,
+#main-area .weather-outlook p {
+  font-size: var(--app-meta);
+  line-height: 1.4;
+}
+
+#main-area .weather-location h1,
+#main-area .scope-key {
+  font-size: var(--app-copy);
+}
+
+#main-area .farm-readiness .status-text {
+  font-size: var(--app-heading);
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+:is(#main-area, #content) :is(
+  h3, .mall-card h2, .mall-cart-row h2, .mall-line strong, .mall-card-foot strong,
+  .ff-tile strong, .tile strong, .mall-line b, .mall-history-row > b
+) {
+  font-size: var(--app-copy);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+#main-area .ff-block:has(> .ff-entry) > h2,
+#content .datehead {
+  font-size: var(--app-meta);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* Older shopping styles lock the size on these three controls. */
+.mall-screen :is(.mall-chip, .mall-add, .mall-remove) {
+  font-size: var(--app-copy) !important;
+  font-weight: 600 !important;
+}
+
+:is(#main-area, #content) :is(.mall-detail-price strong, .mall-total strong, .total-panel .sum) {
+  font-size: var(--app-price);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+:is(#main-area, #content) :is(.ff-cost-result .ff-range, .repair-range strong) {
+  font-size: 1.875rem;
+  line-height: 1.25;
+  font-weight: 650;
+}
+
+#main-area .ff-range span { font-size: var(--app-copy); }
+#main-area .ring-number small { font-size: .75rem; }
+
+#mobile-nav :is(a, .menu-item) {
+  font-size: var(--app-tab);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+#bar :is(.back-link, .crumb),
+#top :is(.toplabel, .tools button) {
+  font-size: var(--app-meta);
+  line-height: 1.35;
+}

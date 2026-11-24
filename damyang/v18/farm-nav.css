@@ -1,0 +1,27 @@
+/* The bottom menu occupies the same row in the farm and insurance views. */
+nav.farm-tabbar {
+  display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); align-items: stretch;
+  width: 100%; height: calc(64px + env(safe-area-inset-bottom,0px)); box-sizing: border-box;
+  margin: 0;
+  padding: 4px env(safe-area-inset-right,0px) calc(4px + env(safe-area-inset-bottom,0px)) env(safe-area-inset-left,0px);
+  border-top: 1px solid #d7e3d8; background: #fff;
+}
+#mobile-nav.farm-tabbar > a {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-width: 0; min-height: 44px; padding: 0; margin: 0;
+  color: #526057; border: 0; border-radius: 8px; background: transparent;
+  font-size: .8125rem; line-height: 1.25; font-weight: 600; text-decoration: none;
+}
+.farm-tabbar .n-label { white-space: nowrap; letter-spacing: -.035em; }
+.farm-tabbar .n-icon { display: grid; place-items: center; width: 44px; height: 25px; border-radius: 15px; }
+.farm-tabbar .shell-icon {
+  display: block; width: 20px; height: 20px;
+  fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; color: inherit;
+}
+#mobile-nav.farm-tabbar > a[aria-current=page] { color: #155537; font-weight: 700; }
+.farm-tabbar a[aria-current=page] .n-icon { background: #e8f1e6; }
+.farm-tabbar a:focus-visible { outline: 2px solid #226e48; outline-offset: -2px; }
+html:not(.phone-layout) body:has(> .workspace) > .mobilebar.farm-tabbar { display: none; }
+@media (forced-colors: active) {
+  .farm-tabbar a[aria-current=page] .n-icon { outline: 1px solid Highlight; }
+}
