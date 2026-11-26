@@ -1,0 +1,61 @@
+:is(#bar, #main-area, #content) .field-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #4a554e;
+  font: 650 .875rem/1.2 "Noto Sans KR", sans-serif;
+  white-space: nowrap;
+}
+.field-state { font-weight: 500; color: #526157; }
+.field-track {
+  display: inline-flex;
+  align-items: center;
+  width: 31px;
+  height: 19px;
+  padding: 2px;
+  border: 1px solid #718278;
+  border-radius: 14px;
+  background: #e3e6e4;
+}
+.field-track::before {
+  content: ""; width: 13px; height: 13px; border-radius: 50%; background: #55645a;
+}
+[data-field-mode][aria-checked=true] .field-track { justify-content: flex-end; background: #446751; border-color: #446751; }
+[data-field-mode][aria-checked=true] .field-track::before { background: #fff; }
+:is(#main-area, #content) .field-setting {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px;
+  padding: 8px 0; border-bottom: 1px solid #e1e3e2;
+}
+.field-setting p { margin: 0; font-size: .875rem; color: #5f6962; }
+.field-setting .field-switch { padding-inline-start: 0; }
+
+/* A separate preference. Using the same root size avoids doubling large text. */
+html.field-mode {
+  font-size: 125%;
+  --green: #40644c; --farm-green: #40644c; --farm-edge: #879d8d; --muted: #5f6962;
+}
+.field-mode :is(#main-area,#content) :is(.ff-note,.required-notice,.ff-muted,.record-meta,.caption,.mall-fiction,.mall-footnote,.mall-date,.access-status) {
+  color: #59645d;
+}
+.field-mode :is(#main-area,#content) :is(.primary-link,.ff-primary,.mall-primary,.solid) {
+  background-color: #3e604a; color: white; font-weight: 700;
+}
+.field-mode :is(#main-area,#content) :is(button:not(.field-switch), .primary-link, .home-save-link, .home-journal-calendar, .insurance-entry, .mall-primary, .mall-soft, .setting-row, .mall-history-row, .ff-choice) {
+  min-height: 54px;
+}
+.field-mode :is(#main-area,#content) :is(input:not([type=checkbox],[type=radio],[type=file]),select,textarea) { min-height: 52px; }
+.field-mode :is(#main-area,#content) :is(.ff-choice, .setting-row, .ff-block, .mall-search, .mall-chip, .mall-stepper) { border-color: #83998a; }
+.field-mode #mobile-nav a[aria-current] .n-icon { background: #e3e9e5; color: #395844; }
+.field-mode .farm-readiness .repair-note { color: #f1f4f2; }
+.field-mode :focus-visible { outline: 3px solid #a95100; outline-offset: 2px; }
+@media (forced-colors:active) {
+  .field-track { border-color: ButtonText; }
+  .field-track::before { background: ButtonText; }
+  [data-field-mode][aria-checked=true] .field-track::before { background: HighlightText; }
+}

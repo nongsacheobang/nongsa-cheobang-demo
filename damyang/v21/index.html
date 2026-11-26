@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; form-action 'none'; object-src 'none'; base-uri 'self'; worker-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    const desktopPreview = new URLSearchParams(location.search).has('atlas') && matchMedia('(min-width: 900px)');
+    function fitAppFrame() {
+      const field = document.documentElement.classList.contains('field-mode');
+      document.documentElement.classList.toggle('phone-layout', field || !desktopPreview || !desktopPreview.matches);
+    }
+    fitAppFrame();
+    if (desktopPreview) desktopPreview.addEventListener('change', fitAppFrame);
+    window.addEventListener('farm-field-change', fitAppFrame);
+  </script>
+  <meta name="theme-color" content="#4d6e59">
+  <title>담양 농사처방 v21 | 농장 홈</title>
+  <meta name="application-name" content="담양 농사처방 v21">
+  <meta name="description" content="가상 농가에서 하우스별 영농일지, 보험 자료와 모의 장보기를 체험할 수 있는 공개 시연입니다.">
+  <link rel="icon" href="assets/mark.svg" type="image/svg+xml"><link rel="alternate icon" href="assets/mark.png"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="shell.css">
+  <link rel="stylesheet" href="flow.css">
+  <link rel="stylesheet" href="home-v02.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="farm-demo-v07.css">
+  <link rel="stylesheet" href="mall.css">
+  <link rel="stylesheet" href="app-type.css">
+  <link rel="stylesheet" href="app-frame.css">
+  <link rel="stylesheet" href="home-actions.css">
+  <link rel="stylesheet" href="field-mode.css">
+  <link rel="stylesheet" href="home-cards.css">
+  <link rel="stylesheet" href="farm-nav.css">
+  <link rel="stylesheet" href="home-v21.css">
+  <script src="farm-nav.js"></script>
+  <script src="field-mode.js"></script>
+  <script defer src="mall-catalog.js"></script>
+  <script defer src="shop-model.js"></script>
+  <script defer src="mall.js"></script>
+  <script defer src="journal-diary-data.js"></script>
+  <script defer src="journal-samples.js"></script>
+  <link rel="stylesheet" href="journal-photo.css">
+  <link rel="stylesheet" href="journal-edit.css">
+  <script defer src="journal-photo.js"></script>
+  <script defer src="field-entry-data.js"></script>
+  <script defer src="journal-edit.js"></script>
+  <script defer src="news-data.js"></script>
+  <script defer src="flow.js"></script>
+  <script defer src="shell.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-area">본문으로 건너뛰기</a>
+  <aside id="sidebar" class="rail" aria-label="농장 메뉴"></aside>
+  <div class="workspace">
+    <header id="bar" class="shellbar"></header>
+    <main id="main-area" tabindex="-1"></main>
+  </div>
+  <nav id="mobile-nav" class="mobilebar farm-tabbar" aria-label="농장 메뉴"></nav>
+  <dialog id="switcher" aria-labelledby="choose-house"></dialog>
+  <div id="live-region" class="sr" role="status" aria-live="polite"></div>
+  <noscript>이 클릭 목업을 사용하려면 브라우저에서 자바스크립트를 켜 주세요.</noscript>
+</body>
+</html>

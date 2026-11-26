@@ -1,0 +1,29 @@
+.journal-photo-tools { margin-block: 10px; }
+.journal-photo-tools [hidden] { display: none !important; }
+.journal-photo-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.journal-photo-actions button {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; min-width: 0; min-height: 46px;
+  border: 1px solid #cbd1cd; border-radius: 12px; padding: 9px 6px;
+  background: white; color: #4d6e59; line-height: 1.35; text-align: center;
+}
+.journal-photo-actions button { white-space: nowrap; }
+:is(.large-text, .field-mode) .journal-photo-actions { grid-template-columns: minmax(0, 1fr); }
+.journal-photo-actions [data-photo-pick="camera"] { background: #eff2f0; border-color: #bac2bd; }
+.journal-photo-actions svg {
+  width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor;
+  stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round;
+}
+.journal-photo-tools .journal-photo-preview {
+  display: block; width: 100%; max-height: 180px; object-fit: contain;
+  background: #f4f5f4; border-radius: 10px; margin-top: 10px;
+}
+.journal-photo-tools .journal-photo-status {
+  margin: 6px 0 0; color: #526357; font-size: .875rem; overflow-wrap: anywhere;
+}
+.journal-photo-status:empty { display: none; }
+.journal-photo-tools [data-photo-clear] {
+  min-height: 44px; padding: 0 2px; border: 0; background: transparent; color: #5b6e62;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.journal-photo-samples > summary { cursor: pointer; min-height: 44px; align-content: center; color: #46564b; }
