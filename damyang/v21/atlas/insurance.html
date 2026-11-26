@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; form-action 'none'; object-src 'none'; base-uri 'self'; worker-src 'none'">
+  <meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>재해보험 시연 안내 · 농사처방</title><link rel="icon" href="../assets/mark.svg" type="image/svg+xml"><link rel="alternate icon" href="../assets/mark.png">
+<link rel="stylesheet" href="../estimate/insurance.css"><link rel="stylesheet" href="../field-mode.css">
+<link rel="stylesheet" href="../farm-nav.css"><link rel="stylesheet" href="../estimate/app-dock.css">
+<script src="../farm-nav.js"></script><script src="../estimate/visit.js"></script>
+<script src="../example-type.js"></script><script src="../field-mode.js"></script>
+</head><body><div class="insurance-viewport"><header class="top"><div class="bar"><span class="brand"><img src="../assets/mark.svg" alt="" width="29" height="29">농사처방</span><span class="area">재해보험</span></div></header>
+<main><nav class="example-nav"><a id="back" class="calendar-return" href="../estimate/index.html">‹ 농사 일정과 보험금 예시</a></nav>
+<section id="terms" hidden><h1>약관 원문 보기</h1><p>시연에 참고한 약관입니다. 내 계약의 보험기간과 보장 조건은 가입한 보험증권에서 확인하세요.</p>
+<h3>약관 원문 발췌</h3><p>NH농협손해보험 농작물재해보험(원예시설) 약관(2602) 별표1, 27쪽<br>명세의 확인일: 2026년 11월 17일</p><ul><li>농업용 시설물(단동하우스, 연동하우스, 유리온실의 구조체와 피복재), 부대시설: 보장개시 "청약을 승낙하고 제1회 보험료 납입할 때", 보장종료 "보험증권에 기재된 보험종료일 24시".</li>
+<li>일조량 부족 外 시설재배 농작물: 같은 칸(위와 같음).</li>
+<li>일조량 부족 재해, 시설재배 농작물: "보험가입일이 속하는 연도 12월부터 이듬해 3월까지. 다만, 보험가입일이 1월부터 3월 사이인 경우에는 아래와 같음 (일조시수 측정기간이 15일 이하인 경우 미보장) ⅰ) 청약을 승낙하고 제1회 보험료 납입할 때부터 3월 31일까지 ⅱ) 보험가입일이 속하는 연도 12월부터 보험증권에 기재된 보험종료일 24시까지."</li>
+<li>"※ 다만 아래의 농작물은 '해당 농업용시설물 내에 농작물을 정식한 시점'과 '청약을 승낙하고 제1회 보험료를 납입한 때'중 늦은 때를 보장개시일로 합니다. - 딸기, 오이, 토마토, 참외, 고추, 호박, 국화, 장미, 수박, 멜론, 파프리카, 상추, 부추, 가지, 배추, 파(대파), 백합, 카네이션, 미나리, 감자, 깻잎"</li>
+<li>[약관] 보통약관 일반조항 제24조 ① 9쪽: "회사는 계약의 청약을 승낙하고 제1회 보험료 등을 받으면 보장개시 시점부터 보장종료 시점까지 [별표1 ... 참조, 이하 '보험기간'이라 합니다.] 이 약관이 정한 바에 따라 보장을 합니다."</li>
+<li>[약관] 제2조 1호 거목 3쪽: "정식일 : 정식을 완료한 날을 말합니다."</li>
+<li>[약관] 제3조 ① 2호 마목 4쪽: 일조량 부족은 "농작물재해보험 사업시행지침에 따라 인정된 일조량 부족 재해 시, 군 등에서 해당 재해로 인해 작물에 피해가 발생한 경우".</li></ul>
+</section></main></div><nav id="mobile-nav" class="farm-tabbar" aria-label="농장 메뉴" hidden></nav>
+<script>
+(() => {
+  const query = new URLSearchParams(location.search);
+  const page = Number(query.get('p') || 67);
+  const target = new URL(InsuranceVisit.link('../estimate/index.html'));
+  if (!target.searchParams.has('house') && !query.get('from')) target.searchParams.set('house', [68,70].includes(page)?'2':'1');
+  if (page === 70) target.searchParams.set('panel','dates');
+  if (page !== 69) { location.replace(target.href); return; }
+  document.getElementById('terms').hidden = false;
+  document.getElementById('back').href = target.href;
+})();
+</script></body></html>

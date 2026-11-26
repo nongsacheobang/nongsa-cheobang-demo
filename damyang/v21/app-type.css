@@ -1,0 +1,160 @@
+ 
+:root {
+  font-size: 100%;
+  --app-title: 1rem;      /* T1 화면 제목·강조 숫자 700 */
+  --app-heading: 1rem;    /* T2 카드 제목 650 */
+  --app-input: 1rem;      /* T3 입력칸·주 버튼 */
+  --app-copy: .9375rem;   /* T4 본문·라벨·보조 버튼 */
+  --app-meta: .8125rem;   /* T5 안내·보조 정보 */
+  --app-tab: .75rem;      /* T6 하단 탭 */
+  --app-price: 1rem;
+}
+
+html.large-text,
+html.large {
+  font-size: 125%;
+}
+
+body {
+  font-size: var(--app-copy);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:is(#main-area, #content, #switcher, #actions) :is(h1, h2, legend),
+#main-area .ff-labelrow label {
+  font-size: var(--app-heading);
+  line-height: 1.35;
+  font-weight: 650;
+  letter-spacing: -.035em;
+}
+
+:is(#main-area, #content, #switcher, #actions) :is(
+  button, .primary-link, .entry-action, .setting-row, .solid, .secondary,
+  .setting-link, .receipt-link, .supply-link, .ff-btn, .ff-shop-text-link, .ff-jtabs > strong,
+  .mall-primary, .mall-soft, .mall-text-link, summary
+) {
+  font-size: var(--app-copy);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+:is(#main-area, #content, #switcher, #actions) h1 { font-size: var(--app-title); font-weight: 700; }
+
+/* 입력칸은 아이폰 자동 확대를 막기 위해 16px 유지, 주 버튼도 16px */
+/* 위 버튼 규칙의 :is() 안에 '.ff-jtabs > strong'이 있어 우선순위가 (1,1,1)이므로 a/button을 붙여 맞춘다 */
+:is(#main-area, #content) :is(.ff-primary, .solid, .mall-primary, .primary-link, .entry-action):is(a, button) { font-size: var(--app-input); }
+
+:is(#main-area, #content) :is(input, select, textarea) {
+  font-size: var(--app-input);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:is(#main-area, #content) :is(
+  .record-memo, .ff-memo, .ff-entry-text > span, .record-copy strong,
+  .journal-entry > p, .observation-row p, .ff-lead, .intro-story > p,
+  .sub, .tile small, .ff-choice, .ff-line dd, .receipt-facts dd
+) {
+  font-size: var(--app-copy);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:is(#main-area, #content, #switcher) :is(
+  small, figcaption, .record-meta, .record-time, .record-scope, .ff-entry-text > strong,
+  .ff-cal-count, .weekday, .ff-calendar > b, .kicker, .eyebrow, .ff-kicker, .ff-context,
+  .ff-note, .ff-notice, .notice, .ff-error, .ff-muted, .caption, .image-credit,
+  .observation-time, .context-source, .scope label, .scope-season > span, .ff-scope > span,
+  .repair-note, .required-notice, .disclaimer, .access-status, .ff-line dt, .receipt-facts dt,
+  .ff-scope label, .scope-trigger, .ff-pic span, .scope-season strong, .journal-toolbar > p,
+  .ff-cost-result > p, .repair-range > p, .total-note,
+  .mall-fiction, .mall-category, .mall-footnote, .mall-date, .mall-status,
+  .mall-tool > span, .mall-counter,
+  .mall-cart-row p, .mall-line p
+) {
+  font-size: var(--app-meta);
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+:is(#main-area, #content) :is(.sticky, .ff-alert strong, .notice.saved) {
+  font-size: var(--app-copy);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+#main-area .farm-readiness .row-label,
+#main-area .weather-location span,
+#main-area .weather-range,
+#main-area .weather-outlook p {
+  font-size: var(--app-meta);
+  line-height: 1.4;
+}
+
+#main-area .weather-location h1,
+#main-area .scope-key {
+  font-size: var(--app-copy);
+}
+
+#main-area .farm-readiness .status-text {
+  font-size: var(--app-heading);
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+:is(#main-area, #content) :is(
+  h3, .mall-card h2, .mall-cart-row h2, .mall-line strong, .mall-card-foot strong,
+  .ff-tile strong, .tile strong, .mall-line b, .mall-history-row > b
+) {
+  font-size: var(--app-copy);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+#main-area .ff-block:has(> .ff-entry) > h2,
+#content .datehead {
+  font-size: var(--app-meta);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* Older shopping styles lock the size on these three controls. */
+.mall-screen :is(.mall-chip, .mall-add, .mall-remove) {
+  font-size: var(--app-copy) !important;
+  font-weight: 600 !important;
+}
+
+:is(#main-area, #content) :is(.mall-detail-price strong, .mall-total strong, .total-panel .sum) {
+  font-size: var(--app-price);
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+:is(#main-area, #content) :is(.ff-cost-result .ff-range, .repair-range strong) {
+  font-size: var(--app-title);
+  line-height: 1.25;
+  font-weight: 650;
+}
+
+#main-area .ff-range span { font-size: var(--app-copy); }
+#main-area .ring-number small { font-size: .75rem; }
+
+#mobile-nav :is(a, .menu-item) {
+  font-size: var(--app-tab);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* 16px 상한: 예전 화면별 CSS에 남아 있던 큰 글자(기온·점수·브랜드·화살표) */
+#main-area :is(.weather-temperature, .weather-temperature span, .ring-number),
+#main-area .ff-entry > b, #bar .brand, #sidebar .brand {
+  font-size: var(--app-title);
+}
+#main-area :is(.weather-temperature, .ring-number) { font-weight: 700; }
+
+#bar :is(.back-link, .crumb),
+#top :is(.toplabel, .tools button) {
+  font-size: var(--app-meta);
+  line-height: 1.35;
+}

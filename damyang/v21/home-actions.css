@@ -1,0 +1,66 @@
+.orchard-home .farm-cover {
+  display: grid;
+  gap: 16px;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.orchard-home .home-weather,
+.orchard-home .farm-readiness { border-radius: 18px; }
+.orchard-home .home-weather { box-shadow: inset 0 0 0 1px #55708913; }
+.orchard-home .journal-head, .orchard-home .insurance-heading {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0 8px;
+}
+.orchard-home .journal-head h2, .orchard-home .insurance-heading h2 { margin: 0; }
+.orchard-home .home-journal-calendar {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 44px;
+  color: #4e6c58; font-size: .875rem; font-weight: 650; text-decoration: none;
+}
+.orchard-home .home-journal-calendar svg { width: 17px; height: 17px; }
+.home-latest {
+  padding: 0 0 10px;
+}
+.orchard-home .home-latest p { margin: 0; }
+.orchard-home .home-latest .record-memo {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  margin-top: 3px;
+}
+.home-record-actions, .insurance-actions {
+  display: grid; grid-template-columns: minmax(0, 1.14fr) minmax(0, 1fr); gap: 8px;
+}
+.orchard-home .home-save-link, .orchard-home .home-record-actions .primary-link, .orchard-home .insurance-entry {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  min-width: 0; min-height: 48px; gap: 6px; padding: 6px 8px; border-radius: 12px;
+  font-size: 1rem; font-weight: 650; line-height: 1.35; text-decoration: none;
+}
+.home-save-link { background: #f0f3f1; color: #43634f; border: 1px solid #c0c6c2; }
+.home-save-link:hover, .insurance-entry:hover { background: #e8edea; }
+.orchard-home .home-insurance { margin-top: 18px; padding-top: 14px; border-top: 1px solid #dee1df; }
+.orchard-home .insurance-heading { margin-bottom: 9px; justify-content: flex-start; }
+.insurance-heading span { color: #526057; font-size: .875rem; }
+.insurance-actions { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+.orchard-home .insurance-entry {
+  color: #425f4c; background: #fff; border: 1px solid #c6ccc8;
+  font-size: .9375rem;
+}
+.orchard-home .insurance-entry svg { width: 18px; height: 18px; }
+.phone-layout .farm-today { margin-top: 10px; }
+.phone-layout #bar .back-link { min-width: 0; }
+.phone-layout #bar .field-switch { flex-shrink: 0; margin-inline-end: -4px; }
+@media (max-width: 350px) {
+  .orchard-home .home-record-actions, .orchard-home .insurance-actions { gap: 6px; }
+  .orchard-home .insurance-entry { padding-inline: 4px; }
+}
+@media (max-height: 850px) {
+  .phone-layout:is(.large-text,.field-mode) .home-latest .record-memo { -webkit-line-clamp: 1; }
+}
+.phone-layout.field-mode .home-insurance { margin-top: 9px; padding-top: 7px; }
+.phone-layout.field-mode .home-weather { padding-block: 10px; }
+.phone-layout.field-mode .farm-readiness { padding-block: 11px; }
+.phone-layout.field-mode .farm-dashboard { margin-top: 8px; }
+@media (max-height: 850px) {
+  .phone-layout.field-mode { --app-top: 8px; }
+  .phone-layout.field-mode .home-weather { padding-block: 8px; }
+  .phone-layout.field-mode .farm-readiness { padding-block: 9px; }
+}

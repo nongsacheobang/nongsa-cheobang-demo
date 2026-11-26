@@ -1,0 +1,22 @@
+@font-face {
+  font-family: "Noto Sans KR";
+  src: url("assets/NotoSansKR-VF.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+:root {
+  --brand-green: #4d6e59;
+  --forest: #415949;
+  --ink: #171717;
+  --body: #353535;
+  --muted: #5c5c5c;
+  --line: #dee1df;
+  --mist: #f3f5f4;
+  color-scheme: light;
+}
+html, body, button, input, select, textarea {
+  font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+button, input, textarea, select { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 3px solid #557a62; outline-offset: 3px; }
