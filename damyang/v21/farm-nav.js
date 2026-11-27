@@ -14,7 +14,7 @@
   const contextKeys = {
     atlas:/^\d{1,2}$/, view:/^field$/, branch:/^[a-z0-9-]{1,50}$/,
     mallPreview:/^[a-z0-9-]{1,50}$/, frame:/^(?:[4-9]|[1-5]\d|6[0-6])$/,
-    atlasRun:/^[\w.-]{1,90}$/, typeSize:/^(?:large|basic)$/
+    atlasRun:/^[\w.-]{1,90}$/, typeSize:/^(?:large|basic)$/, trial:/^1$/
   };
   const editorPages = {journal:6, shop:27, settings:5};
   function copyContext(source, dest) {
@@ -59,7 +59,7 @@
   }
 
 
-  const LAST = 'damyang-public-v21-nav';
+  const LAST = (window.FarmTrial?.ns||'damyang-public-v21-')+'nav';
   const still = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   let shown = '';
   function place(nav, a, animate) {

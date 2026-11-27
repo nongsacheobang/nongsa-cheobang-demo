@@ -1,0 +1,747 @@
+/* 261126 기능 데모: 체험본(?trial=1)에서만 그려지는 요소. 기존 색과 글자 크기를 그대로 쓴다. */
+.ff-screen .ff-next-tag { margin: 0 0 .35em; color: #44644f; font-size: .875rem; font-weight: 700; }
+.ff-screen .ff-heading .ff-next-tag { margin-top: .5em; }
+.ff-screen .ff-next .ff-btn { width: 100%; margin-top: .6em; }
+.ff-screen .ff-plan-head { margin: 1em 0 .4em; font-size: 1rem; }
+.ff-calendar button .ff-cal-plan { display: block; color: #44644f; font-size: .6875rem; font-weight: 700; line-height: 1.1; }
+.trial-reset { display: grid; gap: 10px; }
+.trial-confirm { border: 1px solid var(--line, #d7ddd8); border-radius: 12px; padding: 12px 14px; background: #fff; }
+.trial-confirm p { margin: 0 0 10px; }
+.trial-confirm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.utility-page .trial-confirm-actions button { flex: 1 1 120px; }
+.utility-page .trial-confirm-actions .trial-danger { border-color: #b25400; color: #8a3f00; font-weight: 700; }
+.ff-screen .ff-cal-legend .ff-cal-plan-legend { display: block; margin-top: .3em; }
+
+/* 261127 효신 11/26 요청 + 허간 요청(체험본): 하단 탭 이름 항상 표시. 올라오는 원·움직임은 빼고,
+   지금 화면 탭은 진한 브랜드 녹색, 나머지는 옅은 회녹색 */
+html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav.farm-tabbar { height: 60px; }
+html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav.farm-tabbar > a { height: 60px; position: relative; color: #8a948e; }
+html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav .nav-bubble,
+html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav a[aria-current=page]::before { display: none !important; content: none; }
+html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav a .n-icon,
+html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav a[aria-current=page] .n-icon { transform: translateY(-9px); background: transparent; color: inherit; transition: none; animation: none; }
+html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav .n-label,
+html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav a[aria-current=page] .n-label { position: absolute; left: 0; right: 0; transform: none; top: auto; bottom: 5px; width: auto; height: auto; clip: auto; overflow: visible; text-align: center; font-size: .6875rem; font-weight: 500; color: inherit; animation: none; }
+html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav.farm-tabbar > a[aria-current=page] { color: #2f5a3e; }
+html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav a[aria-current=page] .n-label { font-weight: 700; }
+html.trial.phone-layout #main-area::after, html.trial.insurance-in-app .insurance-viewport::after { height: calc(116px + env(safe-area-inset-bottom, 0px)); }
+html.trial.phone-layout #ff-form > .ff-save-bar { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+/* 홈 머리의 보험 소식 줄: 특보(주황)와 구분해 초록 계열 */
+.h23-hero .h22-alert.h22-due b { background: rgba(207,227,213,.18); color: #d7ecdd; }
+/* 두 번째 줄도 첫 줄처럼 위 선과 10px 띄운다(날씨 줄 아래 간격과 같게) */
+.h23-hero .h22-alert + .h22-alert { padding-top: 10px; }
+/* 261127 보험 결과 화면(체험본): 첫 화면과 분리. '보험 첫 화면으로'는 '인증부터 다시 보기'와 같은 모양 */
+.damage-first[hidden], .result-back[hidden], .last-check[hidden] { display: none !important; }
+/* 첫 화면 아래 '지난 조회' 상자: 피해 안내 상자와 같은 모양 */
+.last-check { display: flex; align-items: center; gap: 12px; margin: 12px 0 20px; padding: 12px 12px 12px 16px; border: 1px solid var(--line, #dfe5e0); border-radius: 12px; background: #fff; }
+.last-check p { flex: 1; min-width: 0; margin: 0; line-height: 1.4; }
+.last-check-kicker { display: block; color: var(--muted, #5f6b63); font-size: .8125rem; }
+.last-check strong { display: block; font-size: .9375rem; }
+.last-check small { display: block; margin-top: 2px; color: var(--muted, #5f6b63); font-size: .8125rem; }
+.last-check-open { flex: none; min-height: 44px; padding: 0 14px; border: 1px solid var(--green, #3f5747); border-radius: 10px; background: #fff; color: var(--green, #3f5747); font: inherit; font-size: .9375rem; font-weight: 700; cursor: pointer; }
+.last-check-open:focus-visible { outline: 3px solid #986522; outline-offset: 2px; }
+html.ins-result-view .example-intro { margin-top: 4px; }
+/* 261127 24절기(효신 요청): 달력 칸·범례·날짜 제목, 홈 날짜 줄 */
+.ff-calendar button .ff-cal-term { display: block; color: #8a5a1c; font-size: .625rem; font-weight: 700; line-height: 1.1; letter-spacing: -.02em; }
+.ff-screen .ff-cal-legend .ff-cal-term-legend { display: block; margin-top: .3em; color: #8a5a1c; }
+.ff-screen .ff-day-term { color: #8a5a1c; font-size: .8125rem; font-weight: 600; white-space: nowrap; }
+.h22-date .h22-term { white-space: nowrap; }
+/* 261127 소식(체험본): 브런치처럼 글 중심. 색은 기존 녹색·회색·주황(특보)만 쓴다 */
+.bn-news .bn-head h1 { font-size: 1.625rem; font-weight: 800; letter-spacing: -.03em; }
+.bn-news .news-lead { margin-top: 6px; }
+.bn-tabs { display: flex; gap: 20px; margin: 20px -16px 0; padding: 0 16px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid #e6e9e7; }
+.bn-tabs::-webkit-scrollbar { display: none; }
+.utility-page .bn-tab { flex: none; min-height: 44px; padding: 0 0 2px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: #8a948e; font: inherit; font-size: .9375rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.utility-page .bn-tab[aria-pressed="true"] { border-bottom-color: #2f3a33; background: none; color: #171717; font-weight: 800; }
+.bn-tab:focus-visible { outline: 3px solid #4d6e59; outline-offset: -3px; }
+.bn-cat { color: #4d6e59; font-size: .8125rem; font-weight: 700; letter-spacing: .01em; }
+.bn-cat.is-alert { color: #b25400; }
+.bn-sub { color: #5d6861; font-size: .9375rem; line-height: 1.6; }
+.bn-meta, .bn-byline { color: #8a948e; font-size: .8125rem; }
+.bn-feature { display: grid; gap: 8px; margin: 20px 0 4px; padding: 24px 20px 22px; border-radius: 16px; background: #f1f5f2; color: inherit; text-decoration: none; }
+.bn-feature[data-cat="weather"] { background: #fbf2e8; }
+.bn-feature strong { color: #171717; font-size: 1.375rem; font-weight: 800; line-height: 1.38; letter-spacing: -.03em; word-break: keep-all; }
+.bn-feature:focus-visible, .bn-item:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+.bn-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.bn-list li + li { border-top: 1px solid #eef0ef; }
+.bn-item { display: flex; align-items: flex-start; gap: 16px; padding: 22px 0; color: inherit; text-decoration: none; border-radius: 0; }
+.bn-item:hover { background: none; }
+.bn-item:hover strong { text-decoration: underline; text-underline-offset: .2em; }
+.bn-text { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.bn-item strong { color: #171717; font-size: 1.0625rem; font-weight: 700; line-height: 1.45; letter-spacing: -.02em; word-break: keep-all; }
+.bn-item .bn-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .875rem; }
+.bn-thumb { flex: none; display: grid; place-items: center; width: 72px; height: 72px; margin-top: 22px; border-radius: 10px; background: #eef3ef; color: #4d6e59; }
+.bn-thumb .shell-icon { width: 28px; height: 28px; }
+.bn-thumb[data-cat="weather"] { background: #fbf0e3; color: #b25400; }
+.bn-thumb[data-cat="support"] { background: #eef0df; color: #5d6a2c; }
+.bn-thumb[data-cat="notice"] { background: #e8eef2; color: #3c6273; }
+.bn-thumb[data-cat="farming"] { background: #f1ebe0; color: #75592f; }
+/* 글 보기 */
+.bn-article { max-width: 620px; }
+.bn-cover { display: grid; gap: 10px; margin: 4px 0 0; padding: 0 0 22px; border-bottom: 1px solid #e6e9e7; }
+.bn-article .bn-cover h1 { margin: 0; font-size: 1.625rem; font-weight: 800; line-height: 1.38; letter-spacing: -.035em; word-break: keep-all; }
+.bn-cover .bn-sub { margin: 0; font-size: 1rem; }
+.bn-cover .bn-byline { margin: 6px 0 0; }
+.bn-body { margin: 26px 0 0; }
+.bn-body p { margin: 0 0 1.25em; color: #2f3a33; font-size: 1.0625rem; line-height: 1.9; letter-spacing: -.01em; word-break: keep-all; }
+.bn-article > .primary-link { margin-top: 16px; }
+.bn-more { margin-top: 36px; padding-top: 8px; border-top: 8px solid #f4f6f5; }
+.bn-more h2 { margin: 18px 0 0; font-size: 1rem; }
+/* 제목 크기: 기존 .news-page h1(앱 제목 크기)보다 우선 */
+html.trial #main-area .bn-news .bn-head h1 { font-size: 1.625rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.3; }
+html.trial #main-area .bn-article .bn-cover h1 { font-size: 1.5rem; font-weight: 800; line-height: 1.4; letter-spacing: -.035em; }
+html.trial .ff-screen .ff-cal-legend:has(.ff-cal-term-legend) { flex-wrap: wrap; }
+html.trial .ff-screen .ff-cal-legend .ff-cal-term-legend, html.trial .ff-screen .ff-cal-legend .ff-cal-plan-legend { flex-basis: 100%; margin-top: .1em; }
+html.trial .ff-calendar button .ff-cal-term { font-size: .6875rem; }
+/* 261127 구르미(AI 비서 예시, 체험본): 단색 주먹밥 + 눈. 표식은 얼굴 + '구르미 …' 한 줄 */
+.sc-face { display: block; flex: none; }
+.sc-mark { display: inline-flex; align-items: center; gap: 5px; color: #2f5a3e; font-size: .8125rem; font-weight: 700; }
+.sc-mark-face { width: 20px; height: 20px; }
+.sc-demo { margin-left: 6px; padding: 1px 6px; border-radius: 6px; background: #eef1ef; color: #5d6861; font-size: .6875rem; font-weight: 600; }
+.sc-brief { margin: 16px 16px 0; padding: 16px; border: 1px solid #e3e8e4; border-radius: 16px; background: #fff; }
+.sc-head { display: flex; align-items: center; gap: 12px; }
+.sc-head-face { width: 48px; height: 48px; }
+.sc-kicker { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: 0; }
+.sc-brief h2 { margin: 2px 0 0; color: #171717; font-size: 1.0625rem; font-weight: 800; line-height: 1.4; letter-spacing: -.02em; }
+.sc-brief h2:focus { outline: none; }
+.sc-tasks { list-style: none; margin: 12px 0 0; padding: 0; }
+.sc-task { padding: 12px 0; border-top: 1px solid #eef0ef; }
+.sc-task strong { display: block; color: #171717; font-size: 1rem; font-weight: 700; line-height: 1.45; }
+.sc-task.is-done strong { color: #5d6861; }
+.sc-check { margin-right: 6px; color: #2f5a3e; }
+.sc-sub { display: block; margin-top: 2px; color: #5d6861; font-size: .875rem; }
+.sc-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.sc-chip { padding: 2px 8px; border-radius: 999px; background: #f1f5f2; color: #44644f; font-size: .75rem; font-weight: 600; }
+.sc-why { min-height: 28px; padding: 0 8px; border: 0; background: none; color: #2f5a3e; font: inherit; font-size: .8125rem; font-weight: 700; text-decoration: underline; text-underline-offset: .2em; cursor: pointer; }
+.sc-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.sc-btn { min-height: 40px; padding: 0 14px; border: 1px solid #d5dcd7; border-radius: 10px; background: #fff; color: #2f3a33; font: inherit; font-size: .875rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.sc-btn.sc-primary { border-color: #3f6a4c; background: #3f6a4c; color: #fff; }
+.sc-btn.sc-quiet { border-color: transparent; color: #6b756f; }
+.sc-btn:focus-visible, .sc-why:focus-visible, .sc-cal-link:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+.sc-wide { width: 100%; margin-top: 8px; }
+.sc-cal-link { display: flex; justify-content: space-between; align-items: center; min-height: 44px; margin-top: 6px; padding-top: 6px; border-top: 1px solid #eef0ef; color: #2f5a3e; font-size: .875rem; font-weight: 700; text-decoration: none; }
+.sc-status:empty { display: none; }
+.sc-status { margin: 6px 0 0; color: #44644f; font-size: .8125rem; }
+.sc-sheet { width: min(420px, calc(100vw - 32px)); border: 0; border-radius: 16px; padding: 20px; }
+.sc-sheet::backdrop { background: rgba(20,30,24,.45); }
+.sc-sheet-head { display: flex; gap: 12px; align-items: center; }
+.sc-sheet-face { width: 44px; height: 44px; }
+.sc-sheet h2 { margin: 2px 0 0; font-size: 1.0625rem; line-height: 1.4; }
+.sc-why-list { margin: 16px 0 0; }
+.sc-why-list div { padding: 8px 0; border-top: 1px solid #eef0ef; }
+.sc-why-list dt { color: #5d6861; font-size: .8125rem; font-weight: 700; }
+.sc-why-list dd { margin: 2px 0 0; color: #2f3a33; font-size: .9375rem; line-height: 1.5; }
+.sc-note { margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: #f4f6f5; color: #4a544e; font-size: .8125rem; line-height: 1.5; }
+/* 달력 */
+.sc-calbar { display: flex; align-items: center; gap: 10px; margin: 12px 0 0; padding: 12px; border-radius: 14px; background: #f1f5f2; }
+.sc-calbar-face { width: 36px; height: 36px; }
+.sc-calbar p { flex: 1; min-width: 0; margin: 0; }
+.sc-calbar strong { display: block; font-size: .9375rem; }
+.sc-calbar span { display: block; color: #5d6861; font-size: .8125rem; }
+.sc-calbar:focus { outline: none; }
+.ff-calendar button .ff-cal-sug { display: block; margin: 1px auto 0; padding: 0 3px; border: 1px dashed #3f6a4c; border-radius: 4px; color: #2f5a3e; font-size: .625rem; font-weight: 700; line-height: 1.3; width: max-content; }
+.ff-calendar button .ff-cal-sug.is-accepted { border-style: solid; background: #3f6a4c; color: #fff; }
+.ff-screen .ff-cal-legend .ff-cal-sug-legend { flex-basis: 100%; margin-top: .1em; color: #2f5a3e; }
+.sc-day-head { display: flex; }
+.sc-day { list-style: none; margin: 0; padding: 0; }
+.sc-day li { padding: 10px 12px; margin-top: 8px; border-radius: 12px; border: 1px dashed #3f6a4c; }
+.sc-day li.is-accepted { border-style: solid; background: #f4f8f5; }
+.sc-day strong { display: block; font-size: .9375rem; }
+.sc-day span { display: block; color: #5d6861; font-size: .8125rem; }
+.sc-day .sc-ok { display: inline-flex; align-items: center; color: #2f5a3e; font-weight: 700; font-size: .8125rem; }
+.sc-fail { color: #a03d00; font-size: .8125rem; }
+@media (min-width: 900px) { .sc-brief { margin: 16px 0 0; } }
+/* 구르미 브리핑 줄이기: 동그라미 체크 + 작은 글자 버튼 */
+.sc-task { display: flex; gap: 12px; align-items: flex-start; }
+.sc-task-main { flex: 1; min-width: 0; }
+.sc-tick { flex: none; display: grid; place-items: center; width: 32px; height: 32px; margin-top: 0; border: 2px solid #9fb2a5; border-radius: 50%; background: #fff; color: transparent; font-size: .9375rem; font-weight: 800; cursor: pointer; }
+.sc-tick::after { content: ''; position: absolute; }
+.sc-tick { position: relative; }
+.sc-tick::before { content: ''; position: absolute; inset: -6px; }
+.sc-tick[aria-pressed="true"] { border-color: #3f6a4c; background: #3f6a4c; color: #fff; }
+.sc-tick:focus-visible, .sc-link:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+.sc-task.is-done strong { color: #6b756f; text-decoration: line-through; text-decoration-color: #b7c2bb; }
+.sc-chips { margin-top: 6px; }
+.sc-acts { display: flex; gap: 2px; margin-top: 4px; }
+.sc-link { min-height: 36px; padding: 0 8px 0 0; margin-right: 8px; border: 0; background: none; color: #6b756f; font: inherit; font-size: .8125rem; font-weight: 600; cursor: pointer; }
+.sc-link.sc-strong { color: #2f5a3e; font-weight: 800; }
+/* 구르미 위젯(261127 허간: 화면이 복잡해 홈 카드 대신 떠 있는 버튼 하나) */
+.sc-fab { position: fixed; right: 16px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 40; display: grid; place-items: center; width: 56px; height: 56px; padding: 0; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 4px 14px rgba(20,40,28,.18); cursor: pointer; }
+.sc-fab-face { width: 40px; height: 40px; transform: translateY(-1px); }
+.sc-fab:focus-visible { outline: 3px solid #4d6e59; outline-offset: 3px; }
+.sc-badge { position: absolute; top: -2px; right: -2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #b25400; color: #fff; font-size: .75rem; font-weight: 800; line-height: 20px; text-align: center; }
+.sc-bubble { position: fixed; right: 80px; bottom: calc(108px + env(safe-area-inset-bottom, 0px)); z-index: 40; max-width: 210px; margin: 0; padding: 9px 12px; border-radius: 14px 14px 4px 14px; background: #2f3a33; color: #fff; font-size: .8125rem; font-weight: 600; line-height: 1.4; box-shadow: 0 4px 14px rgba(20,40,28,.2); cursor: pointer; animation: sc-pop .25s ease-out; }
+@keyframes sc-pop { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .sc-bubble { animation: none; } }
+@media (min-width: 900px) { .sc-fab { right: 28px; bottom: 28px; } .sc-bubble { right: 92px; bottom: 40px; } }
+.sc-main-sheet { width: min(480px, 100vw); max-width: 100vw; max-height: 86vh; margin: auto auto 0; padding: 0; border-radius: 20px 20px 0 0; overflow: auto; }
+@media (min-width: 900px) { .sc-main-sheet { margin: auto; border-radius: 20px; } }
+.sc-main-sheet .sc-brief { margin: 0; border: 0; border-radius: 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px)); }
+.sc-main-sheet .sc-head { align-items: flex-start; }
+.sc-main-sheet .sc-head > div { flex: 1; min-width: 0; }
+.sc-close { flex: none; width: 40px; height: 40px; margin: -6px -8px 0 0; border: 0; border-radius: 50%; background: none; color: #5d6861; font-size: 1.125rem; cursor: pointer; }
+.sc-close:focus-visible { outline: 3px solid #4d6e59; }
+.sc-calrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; padding: 12px; border-radius: 12px; background: #f1f5f2; }
+.sc-calrow p { flex: 1 1 160px; margin: 0; }
+.sc-calrow strong { display: block; font-size: .9375rem; }
+.sc-calrow span { display: block; color: #5d6861; font-size: .8125rem; }
+/* 구르미: 홈 인사말 오른쪽 얼굴(떠 있는 버튼 대신) */
+.sc-hello-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sc-hello-row .h22-hello { flex: 1; min-width: 0; }
+.sc-hero { position: relative; flex: none; display: grid; place-items: center; width: 52px; height: 52px; margin-top: 6px; padding: 0; border: 0; border-radius: 50%; background: rgba(255,255,255,.92); box-shadow: 0 2px 10px rgba(0,0,0,.18); cursor: pointer; }
+.sc-hero-face { width: 38px; height: 38px; }
+.sc-hero:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.sc-hero .sc-badge { top: -3px; right: -3px; }
+/* 구르미 위젯 v2(261127 허간): 끌어서 옮기기, 네 모서리 자석, 금지 영역 밀어내기, 말풍선 */
+.sc-fab { position: fixed; left: 0; top: 0; right: auto; bottom: auto; z-index: 45; width: 56px; height: 56px; touch-action: none; user-select: none; -webkit-user-select: none; will-change: transform; transition: box-shadow .2s, scale .2s; }
+.sc-fab.is-snapping { transition: transform .5s cubic-bezier(.34,1.56,.64,1), box-shadow .2s, scale .2s; }
+.sc-fab.is-dragging { cursor: grabbing; scale: 1.08; box-shadow: 0 10px 24px rgba(20,40,28,.28); }
+.sc-fab.is-repel { scale: .9; box-shadow: 0 0 0 6px rgba(178,84,0,.18), 0 6px 16px rgba(20,40,28,.22); }
+.sc-fab.is-repel .sc-fab-face { animation: sc-shake .25s ease-in-out infinite; }
+@keyframes sc-shake { 0%,100% { translate: 0 0; } 25% { translate: -1.5px 0; } 75% { translate: 1.5px 0; } }
+@media (prefers-reduced-motion: reduce) { .sc-fab, .sc-fab.is-snapping { transition: none; } .sc-fab.is-repel .sc-fab-face { animation: none; } }
+@media (min-width: 900px) { .sc-fab { right: auto; bottom: auto; } }
+.sc-bubble-pop { position: fixed; z-index: 44; display: none; overflow: auto; overscroll-behavior: contain; border-radius: 18px; background: #fff; box-shadow: 0 12px 36px rgba(20,40,28,.24), 0 0 0 1px rgba(20,40,28,.06); }
+.sc-bubble-pop.is-open { display: block; animation: sc-bubble-in .22s ease-out; }
+.sc-bubble-pop[data-tail^="b"].is-open { transform-origin: var(--tail) 100%; }
+.sc-bubble-pop[data-tail^="t"].is-open { transform-origin: var(--tail) 0; }
+@keyframes sc-bubble-in { from { opacity: 0; scale: .86; } }
+@media (prefers-reduced-motion: reduce) { .sc-bubble-pop.is-open { animation: none; } }
+.sc-bubble-pop .sc-brief { margin: 0; border: 0; border-radius: 0; padding: 16px 16px 14px; }
+.sc-bubble-pop .sc-head { align-items: flex-start; }
+.sc-bubble-pop .sc-head > div { flex: 1; min-width: 0; }
+.sc-bubble-pop .sc-head-face { width: 40px; height: 40px; }
+/* 말풍선 꼬리: 겉은 넘침 보이게, 안쪽 내용만 스크롤 */
+.sc-bubble-pop { overflow: visible; }
+.sc-bubble-pop.is-open { display: flex; flex-direction: column; }
+.sc-bubble-pop .sc-brief { overflow: auto; overscroll-behavior: contain; max-height: inherit; border-radius: 18px; }
+.sc-bubble-pop::after { content: ''; position: absolute; left: calc(var(--tail, 28px) - 9px); width: 18px; height: 18px; background: #fff; rotate: 45deg; box-shadow: 3px 3px 6px rgba(20,40,28,.08); }
+.sc-bubble-pop[data-tail^="b"]::after { bottom: -8px; }
+.sc-bubble-pop[data-tail^="t"]::after { top: -8px; box-shadow: -3px -3px 6px rgba(20,40,28,.06); }
+/* 구르미 말풍선 안 격자(261127 허간): 8px 단위, 바깥 여백 16, 칸 사이 8 */
+.sc-bubble-pop .sc-brief { display: grid; gap: 12px; padding: 16px; }
+.sc-bubble-pop .sc-head { display: grid; grid-template-columns: 40px 1fr 32px; gap: 0 12px; align-items: center; }
+.sc-bubble-pop .sc-head-face { width: 40px; height: 40px; }
+.sc-head-text { min-width: 0; }
+.sc-bubble-pop .sc-kicker { gap: 6px; }
+.sc-name { color: #2f5a3e; font-size: .8125rem; font-weight: 800; }
+.sc-bubble-pop .sc-demo { margin-left: 0; }
+.sc-bubble-pop .sc-brief h2 { margin-top: 2px; font-size: 1rem; line-height: 1.4; }
+.sc-bubble-pop .sc-close { width: 32px; height: 32px; margin: 0; align-self: start; font-size: 1rem; }
+.sc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sc-stat { display: grid; gap: 2px; min-height: 56px; padding: 8px 12px; border-radius: 12px; background: #f4f7f5; color: inherit; text-decoration: none; align-content: center; }
+.sc-stat span { color: #5d6861; font-size: .75rem; font-weight: 600; }
+.sc-stat b { color: #171717; font-size: 1.125rem; font-weight: 800; line-height: 1.2; letter-spacing: -.02em; }
+.sc-stat b small { margin-left: 1px; color: #6b756f; font-size: .75rem; font-weight: 700; }
+.sc-stat.is-link { background: #eaf2ec; }
+.sc-stat.is-link b small { color: #2f5a3e; }
+.sc-stat.is-link:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+.sc-section { margin: 4px 0 -4px; color: #5d6861; font-size: .75rem; font-weight: 700; letter-spacing: .01em; }
+.sc-bubble-pop .sc-tasks { margin: 0; border-top: 1px solid #eef0ef; }
+.sc-bubble-pop .sc-task { display: grid; grid-template-columns: 32px 1fr; gap: 0 12px; align-items: start; padding: 12px 0; border-top: 0; border-bottom: 1px solid #eef0ef; }
+.sc-bubble-pop .sc-tick { width: 28px; height: 28px; margin: 0 2px; }
+.sc-bubble-pop .sc-task strong { font-size: .9375rem; line-height: 1.45; }
+.sc-bubble-pop .sc-sub { margin-top: 2px; font-size: .8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.sc-bubble-pop .sc-chips { flex-wrap: nowrap; gap: 4px; margin: 0; min-width: 0; }
+.sc-bubble-pop .sc-chip { white-space: nowrap; font-size: .6875rem; padding: 2px 8px; }
+.sc-chip.is-carry { background: #fbf0e3; color: #8a4b00; }
+.sc-bubble-pop .sc-why { min-height: 32px; padding: 0 4px; font-size: .75rem; }
+.sc-bubble-pop .sc-acts { flex: none; gap: 0; margin: 0; }
+.sc-bubble-pop .sc-link { min-height: 32px; margin: 0; padding: 0 0 0 12px; font-size: .75rem; }
+.sc-bubble-pop .sc-calrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin: 0; padding: 12px; }
+.sc-bubble-pop .sc-calrow strong { font-size: .875rem; }
+.sc-bubble-pop .sc-calrow span { font-size: .75rem; }
+.sc-btn.sc-small { min-height: 36px; padding: 0 12px; font-size: .8125rem; }
+.sc-bubble-pop .sc-status { margin: -4px 0 0; }
+/* 구르미 말풍선 간결판(261127 허간 '더 간결하게') */
+.sc-bubble-pop .sc-brief { gap: 8px; padding: 14px 16px 10px; }
+.sc-bubble-pop .sc-head { grid-template-columns: 32px 1fr 32px; gap: 0 10px; }
+.sc-bubble-pop .sc-head-face { width: 32px; height: 32px; }
+.sc-bubble-pop .sc-kicker { gap: 6px; }
+.sc-bubble-pop .sc-brief h2 { font-size: .9375rem; margin-top: 0; }
+.sc-bubble-pop .sc-tasks { border-top: 1px solid #eef0ef; }
+.sc-bubble-pop .sc-task { grid-template-columns: 28px 1fr auto; gap: 0 10px; align-items: center; padding: 10px 0; }
+.sc-bubble-pop .sc-task:last-child { border-bottom: 0; }
+.sc-bubble-pop .sc-tick { width: 26px; height: 26px; margin: 0 1px; border-width: 2px; font-size: .8125rem; }
+.sc-bubble-pop .sc-task strong { font-size: .9375rem; font-weight: 700; line-height: 1.4; }
+.sc-carry { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #fbf0e3; color: #8a4b00; font-size: .6875rem; font-weight: 700; vertical-align: 2px; }
+.sc-bubble-pop .sc-why { min-height: 32px; padding: 0 2px 0 8px; color: #6b756f; font-size: .75rem; font-weight: 700; }
+.sc-bubble-pop .sc-link { min-height: 32px; padding: 0 2px 0 8px; font-size: .8125rem; }
+.sc-bubble-pop .sc-calrow { display: flex; justify-content: space-between; align-items: center; margin: 0; padding: 8px 0 0; border-top: 1px solid #eef0ef; border-radius: 0; background: none; }
+.sc-bubble-pop .sc-calrow a { display: inline-flex; align-items: center; min-height: 36px; color: #2f5a3e; font-size: .8125rem; font-weight: 700; text-decoration: none; }
+.sc-bubble-pop .sc-calrow a:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+.sc-why-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+/* '왜?' → 동그라미 물음표 아이콘(261127 허간) */
+.sc-bubble-pop .sc-why, .sc-why { display: inline-grid; place-items: center; width: 36px; min-height: 36px; padding: 0; color: #8a948e; text-decoration: none; }
+.sc-why svg { width: 20px; height: 20px; }
+.sc-why:hover { color: #2f5a3e; }
+/* 구르미 알림 줄·쇼핑 줄, 소식 병해충 그림, 쇼핑 가상 카드(261127) */
+.sc-alerts { display: flex; flex-wrap: wrap; gap: 6px; }
+.sc-alert { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 10px; border-radius: 999px; background: #f1f5f2; color: #2f3a33; font-size: .75rem; font-weight: 600; text-decoration: none; }
+.sc-alert b { color: #2f5a3e; font-weight: 800; }
+/* 261127 허간 '너무 AI 같아': 크림 알약+색 단어 → 기상청 예비특보 노랑 단색 뱃지. 경고 삼각형(선 2px) + '특보 | 대설 예비특보' 한 덩어리. 글자 #2a1d00/바탕 #ffc53d 대비 약 11:1. 마크업(saecham.js)은 그대로 */
+.sc-alert.is-warn { gap: 6px; min-height: 36px; padding: 0 12px 0 10px; border-radius: 10px; background: #ffc53d; color: #2a1d00; font-size: .8125rem; font-weight: 700; letter-spacing: -.01em; }
+.sc-alert.is-warn::before { content: ''; flex: none; width: 16px; height: 16px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'/%3E%3Cpath d='M12 9v4'/%3E%3Cpath d='M12 17h.01'/%3E%3C/svg%3E") center/contain no-repeat; }
+.sc-alert.is-warn b { color: inherit; font-weight: 800; padding-right: 6px; border-right: 1px solid rgba(42,29,0,.28); line-height: 1; }
+.sc-alert.is-warn:focus-visible { outline-color: #2a1d00; }
+.sc-alert:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+.sc-shop { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0 0; border-top: 1px solid #eef0ef; }
+.sc-shop p { flex: 1; min-width: 0; margin: 0; overflow: hidden; color: #2f3a33; font-size: .8125rem; white-space: nowrap; text-overflow: ellipsis; }
+.sc-shop p b { margin-right: 6px; color: #5d6861; font-size: .75rem; }
+.bn-thumb[data-cat="pest"] { background: #fbf0e3; color: #8a4b00; }
+.mall-card-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.mall-card-row .mall-method { margin: 0; }
+.mall-card-none { margin: 0; color: #5d6861; }
+.mall-card-change { min-height: 40px; padding: 0 12px; }
+.mall-card-sheet { width: min(420px, calc(100vw - 32px)); border: 0; border-radius: 16px; padding: 20px; }
+.mall-card-sheet::backdrop { background: rgba(20,30,24,.45); }
+.mall-card-form h2 { margin: 0; font-size: 1.125rem; }
+.mall-card-note { margin: 6px 0 14px; color: #5d6861; font-size: .875rem; line-height: 1.5; }
+.mall-card-form fieldset { display: grid; gap: 10px; margin: 0; padding: 0; border: 0; }
+.mall-card-option { display: block; cursor: pointer; }
+.mall-card-option input { position: absolute; opacity: 0; }
+.mall-card-face { display: grid; gap: 18px; padding: 16px; border-radius: 14px; background: linear-gradient(135deg, #3f6a4c, #2f4f3a); color: #fff; outline: 3px solid transparent; outline-offset: 2px; }
+.mall-card-face[data-card="kb"] { background: linear-gradient(135deg, #6b5a3a, #4a3d27); }
+.mall-card-face b { font-size: .9375rem; }
+.mall-card-face small { font-size: 1rem; letter-spacing: .12em; opacity: .9; }
+.mall-card-option input:checked + .mall-card-face { outline-color: #b25400; }
+.mall-card-option input:focus-visible + .mall-card-face { outline-color: #2f3a33; }
+.mall-card-error:empty { display: none; }
+.mall-card-error { color: #a03d00; font-size: .875rem; }
+.mall-card-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 16px; }
+.mall-card-actions button { min-height: 44px; padding: 0 14px; }
+.mall-card-actions button { border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; }
+.mall-card-actions .mall-soft { border: 1px solid #d5dcd7; background: #fff; color: #2f3a33; }
+.mall-card-actions .mall-primary { border: 1px solid #3f6a4c; background: #3f6a4c; color: #fff; }
+.mall-card-actions button:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+/* 261127 허간 '앱이니까 폰 모양으로'(체험본): 넓은 창에서는 앱 칸을 휴대폰 틀로 감싼다. 데스크톱 배치는 쓰지 않는다.
+   틀(body)에 transform을 줘서 구르미·말풍선 같은 고정 위치 요소도 틀 안에 머문다. 휴대폰처럼 좁은 화면에는 틀을 씌우지 않는다. */
+@media (min-width: 540px) and (min-height: 660px) {
+  html.trial:is(.phone-layout, .insurance-in-app) { background: radial-gradient(120% 80% at 50% 0%, #e9eeea 0%, #dfe5e1 60%, #d6ddd8 100%); }
+  html.trial:is(.phone-layout, .insurance-in-app) body {
+    position: relative; width: 393px; max-width: 393px; height: min(852px, calc(100dvh - 48px)); margin: 24px auto;
+    border: 11px solid #1b201d; border-radius: 54px; overflow: hidden; transform: translateZ(0);
+    box-shadow: 0 0 0 2px #3a413c, 0 30px 60px rgba(20,35,26,.28), 0 8px 18px rgba(20,35,26,.18);
+  }
+  /* 상단 상태줄 자리: 시간과 가운데 섬 */
+  html.trial:is(.phone-layout, .insurance-in-app) body::before { content: ''; position: absolute; z-index: 60; top: 10px; left: 50%; width: 108px; height: 31px; margin-left: -54px; border-radius: 20px; background: #0b0d0c; pointer-events: none; }
+  html.trial:is(.phone-layout, .insurance-in-app) body::after { content: '9:41'; position: absolute; z-index: 60; top: 15px; left: 34px; color: #fff; mix-blend-mode: difference; font: 700 15px/1 system-ui, sans-serif; letter-spacing: -.01em; pointer-events: none; }
+  html.trial.phone-layout .workspace { grid-template-rows: calc(var(--app-bar-height) + 44px) minmax(0, 1fr); }
+  html.trial.phone-layout #bar { padding-top: 44px; }
+  html.trial.insurance-in-app body { padding-top: 44px; background: #fff; }
+  /* 아래 홈 표시줄 */
+  html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav.farm-tabbar { translate: 0 -14px; }
+  html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav::after { content: ''; position: absolute; left: 50%; bottom: -12px; width: 134px; height: 5px; margin-left: -67px; border-radius: 3px; background: #1b201d; opacity: .8; pointer-events: none; }
+  html.trial.phone-layout #main-area::after, html.trial.insurance-in-app .insurance-viewport::after { height: 132px; }
+}
+@media (min-width: 540px) and (min-height: 660px) {
+  /* 흐림·합성 레이어가 둥근 모서리 밖으로 새지 않게 틀 모양대로 잘라 낸다 */
+  html.trial:is(.phone-layout, .insurance-in-app) body { clip-path: inset(0 round 54px); }
+}
+@media (min-width: 540px) and (min-height: 660px) {
+  /* 틀 다시 잡기: 화면(body)은 테두리 없이 둥글게 잘라 내고, 검은 베젤은 뒤에 깐 판(html::before)으로 그린다 */
+  html.trial:is(.phone-layout, .insurance-in-app) body { border: 0; border-radius: 44px; clip-path: inset(0 round 44px); margin: 35px auto; height: min(830px, calc(100dvh - 70px)); width: 393px; box-shadow: none; }
+  html.trial:is(.phone-layout, .insurance-in-app)::before { content: ''; position: fixed; z-index: 0; left: 50%; top: 24px; width: 415px; margin-left: -207.5px; height: min(852px, calc(100dvh - 48px)); border-radius: 56px; background: #1b201d; box-shadow: 0 0 0 2px #3a413c, 0 30px 60px rgba(20,35,26,.28), 0 8px 18px rgba(20,35,26,.18); pointer-events: none; }
+  html.trial:is(.phone-layout, .insurance-in-app) body { z-index: 1; }
+  html.trial:is(.phone-layout, .insurance-in-app) body::before { top: 10px; }
+  html.trial:is(.phone-layout, .insurance-in-app) body::after { top: 16px; left: 30px; }
+  /* 탭 바 아래(홈 표시줄 자리)는 흰 바탕으로 덮어 본문이 비치지 않게 */
+  html.trial:is(.phone-layout, .insurance-in-app) #mobile-nav::before { content: ''; position: absolute; z-index: -1; left: -24px; right: -24px; top: 40%; bottom: -24px; background: linear-gradient(to bottom, rgba(255,255,255,0), #fff 45%); pointer-events: none; }
+}
+/* 말풍선 맨 아래: 지금 할 행동 하나(허간 '하나에 집중') */
+.sc-next { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 56px; margin-top: 2px; padding: 10px 14px; border: 0; border-radius: 14px; background: #3f6a4c; color: #fff; text-align: left; font: inherit; cursor: pointer; }
+.sc-next span { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.sc-next b { font-size: .9375rem; font-weight: 800; }
+.sc-next small { overflow: hidden; color: rgba(255,255,255,.82); font-size: .75rem; white-space: nowrap; text-overflow: ellipsis; }
+.sc-next i { font-style: normal; font-size: 1.25rem; opacity: .85; }
+.sc-next:focus-visible { outline: 3px solid #2f3a33; outline-offset: 2px; }
+.sc-bubble-pop .sc-alerts { margin-top: -2px; }
+@media (min-width: 540px) and (min-height: 660px) {
+  /* 얇은 베젤(요즘 폰): 화면 둘레 6px */
+  html.trial:is(.phone-layout, .insurance-in-app)::before { top: 29px; width: 405px; margin-left: -202.5px; height: min(842px, calc(100dvh - 58px)); border-radius: 50px; box-shadow: 0 0 0 1px #3a413c, 0 30px 60px rgba(20,35,26,.26), 0 8px 18px rgba(20,35,26,.16); }
+  /* 상태줄 시간: 머리 막대 글자색을 따른다 */
+  html.trial:is(.phone-layout, .insurance-in-app) body::after { content: none; }
+  html.trial.phone-layout #bar { position: relative; }
+  html.trial.phone-layout #bar::before { content: '9:41'; position: absolute; top: 16px; left: 30px; color: currentColor; font: 700 15px/1 system-ui, sans-serif; pointer-events: none; }
+  html.trial.insurance-in-app body { position: relative; }
+  html.trial.insurance-in-app .insurance-viewport::before { content: '9:41'; position: fixed; z-index: 61; top: 16px; left: 30px; color: #171717; font: 700 15px/1 system-ui, sans-serif; pointer-events: none; }
+}
+/* 261127 소식 리디자인(디자이너 방식, 주 레퍼런스: 브런치 앱)
+   지킬 특성: 흰 바탕·넓은 여백 / 제목-부제-메타 3단 위계 / 강조색은 분류 글자에만 / 오른쪽 작은 그림 + 얇은 구분선 / 글 보기는 표지 색면 + 큰 제목 + 넉넉한 행간
+   가져오지 않음: 브런치 로고·명조 서체·문구·색. 서체는 앱의 Noto Sans KR만. 본문 자간 0, 큰 제목만 음수 자간 */
+html.trial .bn-news, html.trial .bn-article { --bn-ink: #191c1a; --bn-sub: #5b645e; --bn-meta: #8a928c; --bn-line: #eceeed; --bn-green: #2f5a3e; }
+html.trial #main-area .bn-news .bn-head { padding: 8px 0 4px; }
+.bn-date { margin: 0 0 6px; color: var(--bn-meta); font-size: .8125rem; font-weight: 600; letter-spacing: 0; }
+html.trial #main-area .bn-news .bn-head h1 { font-size: 1.875rem; font-weight: 800; letter-spacing: -.035em; line-height: 1.2; color: var(--bn-ink); }
+html.trial .bn-news .news-lead { margin-top: 8px; color: var(--bn-meta); font-size: .8125rem; line-height: 1.5; }
+html.trial .bn-tabs { position: sticky; top: 0; z-index: 2; gap: 22px; margin-top: 18px; background: #fff; border-bottom-color: var(--bn-line); }
+html.trial .utility-page .bn-tab { min-height: 46px; color: #9aa29c; font-size: .9375rem; font-weight: 600; border-bottom-width: 2px; }
+html.trial .utility-page .bn-tab[aria-pressed="true"] { color: var(--bn-ink); font-weight: 800; border-bottom-color: var(--bn-ink); }
+/* 대표 글: 표지 색면 */
+html.trial .bn-feature { position: relative; gap: 10px; margin: 22px 0 8px; padding: 26px 22px 22px; border-radius: 6px; background: #2f4a3a; color: #fff; overflow: hidden; }
+html.trial .bn-feature::after { content: ''; position: absolute; right: -40px; top: -40px; width: 160px; height: 160px; border-radius: 50%; background: rgba(255,255,255,.06); }
+html.trial .bn-feature[data-cat="weather"], html.trial .bn-feature[data-cat="pest"] { background: #6b3f1d; }
+html.trial .bn-feature .bn-cat { color: #cfe3d4; font-size: .75rem; letter-spacing: .02em; }
+html.trial .bn-feature strong { color: #fff; font-size: 1.5rem; line-height: 1.36; letter-spacing: -.035em; }
+html.trial .bn-feature .bn-sub { color: rgba(255,255,255,.82); font-size: .9375rem; line-height: 1.6; }
+html.trial .bn-feature .bn-meta { color: rgba(255,255,255,.62); }
+/* 목록 */
+html.trial .bn-list li + li { border-top-color: var(--bn-line); }
+html.trial .bn-item { gap: 18px; padding: 24px 0; }
+html.trial .bn-text { gap: 7px; }
+html.trial .bn-cat { color: var(--bn-green); font-size: .75rem; font-weight: 700; }
+html.trial .bn-cat.is-alert { color: #a34a00; }
+html.trial .bn-item strong { color: var(--bn-ink); font-size: 1.0625rem; line-height: 1.45; letter-spacing: -.015em; }
+html.trial .bn-item .bn-sub { color: var(--bn-sub); font-size: .875rem; line-height: 1.6; }
+html.trial .bn-meta { color: var(--bn-meta); font-size: .75rem; }
+html.trial .bn-thumb { width: 76px; height: 76px; margin-top: 24px; border-radius: 6px; }
+html.trial .bn-thumb .shell-icon { width: 26px; height: 26px; }
+/* 글 보기 */
+html.trial .bn-article .bn-cover { gap: 12px; margin: 0 -20px; padding: 30px 22px 26px; border-bottom: 0; background: #2f4a3a; color: #fff; }
+html.trial .bn-article .bn-cover[data-cat="weather"], html.trial .bn-article .bn-cover[data-cat="pest"] { background: #6b3f1d; }
+html.trial .bn-cover .bn-cat, html.trial .bn-cover .bn-cat.is-alert { color: #cfe3d4; }
+html.trial #main-area .bn-article .bn-cover h1 { color: #fff; font-size: 1.625rem; line-height: 1.38; }
+html.trial .bn-cover .bn-sub { color: rgba(255,255,255,.82); }
+html.trial .bn-cover .bn-byline { color: rgba(255,255,255,.62); font-size: .75rem; }
+html.trial .bn-body { margin-top: 28px; }
+html.trial .bn-body p { color: #2b302d; font-size: 1.0625rem; line-height: 1.88; letter-spacing: 0; }
+html.trial .bn-body p.bn-lede { color: var(--bn-ink); font-size: 1.125rem; font-weight: 600; line-height: 1.75; }
+html.trial .bn-body p + p { margin-top: 0; }
+html.trial .bn-more { border-top: 1px solid var(--bn-line); margin-top: 32px; padding-top: 4px; }
+html.trial .bn-more h2 { color: var(--bn-meta); font-size: .8125rem; font-weight: 700; }
+@media (min-width: 540px) and (min-height: 660px) {
+  /* 아이폰 상태줄(허간: 양쪽 위를 아이폰과 똑같이): 왼쪽 귀 시간, 오른쪽 귀 신호·와이파이·배터리. 머리 막대 글자색을 따른다 */
+  html.trial.phone-layout #bar::before { top: 15px; left: 0; width: 140px; text-align: center; font: 600 16px/1.1 -apple-system, "SF Pro Text", system-ui, sans-serif; letter-spacing: -.01em; }
+  html.trial.phone-layout #bar::after { content: ''; position: absolute; top: 17px; right: 26px; width: 78px; height: 13px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2278%22%20height%3D%2213%22%20viewBox%3D%220%200%2078%2013%22%3E%3Crect%20x%3D%220%22%20y%3D%228%22%20width%3D%223%22%20height%3D%224%22%20rx%3D%221%22/%3E%3Crect%20x%3D%224.7%22%20y%3D%226%22%20width%3D%223%22%20height%3D%226%22%20rx%3D%221%22/%3E%3Crect%20x%3D%229.4%22%20y%3D%223.5%22%20width%3D%223%22%20height%3D%228.5%22%20rx%3D%221%22/%3E%3Crect%20x%3D%2214.1%22%20y%3D%221%22%20width%3D%223%22%20height%3D%2211%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M29.5%203.2a9.6%209.6%200%200%201%2012.9%200l1.3-1.4a11.6%2011.6%200%200%200-15.5%200zM31.6%205.5a6.5%206.5%200%200%201%208.7%200l1.3-1.4a8.5%208.5%200%200%200-11.3%200zM33.7%207.8a3.4%203.4%200%200%201%204.5%200L36%2010.2z%22/%3E%3Crect%20x%3D%2250.5%22%20y%3D%22.5%22%20width%3D%2223%22%20height%3D%2212%22%20rx%3D%223.6%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-opacity%3D%22.45%22/%3E%3Crect%20x%3D%2252.5%22%20y%3D%222.5%22%20width%3D%2217%22%20height%3D%228%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M75.3%204.4v4.2c.8-.3%201.4-1.1%201.4-2.1s-.6-1.8-1.4-2.1z%22%20fill-opacity%3D%22.45%22/%3E%3C/svg%3E") no-repeat center / contain; mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2278%22%20height%3D%2213%22%20viewBox%3D%220%200%2078%2013%22%3E%3Crect%20x%3D%220%22%20y%3D%228%22%20width%3D%223%22%20height%3D%224%22%20rx%3D%221%22/%3E%3Crect%20x%3D%224.7%22%20y%3D%226%22%20width%3D%223%22%20height%3D%226%22%20rx%3D%221%22/%3E%3Crect%20x%3D%229.4%22%20y%3D%223.5%22%20width%3D%223%22%20height%3D%228.5%22%20rx%3D%221%22/%3E%3Crect%20x%3D%2214.1%22%20y%3D%221%22%20width%3D%223%22%20height%3D%2211%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M29.5%203.2a9.6%209.6%200%200%201%2012.9%200l1.3-1.4a11.6%2011.6%200%200%200-15.5%200zM31.6%205.5a6.5%206.5%200%200%201%208.7%200l1.3-1.4a8.5%208.5%200%200%200-11.3%200zM33.7%207.8a3.4%203.4%200%200%201%204.5%200L36%2010.2z%22/%3E%3Crect%20x%3D%2250.5%22%20y%3D%22.5%22%20width%3D%2223%22%20height%3D%2212%22%20rx%3D%223.6%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-opacity%3D%22.45%22/%3E%3Crect%20x%3D%2252.5%22%20y%3D%222.5%22%20width%3D%2217%22%20height%3D%228%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M75.3%204.4v4.2c.8-.3%201.4-1.1%201.4-2.1s-.6-1.8-1.4-2.1z%22%20fill-opacity%3D%22.45%22/%3E%3C/svg%3E") no-repeat center / contain; pointer-events: none; }
+  html.trial.insurance-in-app .insurance-viewport::before { top: 15px; left: 0; width: 140px; text-align: center; font: 600 16px/1.1 -apple-system, "SF Pro Text", system-ui, sans-serif; }
+  html.trial.insurance-in-app .insurance-viewport::after { content: ''; position: fixed; z-index: 61; top: 17px; right: 26px; width: 78px; height: 13px; background: #171717; -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2278%22%20height%3D%2213%22%20viewBox%3D%220%200%2078%2013%22%3E%3Crect%20x%3D%220%22%20y%3D%228%22%20width%3D%223%22%20height%3D%224%22%20rx%3D%221%22/%3E%3Crect%20x%3D%224.7%22%20y%3D%226%22%20width%3D%223%22%20height%3D%226%22%20rx%3D%221%22/%3E%3Crect%20x%3D%229.4%22%20y%3D%223.5%22%20width%3D%223%22%20height%3D%228.5%22%20rx%3D%221%22/%3E%3Crect%20x%3D%2214.1%22%20y%3D%221%22%20width%3D%223%22%20height%3D%2211%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M29.5%203.2a9.6%209.6%200%200%201%2012.9%200l1.3-1.4a11.6%2011.6%200%200%200-15.5%200zM31.6%205.5a6.5%206.5%200%200%201%208.7%200l1.3-1.4a8.5%208.5%200%200%200-11.3%200zM33.7%207.8a3.4%203.4%200%200%201%204.5%200L36%2010.2z%22/%3E%3Crect%20x%3D%2250.5%22%20y%3D%22.5%22%20width%3D%2223%22%20height%3D%2212%22%20rx%3D%223.6%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-opacity%3D%22.45%22/%3E%3Crect%20x%3D%2252.5%22%20y%3D%222.5%22%20width%3D%2217%22%20height%3D%228%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M75.3%204.4v4.2c.8-.3%201.4-1.1%201.4-2.1s-.6-1.8-1.4-2.1z%22%20fill-opacity%3D%22.45%22/%3E%3C/svg%3E") no-repeat center / contain; mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2278%22%20height%3D%2213%22%20viewBox%3D%220%200%2078%2013%22%3E%3Crect%20x%3D%220%22%20y%3D%228%22%20width%3D%223%22%20height%3D%224%22%20rx%3D%221%22/%3E%3Crect%20x%3D%224.7%22%20y%3D%226%22%20width%3D%223%22%20height%3D%226%22%20rx%3D%221%22/%3E%3Crect%20x%3D%229.4%22%20y%3D%223.5%22%20width%3D%223%22%20height%3D%228.5%22%20rx%3D%221%22/%3E%3Crect%20x%3D%2214.1%22%20y%3D%221%22%20width%3D%223%22%20height%3D%2211%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M29.5%203.2a9.6%209.6%200%200%201%2012.9%200l1.3-1.4a11.6%2011.6%200%200%200-15.5%200zM31.6%205.5a6.5%206.5%200%200%201%208.7%200l1.3-1.4a8.5%208.5%200%200%200-11.3%200zM33.7%207.8a3.4%203.4%200%200%201%204.5%200L36%2010.2z%22/%3E%3Crect%20x%3D%2250.5%22%20y%3D%22.5%22%20width%3D%2223%22%20height%3D%2212%22%20rx%3D%223.6%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-opacity%3D%22.45%22/%3E%3Crect%20x%3D%2252.5%22%20y%3D%222.5%22%20width%3D%2217%22%20height%3D%228%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M75.3%204.4v4.2c.8-.3%201.4-1.1%201.4-2.1s-.6-1.8-1.4-2.1z%22%20fill-opacity%3D%22.45%22/%3E%3C/svg%3E") no-repeat center / contain; pointer-events: none; }
+}
+/* 측정 후 보정(measure-layout): 작은 글자 명암 4.5:1 이상, 탭 누르는 폭 44px 이상, 작은 글자 자간 0 */
+html.trial .bn-news, html.trial .bn-article { --bn-meta: #687069; }
+html.trial .utility-page .bn-tab { min-width: 44px; padding: 0 4px 2px; color: #687069; }
+html.trial .bn-tabs { gap: 14px; }
+html.trial .bn-item strong { letter-spacing: 0; }
+html.trial .bn-more h2 { color: var(--bn-sub); letter-spacing: 0; }
+@media (min-width: 540px) and (min-height: 660px) {
+  /* 와이파이 윗부분이 잘리지 않게 그림 영역을 위로 2px 넓힘 */
+  html.trial.phone-layout #bar::after, html.trial.insurance-in-app .insurance-viewport::after { top: 15px; height: 15px; -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2278%22%20height%3D%2215%22%20viewBox%3D%220%20-2%2078%2015%22%3E%3Crect%20x%3D%220%22%20y%3D%228%22%20width%3D%223%22%20height%3D%224%22%20rx%3D%221%22/%3E%3Crect%20x%3D%224.7%22%20y%3D%226%22%20width%3D%223%22%20height%3D%226%22%20rx%3D%221%22/%3E%3Crect%20x%3D%229.4%22%20y%3D%223.5%22%20width%3D%223%22%20height%3D%228.5%22%20rx%3D%221%22/%3E%3Crect%20x%3D%2214.1%22%20y%3D%221%22%20width%3D%223%22%20height%3D%2211%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M29.5%203.2a9.6%209.6%200%200%201%2012.9%200l1.3-1.4a11.6%2011.6%200%200%200-15.5%200zM31.6%205.5a6.5%206.5%200%200%201%208.7%200l1.3-1.4a8.5%208.5%200%200%200-11.3%200zM33.7%207.8a3.4%203.4%200%200%201%204.5%200L36%2010.2z%22/%3E%3Crect%20x%3D%2250.5%22%20y%3D%22.5%22%20width%3D%2223%22%20height%3D%2212%22%20rx%3D%223.6%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-opacity%3D%22.45%22/%3E%3Crect%20x%3D%2252.5%22%20y%3D%222.5%22%20width%3D%2217%22%20height%3D%228%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M75.3%204.4v4.2c.8-.3%201.4-1.1%201.4-2.1s-.6-1.8-1.4-2.1z%22%20fill-opacity%3D%22.45%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2278%22%20height%3D%2215%22%20viewBox%3D%220%20-2%2078%2015%22%3E%3Crect%20x%3D%220%22%20y%3D%228%22%20width%3D%223%22%20height%3D%224%22%20rx%3D%221%22/%3E%3Crect%20x%3D%224.7%22%20y%3D%226%22%20width%3D%223%22%20height%3D%226%22%20rx%3D%221%22/%3E%3Crect%20x%3D%229.4%22%20y%3D%223.5%22%20width%3D%223%22%20height%3D%228.5%22%20rx%3D%221%22/%3E%3Crect%20x%3D%2214.1%22%20y%3D%221%22%20width%3D%223%22%20height%3D%2211%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M29.5%203.2a9.6%209.6%200%200%201%2012.9%200l1.3-1.4a11.6%2011.6%200%200%200-15.5%200zM31.6%205.5a6.5%206.5%200%200%201%208.7%200l1.3-1.4a8.5%208.5%200%200%200-11.3%200zM33.7%207.8a3.4%203.4%200%200%201%204.5%200L36%2010.2z%22/%3E%3Crect%20x%3D%2250.5%22%20y%3D%22.5%22%20width%3D%2223%22%20height%3D%2212%22%20rx%3D%223.6%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-opacity%3D%22.45%22/%3E%3Crect%20x%3D%2252.5%22%20y%3D%222.5%22%20width%3D%2217%22%20height%3D%228%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M75.3%204.4v4.2c.8-.3%201.4-1.1%201.4-2.1s-.6-1.8-1.4-2.1z%22%20fill-opacity%3D%22.45%22/%3E%3C/svg%3E"); }
+}
+/* 구르미 버튼(허간): 흰 원 배경 없이 캐릭터만 크게. 밝은 바탕에서도 보이게 옅은 그림자 */
+.sc-fab, .sc-fab.is-dragging, .sc-fab.is-repel { width: 64px; height: 64px; border-radius: 0; background: none; box-shadow: none; }
+.sc-fab-face { width: 64px; height: 64px; transform: none; filter: drop-shadow(0 3px 6px rgba(30,50,70,.22)); }
+.sc-fab.is-dragging .sc-fab-face { filter: drop-shadow(0 8px 14px rgba(30,50,70,.3)); }
+.sc-fab.is-repel .sc-fab-face { filter: drop-shadow(0 0 6px rgba(178,84,0,.55)); }
+.sc-fab .sc-badge { top: 4px; right: 0; }
+.sc-fab:focus-visible { outline: 3px solid #4d6e59; outline-offset: 0; border-radius: 16px; }
+/* 261127 홈 머리 A안(허간): 일러스트 없이 날씨·시간대 색면 + 큰 기온 + 선 아이콘. 애플 날씨·토스처럼 데이터가 주인공 */
+.h24-hero { --h24-a: #2c4d39; --h24-b: #46705a; }
+.h24-hero[data-mood="clear"] { --h24-a: #285a3c; --h24-b: #4f8a63; }
+.h24-hero:is([data-mood="cloudy"], [data-mood="neutral"]) { --h24-a: #34443c; --h24-b: #5c6e64; }
+.h24-hero[data-mood="rain"] { --h24-a: #2f3f47; --h24-b: #55666e; }
+.h24-hero[data-mood="snow"] { --h24-a: #47555d; --h24-b: #7d8c93; }
+.h24-hero[data-time="night"] { --h24-a: #18221f; --h24-b: #2c3b36; }
+html.trial #main-area .h24-hero { background: radial-gradient(120% 70% at 85% 0%, rgba(255,255,255,.10), rgba(255,255,255,0) 60%), linear-gradient(180deg, var(--h24-a) 0%, var(--h24-b) 100%) !important; }
+html.trial #main-area .h24-hero[data-mood="clear"][data-time="day"] { background: radial-gradient(90% 60% at 88% 4%, rgba(255,228,160,.22), rgba(255,228,160,0) 62%), linear-gradient(180deg, var(--h24-a) 0%, var(--h24-b) 100%) !important; }
+html.trial .h24-hero :is(.h23-photo, .h23-scrim, .h23-sky) { display: none !important; }
+html.trial .h24-hero .h22-hello, html.trial .h24-hero .h22-wx, html.trial .h24-hero .h23-week b { text-shadow: none; }
+/* 날씨 줄: 큰 기온 | 아이콘 | 상태·최고최저 */
+html.trial .h24-hero .h22-wx { display: grid; grid-template-columns: auto 30px 1fr; align-items: center; gap: 0 12px; padding: 14px 0 12px; }
+html.trial #main-area .h24-hero .h22-temp { font-size: 3.25rem; font-weight: 300; line-height: 1; letter-spacing: -.04em; color: #fff; }
+html.trial .h24-wx-icon { width: 30px; height: 30px; color: rgba(255,255,255,.92); }
+html.trial .h24-hero .h22-wx .h22-strong { font-size: 1rem; font-weight: 700; color: #fff; }
+html.trial .h24-hero .h22-wx .h22-sub { margin-top: 2px; color: rgba(255,255,255,.78); font-size: .8125rem; }
+/* A안 보정: 머리 막대와 색면 이음매 없이(둘 다 --hero-top), 날씨 줄 오른쪽 칸에 상태와 최고·최저를 함께 */
+html.trial body { --hero-top: #2c4d39; --hero-bot: #46705a; }
+html.trial body[data-wx-mood="clear"]:not([data-wx-time="night"]) { --hero-top: #285a3c; --hero-bot: #4f8a63; }
+html.trial body:is([data-wx-mood="cloudy"], [data-wx-mood="neutral"]):not([data-wx-time="night"]) { --hero-top: #34443c; --hero-bot: #5c6e64; }
+html.trial body[data-wx-mood="rain"]:not([data-wx-time="night"]) { --hero-top: #2f3f47; --hero-bot: #55666e; }
+html.trial body[data-wx-mood="snow"]:not([data-wx-time="night"]) { --hero-top: #47555d; --hero-bot: #7d8c93; }
+html.trial body[data-wx-time="night"] { --hero-top: #18221f; --hero-bot: #2c3b36; }
+html.trial #main-area .h24-hero, html.trial #main-area .h24-hero[data-mood="clear"][data-time="day"] { background: linear-gradient(180deg, var(--hero-top) 0%, var(--hero-bot) 100%) !important; }
+html.trial #main-area .h24-hero[data-mood="clear"][data-time="day"]::before { content: ''; position: absolute; inset: 0; background: radial-gradient(80% 55% at 90% 0%, rgba(255,228,160,.20), rgba(255,228,160,0) 65%); pointer-events: none; }
+html.trial .h24-hero .h22-wx .h22-copy { display: grid; gap: 2px; }
+/* 261127 홈 날씨 사진(허간: 고화질, 직관적으로. 하늘·구름·해·달·별·비·눈만, 땅·건물 없음)
+   assets/weather/<날씨>-<낮밤>.webp 8장(세로 1080×1920). 머리 막대와 홈 머리에 한 장처럼 이어 깐다. 사진이 없으면 색면이 그대로 보인다 */
+html.trial body { --bar-h: calc(var(--app-bar-height, 56px) + env(safe-area-inset-top, 0px)); --wx-img: none; }
+@media (min-width: 540px) and (min-height: 660px) { html.trial body { --bar-h: calc(var(--app-bar-height, 56px) + 44px); } }
+html.trial body[data-wx-mood="clear"]:not([data-wx-time="night"]) { --wx-img: url("assets/weather/clear-day.webp"); }
+html.trial body[data-wx-mood="clear"][data-wx-time="night"] { --wx-img: url("assets/weather/clear-night.webp"); }
+html.trial body:is([data-wx-mood="cloudy"], [data-wx-mood="neutral"]):not([data-wx-time="night"]) { --wx-img: url("assets/weather/cloudy-day.webp"); }
+html.trial body:is([data-wx-mood="cloudy"], [data-wx-mood="neutral"])[data-wx-time="night"] { --wx-img: url("assets/weather/cloudy-night.webp"); }
+html.trial body[data-wx-mood="rain"]:not([data-wx-time="night"]) { --wx-img: url("assets/weather/rain-day.webp"); }
+html.trial body[data-wx-mood="rain"][data-wx-time="night"] { --wx-img: url("assets/weather/rain-night.webp"); }
+html.trial body[data-wx-mood="snow"]:not([data-wx-time="night"]) { --wx-img: url("assets/weather/snow-day.webp"); }
+html.trial body[data-wx-mood="snow"][data-wx-time="night"] { --wx-img: url("assets/weather/snow-night.webp"); }
+html.trial:not(.field-mode) body[data-screen="home"] #bar { background: linear-gradient(rgba(8,14,12,.34), rgba(8,14,12,.30)), var(--wx-img) center top / 100% auto no-repeat, var(--hero-top); border-bottom-color: transparent; }
+html.trial #main-area .h24-hero, html.trial #main-area .h24-hero[data-mood="clear"][data-time="day"] {
+  background: linear-gradient(180deg, rgba(8,14,12,.30) 0%, rgba(8,14,12,.16) 45%, rgba(8,14,12,.38) 100%), var(--wx-img) center calc(-1 * var(--bar-h)) / 100% auto no-repeat, linear-gradient(180deg, var(--hero-top) 0%, var(--hero-bot) 100%) !important; }
+html.trial #main-area .h24-hero[data-mood="clear"][data-time="day"]::before { display: none; }
+html.trial .h24-hero .h22-hello, html.trial .h24-hero .h22-wx { text-shadow: 0 1px 8px rgba(0,0,0,.25); }
+/* 배경은 날씨·특보·보험 소식 줄까지만(허간). 요일 띠·카드 위치와 모양은 그대로 두고, 배경을 그리는 판(::before)의 높이만 자른다 */
+html.trial #main-area .h24-hero, html.trial #main-area .h24-hero[data-mood="clear"][data-time="day"] { background: transparent !important; isolation: isolate; }
+html.trial #main-area .h24-hero::after { content: ''; position: absolute; z-index: -1; left: 0; right: 0; top: 0; height: var(--h24-cut, 100%);
+  background: linear-gradient(180deg, rgba(8,14,12,.30) 0%, rgba(8,14,12,.16) 45%, rgba(8,14,12,.38) 100%), var(--wx-img) center calc(-1 * var(--bar-h)) / 100% auto no-repeat, linear-gradient(180deg, var(--hero-top) 0%, var(--hero-bot) 100%); pointer-events: none; }
+/* 홈 줄이기: 재해보험 버튼이 하나라 한 줄 전체로 */
+html.trial .home-insurance .insurance-actions { grid-template-columns: 1fr; }
+/* 배경 끝을 뚜렷한 선 없이 서서히 흰 바탕으로(허간). 아래 110px 동안 점점 투명해진다 */
+html.trial #main-area .h24-hero { overflow: visible; }
+html.trial #main-area .h24-hero::after { -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 110px), rgba(0,0,0,0) 100%); mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 110px), rgba(0,0,0,0) 100%); }
+/* 서서히 사라지는 구간을 더 길게(허간): 아래 220px, 점점 옅어지는 곡선 */
+html.trial #main-area .h24-hero::after { -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 220px), rgba(0,0,0,.75) calc(100% - 150px), rgba(0,0,0,.35) calc(100% - 75px), rgba(0,0,0,0) 100%); mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 220px), rgba(0,0,0,.75) calc(100% - 150px), rgba(0,0,0,.35) calc(100% - 75px), rgba(0,0,0,0) 100%); }
+/* 261127 허간 '안 끊기고 쭉': 날씨 사진은 화면 뒤에 고정된 한 장. 머리 막대·홈 머리·본문 바탕은 투명, 카드가 사진 위를 지나간다 */
+html.trial:not(.field-mode) body[data-screen="home"] .workspace { position: relative; isolation: isolate; background: #f2f4f3; }
+html.trial:not(.field-mode) body[data-screen="home"] .workspace::before { content: ''; position: absolute; z-index: 0; left: 0; right: 0; top: 0; height: var(--h24-bg-h, 520px); pointer-events: none;
+  background: linear-gradient(180deg, rgba(8,14,12,.32) 0%, rgba(8,14,12,.18) 40%, rgba(8,14,12,.34) 100%), var(--wx-img) center top / 100% auto no-repeat, linear-gradient(180deg, var(--hero-top) 0%, var(--hero-bot) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 220px), rgba(0,0,0,.75) calc(100% - 150px), rgba(0,0,0,.35) calc(100% - 75px), rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 220px), rgba(0,0,0,.75) calc(100% - 150px), rgba(0,0,0,.35) calc(100% - 75px), rgba(0,0,0,0) 100%); }
+html.trial:not(.field-mode) body[data-screen="home"] :is(#bar, #main-area) { position: relative; z-index: 1; }
+html.trial:not(.field-mode) body[data-screen="home"] #main-area { background: transparent; }
+html.trial #main-area .h24-hero::after { display: none; }
+/* 머리 막대: 사진은 비쳐 보이고, 스크롤로 밑에 들어간 글은 흐리게 */
+html.trial:not(.field-mode) body[data-screen="home"] #bar { background: rgba(10,16,14,.12) !important; -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1); border-bottom-color: transparent; }
+/* 261127 홈 사진 가림 해결: 홈 판(article) 바탕을 투명하게 */
+html.trial:not(.field-mode) body[data-screen="home"] #main-area > .orchard-home { background: transparent !important; }
+/* 줄 나눔(허간): 한국어 어절 단위로 끊고, 마지막 줄에 한 단어만 남지 않게 */
+html.trial :is(p, li, dd, h1, h2, h3, strong, span, a, button) { word-break: keep-all; overflow-wrap: anywhere; }
+html.trial :is(p, dd, li) { text-wrap: pretty; }
+html.trial :is(h1, h2, h3, .sc-brief h2, .bn-item strong, .bn-feature strong) { text-wrap: balance; }
+/* 구르미: 한 일 뒤 바로가기 */
+.sc-done { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 12px; background: #eef5f0; color: #2f5a3e; font-size: .8125rem; font-weight: 700; }
+.sc-done i { margin-right: 6px; font-style: normal; }
+.sc-done a { flex: none; display: inline-flex; align-items: center; min-height: 36px; color: #2f5a3e; text-decoration: none; font-weight: 800; }
+.sc-done a:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+/* 왜? 시트: 아래에서 올라오는 시트, 휴대폰 화면 폭 */
+.sc-why-sheet { position: fixed; inset: auto 0 0 0; width: 100%; max-width: 100%; margin: 0; padding: 10px 20px calc(20px + env(safe-area-inset-bottom, 0px)); border: 0; border-radius: 22px 22px 0 0; }
+.sc-why-sheet[open] { animation: sc-sheet-up .24s ease-out; }
+@keyframes sc-sheet-up { from { transform: translateY(24px); opacity: .6; } }
+@media (prefers-reduced-motion: reduce) { .sc-why-sheet[open] { animation: none; } }
+.sc-grab { display: block; width: 40px; height: 4px; margin: 0 auto 12px; border-radius: 2px; background: #d5dcd7; }
+.sc-why-sheet .sc-sheet-head { display: grid; grid-template-columns: 40px 1fr 32px; gap: 0 12px; align-items: center; }
+.sc-why-sheet .sc-sheet-face { width: 40px; height: 40px; }
+.sc-why-sheet .sc-close { align-self: start; width: 32px; height: 32px; margin: 0; }
+.sc-why-sheet h2 { margin: 2px 0 0; font-size: 1rem; line-height: 1.45; }
+.sc-why-sheet h2:focus { outline: none; }
+.sc-why-sheet .sc-why-list { margin: 14px 0 0; }
+.sc-why-sheet .sc-why-list div { padding: 10px 0; }
+.sc-why-sheet .sc-note { margin: 10px 0 12px; }
+.sc-why-sheet .sc-primary { width: 100%; min-height: 48px; margin: 0; }
+.sc-why-links { display: flex; justify-content: center; align-items: center; gap: 4px; margin-top: 6px; color: #b2bab4; }
+.sc-why-links .sc-link { min-height: 40px; padding: 0 10px; color: #5d6861; font-size: .8125rem; }
+/* 휴대폰 틀(넓은 창) 안에 창·시트를 가둔다: 틀 폭으로 줄이고, 어둡게 덮는 막도 틀 모양으로 자른다 */
+@media (min-width: 540px) and (min-height: 660px) {
+  html.trial dialog[open] { max-width: min(361px, calc(100vw - 32px)); max-height: calc(min(830px, 100dvh - 70px) - 32px); }
+  html.trial dialog::backdrop { clip-path: inset(35px calc(50% - 196.5px) calc(100% - 35px - min(830px, 100dvh - 70px)) calc(50% - 196.5px) round 44px); }
+  html.trial .sc-why-sheet { left: 50%; right: auto; bottom: calc(100dvh - 35px - min(830px, 100dvh - 70px)); width: 393px; max-width: 393px; transform: translateX(-50%); border-radius: 22px 22px 44px 44px; }
+  html.trial .sc-why-sheet[open] { animation: none; }
+}
+/* 261127 홈: 머리 막대를 본문 위에 띄우고(사진이 막대 뒤까지 이어지며 함께 스크롤), 스크롤했을 때만 막대를 흐리게 */
+html.trial:not(.field-mode) body[data-screen="home"] .workspace::before { display: none; }
+html.trial.phone-layout:not(.field-mode) body[data-screen="home"] .workspace { position: relative; }
+html.trial.phone-layout:not(.field-mode) body[data-screen="home"] #bar { position: absolute; z-index: 3; top: 0; left: 0; right: 0; height: var(--bar-h); background: transparent !important; -webkit-backdrop-filter: none; backdrop-filter: none; transition: background .2s; }
+html.trial.phone-layout:not(.field-mode) body[data-screen="home"].h24-scrolled #bar { background: rgba(14,22,19,.55) !important; -webkit-backdrop-filter: blur(16px) saturate(1.1); backdrop-filter: blur(16px) saturate(1.1); }
+html.trial.phone-layout:not(.field-mode) body[data-screen="home"] #main-area { grid-row: 1 / -1; padding-top: var(--bar-h); }
+html.trial #main-area .h24-hero::after { display: block; top: calc(-1 * var(--bar-h)); height: calc(var(--h24-cut, 100%) + var(--bar-h));
+  background: linear-gradient(180deg, rgba(8,14,12,.34) 0%, rgba(8,14,12,.16) 42%, rgba(8,14,12,.36) 100%), var(--wx-img) center top / 100% auto no-repeat, linear-gradient(180deg, var(--hero-top) 0%, var(--hero-bot) 100%); }
+/* 말풍선 안내 문구는 바로가기 줄이 대신하므로 화면 읽기에만 */
+.sc-bubble-pop .sc-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* 261127 허간 기본값: 넓은 창에서 어떤 화면·창·시트도 휴대폰 틀 밖으로 나오지 않는다.
+   틀은 항상 창 가운데(위아래 여백 같게). 창은 틀 폭·높이 안, 전체 화면 창은 틀과 같은 크기·모서리 */
+@media (min-width: 540px) and (min-height: 660px) {
+  html.trial:is(.phone-layout, .insurance-in-app) { --fh: min(830px, calc(100dvh - 70px)); --ft: max(35px, calc((100dvh - 830px) / 2)); }
+  html.trial:is(.phone-layout, .insurance-in-app) body { height: var(--fh); margin: var(--ft) auto 0; }
+  html.trial:is(.phone-layout, .insurance-in-app)::before { top: calc(var(--ft) - 6px); height: calc(var(--fh) + 12px); }
+  html.trial dialog[open] { max-width: min(393px, calc(100vw - 32px)) !important; max-height: calc(var(--fh) - 16px) !important; }
+  html.trial dialog::backdrop { clip-path: inset(max(35px, calc((100dvh - 830px) / 2)) calc(50% - 196.5px) max(35px, calc((100dvh - 830px) / 2)) calc(50% - 196.5px) round 44px); }
+  /* 전체 화면 창(보험금 확인): 틀과 같은 크기로 겹친다 */
+  html.trial .fc-dialog[open] { position: fixed; inset: 0; margin: auto; width: 393px; height: var(--fh) !important; max-height: var(--fh) !important; border-radius: 44px; clip-path: inset(0 round 44px); }
+  html.trial .fc-dialog .fc-frame { padding-top: 44px; }
+  /* 아래에서 올라오는 시트는 틀 아래쪽에 붙는다 */
+  html.trial .sc-why-sheet { bottom: var(--ft); }
+  html.trial.insurance-in-app dialog:not(.fc-dialog)[open] { margin-bottom: auto; }
+}
+/* 261127 허간: 보험 결과 화면 개선(체험본, 결과 화면일 때만) */
+html.trial.ins-result-view #example { display: none !important; }
+html.trial.ins-result-view .tabs { margin: 4px 0 16px; gap: 0; border: 0; padding: 4px; border-radius: 14px; background: #eef1ef; }
+html.trial.ins-result-view .tabs button { flex: 1; min-height: 44px; border-radius: 10px; color: #5d6861; font-size: .9375rem; }
+html.trial.ins-result-view .tabs button[aria-selected=true] { background: #fff; color: #191c1a; box-shadow: 0 1px 4px rgba(20,40,28,.12); }
+html.trial.ins-result-view .tabs button[aria-selected=true]::after { display: none; }
+/* 금액 카드: 그림 띠 대신 한 줄 머리 + 수정 */
+html.trial.ins-result-view .result-card { border-radius: 22px; background: #fff; box-shadow: 0 6px 24px rgba(20,40,28,.10); border: 1px solid #e6ebe7; }
+html.trial.ins-result-view .result-heading { min-height: 0; padding: 18px 18px 0; background: none; align-items: flex-start; justify-content: space-between; gap: 12px; }
+html.trial.ins-result-view .result-heading::before, html.trial.ins-result-view .result-heading img, html.trial.ins-result-view .image-note { display: none; }
+html.trial.ins-result-view .heading-copy { max-width: none; flex: 1; }
+html.trial.ins-result-view .heading-copy .scope { margin: 0; color: #5d6861; font-size: .8125rem; font-weight: 600; }
+html.trial.ins-result-view #estimate-title { margin: 4px 0 0; color: #191c1a; font-size: 1.0625rem; font-weight: 800; line-height: 1.4; }
+html.trial.ins-result-view #estimate-title span { display: inline; }
+.rv-edit { flex: none; display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 12px; border: 1px solid #d5dcd7; border-radius: 999px; background: #fff; color: #2f5a3e; font: inherit; font-size: .8125rem; font-weight: 700; cursor: pointer; }
+.rv-edit svg { width: 15px; height: 15px; }
+.rv-edit:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+html.trial.ins-result-view .range-card { margin: 14px 18px 0; padding: 20px 18px; border-radius: 16px; background: linear-gradient(160deg, #2f4a3a, #3f6a4c); color: #fff; }
+html.trial.ins-result-view .bound-label { color: rgba(255,255,255,.72); font-size: .8125rem; }
+html.trial.ins-result-view .bound-figure { margin-top: 6px; color: #fff; font-size: 2.125rem; letter-spacing: -.04em; }
+html.trial.ins-result-view .bound-figure .approx { font-size: 1rem; font-weight: 600; opacity: .8; }
+html.trial.ins-result-view .result-disclosure { margin: 12px 18px 16px; padding: 0; background: none; color: #6b746e; font-size: .75rem; }
+html.trial.ins-result-view .result-disclosure br { display: none; }
+html.trial.ins-result-view .result-disclosure::before { content: ''; }
+/* 안내 상자: 한 줄만 */
+html.trial.ins-result-view .notes { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: #f4f6f5; }
+html.trial.ins-result-view .notes > p:not([data-trial-only]) { display: none; }
+html.trial.ins-result-view .notes > p[data-trial-only] { margin: 0; color: #4a544e; font-size: .8125rem; line-height: 1.55; }
+html.trial.ins-result-view #change-note:empty { display: none; }
+/* 계산 조건: 깔끔한 목록 */
+html.trial.ins-result-view .conditions { margin-top: 22px; }
+html.trial.ins-result-view .conditions h2 { font-size: 1rem; font-weight: 800; letter-spacing: -.02em; }
+html.trial.ins-result-view .facts > div { padding: 11px 0; }
+html.trial.ins-result-view .facts dt { font-size: .875rem; }
+html.trial.ins-result-view .facts dd { font-size: .9375rem; }
+html.trial.ins-result-view #evidence { margin-top: 6px; }
+/* 아래 버튼: 같은 모양 둘 */
+.rv-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 18px; }
+.rv-ghost { min-height: 48px; border: 1px solid #d5dcd7; border-radius: 12px; background: #fff; color: #2f3a33; font: inherit; font-size: .9375rem; font-weight: 700; text-decoration: none; cursor: pointer; }
+.rv-ghost:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+.rv-ghost[hidden] { display: none; }
+html.trial.ins-result-view .range-card :is(.bound-figure, .bound-figure strong, .range-tilde, .approx) { color: #fff !important; -webkit-text-fill-color: #fff; opacity: 1; }
+html.trial.ins-result-view .range-card .approx { opacity: .8; }
+/* 보험 화면 위 막대 = 다른 메뉴 머리 막대(허간) */
+html.trial.insurance-in-app .example-nav .back-link { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; color: #353535; font-size: 13px; font-weight: 650; text-decoration: none; letter-spacing: 0; }
+html.trial.insurance-in-app .example-nav .back-link .shell-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html.trial.insurance-in-app .example-nav .back-link:hover { text-decoration: none; }
+html.trial.insurance-in-app .example-nav .example { display: none; }
+/* 261127 허간: 홈 카드의 '현장 기록' 버튼 정리(버튼 자체는 현장 모드 세션이 넣음, 모양만 여기서). 카드 안 한 줄 타일: 아이콘 원 · 이름/설명 · 꺾쇠 */
+html.trial #main-area .h23-card .h21-field { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 36px 1fr 16px; grid-template-rows: auto auto; column-gap: 12px; align-items: center; width: 100%; min-height: 56px; padding: 10px 14px; border-radius: 14px; background: #f1f5f2; color: #191c1a; cursor: pointer; font-family: inherit; }
+html.trial #main-area .h23-card .h21-field > .shell-icon { grid-row: 1 / 3; width: 36px; height: 36px; padding: 8px; box-sizing: border-box; border-radius: 50%; background: #3f6a4c; color: #fff; fill: none; stroke: currentColor; stroke-width: 1.8; }
+html.trial #main-area .h23-card .h21-field { font-size: .9375rem; font-weight: 800; line-height: 1.3; }
+html.trial #main-area .h23-card .h21-field small { grid-column: 2; grid-row: 2; display: block; margin: 1px 0 0; color: #5d6861; font-size: .75rem; font-weight: 500; }
+html.trial #main-area .h23-card .h21-field::after { content: ''; grid-column: 3; grid-row: 1 / 3; width: 8px; height: 8px; border-top: 2px solid #8a948e; border-right: 2px solid #8a948e; transform: rotate(45deg); justify-self: center; }
+html.trial #main-area .h23-card .h21-field:hover { background: #e9f0eb; }
+html.trial #main-area .h23-card .h21-field:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+/* 허간: 오른손 엄지 쪽(오른쪽)에 주 버튼 '기록하기'. 화면 읽기 순서는 그대로 두고 배치만 바꾼다 */
+html.trial #main-area .h23-card .h21-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+html.trial #main-area .h23-card .h21-actions > .primary-link { grid-column: 2; grid-row: 1; }
+html.trial #main-area .h23-card .h21-actions > .home-damage-link { grid-column: 1; grid-row: 1; }
+/* 보험금 확인 창(인증~계산)이 열려 있는 동안은 구르미를 숨긴다(허간). 결과 화면에서 다시 나온다 */
+html.trial body:has(#facility-check[open]) :is(#sc-fab, #sc-bubble) { display: none !important; }
+/* 달력 제목 누르면 아래로 열리는 달 고르기 말풍선(허간) */
+.ff-month-pick { position: relative; flex: 1; display: flex; justify-content: center; }
+.ff-month-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 0; border-radius: 12px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.ff-month-btn h2 { margin: 0; }
+.ff-month-btn:hover { background: #f1f5f2; }
+.ff-month-btn:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+.ff-month-caret { width: 7px; height: 7px; margin-top: -3px; border-right: 2px solid #5d6861; border-bottom: 2px solid #5d6861; transform: rotate(45deg); transition: transform .2s; }
+.ff-month-pick.is-open .ff-month-caret { transform: rotate(-135deg); margin-top: 3px; }
+.ff-month-pop { position: absolute; z-index: 20; top: calc(100% + 10px); left: 50%; width: 236px; max-height: 300px; margin-left: -118px; overflow: auto; overscroll-behavior: contain; padding: 6px; border-radius: 16px; background: #fff; box-shadow: 0 12px 32px rgba(20,40,28,.22), 0 0 0 1px rgba(20,40,28,.06); transform-origin: 50% -10px; animation: ff-pop .2s ease-out; }
+.ff-month-pop::before { content: ''; position: sticky; display: block; top: -16px; left: 50%; width: 14px; height: 14px; margin: -13px auto 0; background: #fff; transform: rotate(45deg); box-shadow: -2px -2px 4px rgba(20,40,28,.06); }
+@keyframes ff-pop { from { opacity: 0; transform: translateY(-6px) scale(.96); } }
+@media (prefers-reduced-motion: reduce) { .ff-month-pop { animation: none; } .ff-month-caret { transition: none; } }
+.ff-month-item { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: none; color: #191c1a; font: inherit; font-size: .9375rem; font-weight: 600; cursor: pointer; text-align: left; }
+.ff-month-item em { margin-left: 4px; color: #2f5a3e; font-style: normal; font-size: .75rem; font-weight: 800; }
+.ff-month-item small { color: #6b746e; font-size: .75rem; font-weight: 500; }
+.ff-month-item:hover { background: #f1f5f2; }
+.ff-month-item.is-sel { background: #2f4a3a; color: #fff; }
+.ff-month-item.is-sel small, .ff-month-item.is-sel em { color: rgba(255,255,255,.8); }
+.ff-month-item:focus-visible { outline: 3px solid #4d6e59; outline-offset: -3px; }
+/* 홈으로 돌아올 때 구르미는 천천히 유유히 떠 내려오듯(허간). 끌어 놓을 때 자석 튕김은 그대로 */
+.sc-fab.is-drifting { transition: transform 1.6s cubic-bezier(.37,0,.2,1), box-shadow .2s, scale .2s; }
+.sc-fab.is-drifting .sc-fab-face { animation: sc-float 1.6s ease-in-out; }
+@keyframes sc-float { 0%, 100% { translate: 0 0; } 30% { translate: 0 -5px; } 65% { translate: 0 3px; } }
+@media (prefers-reduced-motion: reduce) { .sc-fab.is-drifting { transition: none; } .sc-fab.is-drifting .sc-fab-face { animation: none; } }
+/* 261127 모의 구매 내역 카드형(허간) */
+.moc-head h1 { margin: 0; font-size: 1.375rem; font-weight: 800; letter-spacing: -.02em; }
+.moc-head p { margin: 4px 0 0; color: #687069; font-size: .8125rem; }
+.mall-orders { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 12px; }
+.mall-order-card { display: grid; gap: 12px; padding: 16px; border: 1px solid #e3e8e4; border-radius: 18px; background: #fff; color: inherit; text-decoration: none; box-shadow: 0 4px 16px rgba(20,40,28,.06); }
+.mall-order-card:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+.moc-top { display: flex; justify-content: space-between; align-items: center; }
+.moc-date { color: #5d6861; font-size: .8125rem; font-weight: 600; }
+.moc-chip { padding: 3px 8px; border-radius: 999px; background: #eaf2ec; color: #2f5a3e; font-size: .6875rem; font-weight: 800; }
+.moc-body { display: flex; align-items: center; gap: 12px; }
+.moc-thumbs { flex: none; display: flex; }
+.moc-thumb { width: 52px; height: 52px; border-radius: 12px; overflow: hidden; background: #f4f5f2; border: 2px solid #fff; box-shadow: 0 0 0 1px #e3e8e4; }
+.moc-thumb + .moc-thumb { margin-left: -14px; }
+.moc-thumb .moc-img { display: block; width: 100%; height: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 0; }
+.moc-more { align-self: center; margin-left: 6px; color: #687069; font-size: .75rem; font-weight: 700; }
+.moc-text { min-width: 0; display: grid; gap: 3px; }
+.moc-text strong { overflow: hidden; color: #191c1a; font-size: .9375rem; font-weight: 800; white-space: nowrap; text-overflow: ellipsis; }
+.moc-text small { color: #687069; font-size: .75rem; }
+.moc-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #eef0ef; }
+.moc-foot b { color: #191c1a; font-size: 1.125rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.moc-foot span { color: #2f5a3e; font-size: .8125rem; font-weight: 800; }
+.moc-foot i { font-style: normal; }
+.moc-more-shop { margin-top: 16px; }
+/* 소식 대표 사진(있으면 덮고, 없으면 색면·아이콘 그대로) */
+html.trial .bn-thumb { position: relative; overflow: hidden; }
+html.trial .bn-thumb::after { content: ''; position: absolute; inset: 0; background: var(--bn-img, none) center / cover no-repeat; }
+html.trial .bn-feature[style], html.trial .bn-article .bn-cover[style] { background-image: linear-gradient(180deg, rgba(10,18,14,.25) 0%, rgba(10,18,14,.72) 100%), var(--bn-img); background-size: cover; background-position: center; }
+html.trial .bn-feature[style]::after { display: none; }
+html.trial .bn-feature[style] { min-height: 260px; align-content: end; }
+html.trial .bn-article .bn-cover[style] { min-height: 300px; align-content: end; }
+
+@media (min-width: 540px) and (min-height: 660px) {
+  /* 보험금 확인 창(맨 위 층)에도 아이폰 상태줄: 가운데 섬 · 왼쪽 9:41 · 오른쪽 신호·와이파이·배터리. '취소'는 그 아래 */
+  html.trial .fc-dialog[open]::before { content: ''; position: absolute; z-index: 5; top: 10px; left: 50%; width: 108px; height: 31px; margin-left: -54px; border-radius: 20px; background: #0b0d0c; pointer-events: none; }
+  html.trial .fc-dialog .fc-frame { position: relative; padding-top: 44px; }
+  html.trial .fc-dialog .fc-frame::before { content: '9:41'; position: absolute; top: 15px; left: 0; width: 140px; text-align: center; color: #171717; font: 600 16px/1.1 -apple-system, "SF Pro Text", system-ui, sans-serif; pointer-events: none; }
+  html.trial .fc-dialog .fc-frame::after { content: ''; position: absolute; top: 15px; right: 26px; width: 78px; height: 15px; background: #171717; -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2278%22%20height%3D%2215%22%20viewBox%3D%220%20-2%2078%2015%22%3E%3Crect%20x%3D%220%22%20y%3D%228%22%20width%3D%223%22%20height%3D%224%22%20rx%3D%221%22/%3E%3Crect%20x%3D%224.7%22%20y%3D%226%22%20width%3D%223%22%20height%3D%226%22%20rx%3D%221%22/%3E%3Crect%20x%3D%229.4%22%20y%3D%223.5%22%20width%3D%223%22%20height%3D%228.5%22%20rx%3D%221%22/%3E%3Crect%20x%3D%2214.1%22%20y%3D%221%22%20width%3D%223%22%20height%3D%2211%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M29.5%203.2a9.6%209.6%200%200%201%2012.9%200l1.3-1.4a11.6%2011.6%200%200%200-15.5%200zM31.6%205.5a6.5%206.5%200%200%201%208.7%200l1.3-1.4a8.5%208.5%200%200%200-11.3%200zM33.7%207.8a3.4%203.4%200%200%201%204.5%200L36%2010.2z%22/%3E%3Crect%20x%3D%2250.5%22%20y%3D%22.5%22%20width%3D%2223%22%20height%3D%2212%22%20rx%3D%223.6%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-opacity%3D%22.45%22/%3E%3Crect%20x%3D%2252.5%22%20y%3D%222.5%22%20width%3D%2217%22%20height%3D%228%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M75.3%204.4v4.2c.8-.3%201.4-1.1%201.4-2.1s-.6-1.8-1.4-2.1z%22%20fill-opacity%3D%22.45%22/%3E%3C/svg%3E") no-repeat center / contain; mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2278%22%20height%3D%2215%22%20viewBox%3D%220%20-2%2078%2015%22%3E%3Crect%20x%3D%220%22%20y%3D%228%22%20width%3D%223%22%20height%3D%224%22%20rx%3D%221%22/%3E%3Crect%20x%3D%224.7%22%20y%3D%226%22%20width%3D%223%22%20height%3D%226%22%20rx%3D%221%22/%3E%3Crect%20x%3D%229.4%22%20y%3D%223.5%22%20width%3D%223%22%20height%3D%228.5%22%20rx%3D%221%22/%3E%3Crect%20x%3D%2214.1%22%20y%3D%221%22%20width%3D%223%22%20height%3D%2211%22%20rx%3D%221%22/%3E%3Cpath%20d%3D%22M29.5%203.2a9.6%209.6%200%200%201%2012.9%200l1.3-1.4a11.6%2011.6%200%200%200-15.5%200zM31.6%205.5a6.5%206.5%200%200%201%208.7%200l1.3-1.4a8.5%208.5%200%200%200-11.3%200zM33.7%207.8a3.4%203.4%200%200%201%204.5%200L36%2010.2z%22/%3E%3Crect%20x%3D%2250.5%22%20y%3D%22.5%22%20width%3D%2223%22%20height%3D%2212%22%20rx%3D%223.6%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-opacity%3D%22.45%22/%3E%3Crect%20x%3D%2252.5%22%20y%3D%222.5%22%20width%3D%2217%22%20height%3D%228%22%20rx%3D%222%22/%3E%3Cpath%20d%3D%22M75.3%204.4v4.2c.8-.3%201.4-1.1%201.4-2.1s-.6-1.8-1.4-2.1z%22%20fill-opacity%3D%22.45%22/%3E%3C/svg%3E") no-repeat center / contain; pointer-events: none; }
+}
+/* 보험 결과 다듬기 2(허간): 수정 삭제, 사진 자리, 조건 바꾸기 글자 버튼, 자기부담금 표 */
+html.trial.ins-result-view .result-heading { align-items: center; padding: 16px 18px 0; }
+html.trial.ins-result-view .result-heading img#object { display: none; position: static; z-index: auto; width: 52px; height: 52px; flex: none; border-radius: 14px; object-fit: cover; }
+html.trial.ins-result-view .result-heading img#object.rv-has-photo { display: block; }
+html.trial.ins-result-view .rv-edit { display: none; }
+.rv-cond-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rv-cond-head h2 { margin: 0; }
+.rv-edit-link { min-height: 40px; padding: 0 4px; border: 0; background: none; color: #2f5a3e; font: inherit; font-size: .8125rem; font-weight: 800; text-decoration: underline; text-underline-offset: .2em; cursor: pointer; }
+.rv-edit-link:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+html.trial.ins-result-view #cost-lines { margin: 14px 18px 0; padding: 14px 0 0; border-top: 1px solid #eef0ef; }
+html.trial.ins-result-view #cost-lines .cost-head { margin: 0 0 8px; color: #191c1a; font-size: .875rem; font-weight: 800; }
+.rv-cost { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.rv-cost thead th { padding: 0 0 6px; color: #687069; font-size: .6875rem; font-weight: 700; text-align: right; }
+.rv-cost thead th:first-child { text-align: left; }
+.rv-cost tbody th, .rv-cost td { padding: 9px 0; border-top: 1px solid #eef0ef; font-size: .875rem; text-align: right; vertical-align: middle; }
+.rv-cost tbody th { text-align: left; color: #2f3a33; font-weight: 700; }
+.rv-cost tbody th small, .rv-cost td small { display: block; color: #8a928c; font-size: .6875rem; font-weight: 600; }
+.rv-cost .rv-minus { color: #a34a00; font-weight: 600; }
+.rv-cost .rv-out { color: #191c1a; font-size: 1rem; font-weight: 800; }
+html.trial.ins-result-view #cost-lines .cost-foot { margin: 10px 0 0; color: #687069; font-size: .75rem; line-height: 1.55; }
+@media (min-width: 540px) and (min-height: 660px) {
+  /* '취소'를 상태줄 아래, 제목 줄과 같은 높이로 */
+  html.trial .fc-dialog .fc-cancel { top: 50px; }
+}
+/* 소식 '원문 보러 가기'와 출시 전 안내 팝업 */
+html.trial .bn-article .bn-origin { width: 100%; margin-top: 16px; border: 0; cursor: pointer; font: inherit; font-weight: 700; }
+.bn-pop { width: min(320px, calc(100vw - 48px)); border: 0; border-radius: 22px; padding: 24px 22px 18px; text-align: center; box-shadow: 0 20px 50px rgba(20,40,28,.25); }
+.bn-pop::backdrop { background: rgba(20,30,24,.45); }
+.bn-pop[open] { animation: bn-pop-in .22s ease-out; }
+@keyframes bn-pop-in { from { opacity: 0; transform: translateY(8px) scale(.97); } }
+@media (prefers-reduced-motion: reduce) { .bn-pop[open] { animation: none; } }
+.bn-pop-icon { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 50%; background: #eaf2ec; color: #2f5a3e; font-size: 1.375rem; font-weight: 800; }
+.bn-pop h2 { margin: 0; font-size: 1.0625rem; font-weight: 800; }
+.bn-pop p { margin: 8px 0 18px; color: #5d6861; font-size: .875rem; line-height: 1.6; }
+.bn-pop .primary-link { width: 100%; min-height: 48px; border: 0; cursor: pointer; font: inherit; font-weight: 800; }
+/* 261127 구르미 화면별 말풍선 정리(허간): 목록은 점·밑줄 없이 한 줄 카드, 보는 중 표시는 작은 칩, 살펴보는 중 점 애니메이션 */
+.sc-bubble-pop .sc-kicker { flex-wrap: wrap; row-gap: 2px; }
+.sc-seeing { display: inline-flex; align-items: center; gap: 4px; color: #687069; font-size: .6875rem; font-weight: 700; }
+.sc-seeing::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #4f8a63; box-shadow: 0 0 0 3px rgba(79,138,99,.18); }
+.sc-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sc-line { margin: 0; }
+.sc-line > span, .sc-line > a { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-height: 44px; padding: 11px 12px; border-radius: 12px; background: #f4f6f5; color: #2f3a33; font-size: .875rem; line-height: 1.45; text-decoration: none; }
+.sc-line > a { color: #191c1a; font-weight: 600; }
+.sc-line > a span[aria-hidden] { flex: none; color: #8a948e; font-weight: 700; }
+.sc-line > a:hover { background: #eaf0ec; }
+.sc-line > a:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+.sc-line b { margin-right: 6px; padding: 1px 7px; border-radius: 6px; background: #eaf2ec; color: #2f5a3e; font-size: .6875rem; font-weight: 800; white-space: nowrap; vertical-align: 1px; }
+.sc-line.is-warn > span, .sc-line.is-warn > a { background: #fbf4ec; }
+.sc-line.is-warn b { background: #f7e3cf; color: #8a4b00; }
+.sc-line small { display: block; margin-top: 2px; color: #687069; font-size: .75rem; font-weight: 500; }
+.sc-thinking h2 { display: flex; align-items: center; gap: 6px; }
+.sc-dots { display: inline-flex; gap: 3px; }
+.sc-dots i { width: 5px; height: 5px; border-radius: 50%; background: #4f8a63; animation: sc-dot 1s ease-in-out infinite; }
+.sc-dots i:nth-child(2) { animation-delay: .15s; } .sc-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes sc-dot { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .sc-dots i { animation: none; opacity: .7; } }
+.sc-bubble-pop a.sc-next { text-decoration: none; }
+
+/* 261127 허간 '텍스트 더 줄이자': 머리줄 한 줄(구르미 · AI 비서), 제목 뒤 동은 작게 */
+.sc-bubble-pop .sc-kicker { flex-wrap: nowrap; }
+.sc-h-house { margin-left: 2px; color: #687069; font-size: .8125rem; font-weight: 600; white-space: nowrap; }

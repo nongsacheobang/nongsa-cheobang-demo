@@ -1,0 +1,58 @@
+/* 261127 허간: 보험 첫 화면 개선(체험본만, 결과 화면 제외). trial.css와 따로 둔 보험 전용 파일 */
+
+html.trial .fc-gate { padding: 0 0 18px; border: 0; border-radius: 22px; background: #fff; box-shadow: 0 6px 24px rgba(20,40,28,.10), 0 0 0 1px #e6ebe7; }
+html.trial .fc-gate .ig-photo { position: relative; height: 150px; background: linear-gradient(160deg, #2f4a3a, #4f7d5d); overflow: hidden; }
+html.trial .fc-gate .ig-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .3s; }
+html.trial .fc-gate .ig-photo img.is-ok { opacity: 1; }
+html.trial .fc-gate .ig-photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.28)); }
+html.trial .fc-gate > img { display: none; }
+html.trial .fc-gate > :not(img):not(.ig-photo) { margin-inline: 18px; }
+html.trial .fc-gate-kicker { display: inline-block; margin-top: 16px; padding: 3px 10px; border-radius: 999px; background: #eaf2ec; color: #2f5a3e; font-size: .75rem; font-weight: 800; }
+html.trial .fc-gate-title { margin-top: 10px; font-size: 1.25rem; font-weight: 800; letter-spacing: -.02em; }
+html.trial .fc-gate-copy { margin-top: 6px; color: #5d6861; font-size: .875rem; line-height: 1.55; }
+html.trial .fc-gate .fc-steps { gap: 6px; margin-top: 16px; counter-reset: fc; }
+html.trial .fc-gate .fc-steps li { display: grid; justify-items: center; gap: 6px; padding: 0; border: 0; color: #5d6861; font-size: .75rem; font-weight: 700; text-align: center; }
+html.trial .fc-gate .fc-steps li::before { content: counter(fc); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #eef1ef; color: #2f5a3e; font-size: .8125rem; font-weight: 800; }
+html.trial .fc-gate .fc-steps li:first-child::before { background: #2f4a3a; color: #fff; }
+html.trial .fc-gate .fc-bubble { margin-top: 18px !important; }
+html.trial .fc-gate .primary { width: calc(100% - 36px); min-height: 52px; margin-top: 10px; border-radius: 14px; font-size: 1rem; font-weight: 800; }
+html.trial .fc-gate .ig-note { margin-top: 10px !important; color: #687069; font-size: .75rem; text-align: center; }
+/* 지난 조회 · 작기 일정 · 피해 안내 카드도 같은 결로 */
+html.trial .last-check { border: 0; border-radius: 18px; background: #fff; box-shadow: 0 0 0 1px #e6ebe7; }
+html.trial.insurance-in-app .season { border: 0; border-radius: 18px; box-shadow: 0 0 0 1px #e6ebe7; }
+html.trial.insurance-in-app .season h2 { font-size: 1rem; font-weight: 800; }
+html.trial.insurance-in-app .damage-first { border-radius: 18px; }
+html.trial .fc-gate > .ig-photo { margin: 0 !important; }
+/* 보험 위 막대 오른쪽 '현장 모드' 진입 버튼(현장 모드 세션의 FarmField.entryMarkup). 보험금 확인 창이 열린 동안은 숨김(허간) */
+html.trial.insurance-in-app .example-nav .field-entry { min-height: 36px; padding: 0 12px; border: 1px solid #d5dcd7; border-radius: 999px; background: #fff; color: #2f3a33; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+html.trial.insurance-in-app .example-nav .field-entry:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+html.trial body:has(#facility-check[open]) .example-nav .field-entry { display: none; }
+html.trial body:has(#facility-check[open]) .example-nav :is(.field-switch, .field-entry) { display: none; }
+
+/* 위 막대 위치를 다른 메뉴(#bar)와 통일(허간): 본문 위 여백 없이 막대를 맨 위에, 높이 56px, 아래 12px 띄움 */
+html.trial.insurance-in-app main { padding-top: 0 !important; }
+html.trial.insurance-in-app .example-nav { top: 0; margin-top: 0 !important; height: 56px; min-height: 56px; background: #fff; z-index: 5; }
+html.trial.insurance-in-app main > .example-nav + * { margin-top: 16px; }
+
+/* 261127 허간: 결과 '예상 범위' 카드 = 큰 사진 표지. 진한 초록 상자 대신 사진 아래쪽을 어둡게 깔고 흰 글씨로 범위를 크게(결과 화면·체험본만) */
+html.trial.ins-result-view .result-heading.rv-cover { position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; min-height: 256px; padding: 18px 20px 18px; background: #2b2f2c; color: #fff; overflow: hidden; }
+html.trial.ins-result-view .rv-cover img#object { display: block; position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; border-radius: 0; object-fit: cover; object-position: center 60%; opacity: 0; transition: opacity .35s; }
+html.trial.ins-result-view .rv-cover img#object.rv-has-photo { opacity: 1; }
+html.trial.ins-result-view .rv-cover::before { content: ''; display: block; position: absolute; z-index: -1; inset: 0; background: linear-gradient(180deg, rgba(10,14,12,.66) 0%, rgba(10,14,12,.52) 24%, rgba(10,14,12,.26) 38%, rgba(10,14,12,.60) 50%, rgba(10,14,12,.84) 70%, rgba(10,14,12,.90) 100%); }
+html.trial.ins-result-view .rv-cover .image-note { display: none; }
+html.trial.ins-result-view .rv-cover .heading-copy { flex: none; max-width: none; }
+html.trial.ins-result-view .rv-cover .heading-copy .scope { margin: 0; color: rgba(255,255,255,.92); font-size: .8125rem; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+html.trial.ins-result-view .rv-cover #estimate-title { margin: 3px 0 0; color: #fff; font-size: 1rem; font-weight: 700; line-height: 1.4; letter-spacing: -.01em; text-shadow: 0 1px 2px rgba(0,0,0,.35); word-break: keep-all; }
+html.trial.ins-result-view .rv-cover .range-card { display: block; margin: auto 0 0; padding: 28px 0 0; border: 0; border-radius: 0; background: none; text-align: left; }
+html.trial.ins-result-view .rv-cover .range-line { justify-content: flex-start; gap: 0 6px; margin-top: 2px; }
+html.trial.ins-result-view .rv-cover .range-card[hidden] { display: none; }
+html.trial.ins-result-view .rv-cover .bound-label { color: rgba(255,255,255,.9); font-size: .875rem; font-weight: 700; letter-spacing: 0; }
+html.trial.ins-result-view .rv-cover .bound-figure { margin-top: 2px; font-size: clamp(1.875rem, 9.4vw, 2.375rem); font-weight: 800; line-height: 1.18; letter-spacing: -.035em; word-break: keep-all; text-shadow: 0 2px 10px rgba(0,0,0,.35); }
+html.trial.ins-result-view .rv-cover .bound-figure strong { font-weight: 800; white-space: nowrap; }
+html.trial.ins-result-view .rv-cover .bound-figure .approx { font-size: .5em; font-weight: 700; opacity: .92; }
+html.trial.ins-result-view .rv-cover .range-tilde { font-weight: 500; opacity: .85; }
+html.trial.ins-result-view .rv-cover .result-disclosure { margin: 10px 0 0; padding: 0; background: none; color: rgba(255,255,255,.86); font-size: .75rem; line-height: 1.45; word-break: keep-all; }
+html.trial.ins-result-view .rv-cover + .amount.pending { margin: 0; }
+html.trial.ins-result-view .result-card:has(.rv-cover) #cost-lines { margin-top: 16px; padding-top: 0; border-top: 0; }
+html.trial.ins-result-view .result-card:has(.rv-cover) #cost-lines:not([hidden]) { padding-bottom: 16px; }
+@media (min-width: 540px) { html.trial.ins-result-view .rv-cover .bound-figure { font-size: 2.375rem; } }

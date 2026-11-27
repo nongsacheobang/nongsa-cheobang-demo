@@ -94,10 +94,10 @@
     ['g-mulch','garden','흑색 멀칭 비닐 50m',15000,'1롤','이랑을 덮어 풀이 덜 나고 흙이 마르지 않게 해요.','roll'],
     ['g-saucer','garden','화분 받침 10개',5000,'10개','화분 아래 물이 흘러나오지 않게 받쳐요.','pot']
   ];
-  const photos=new Set(['hose','gloves','tape','film','connector','boots']);
+  const photos=new Set(['tape','film','h-film-10m','h-po-5m','h-clip','h-pipe','h-joint','h-spring','h-shade','h-curtain','h-band','h-clear-tape','h-handle','h-insect-net','h-door','h-thermo','h-tie','h-clamp','h-hook','h-cutter','hose','connector','w-drip','w-nipple','w-pe-pipe','w-ball-valve','w-sprinkler','w-nozzle','w-coupler','w-reel','w-can','w-pail','w-timer','w-filter','w-drain-net','w-pump','w-tee','w-band','w-gauge','w-pipe-tape','gloves','boots','k-nitrile','k-winter','k-sleeve','k-apron','k-hat','k-scarf','k-raincoat','k-goggle','k-mask','k-knee','k-seat','k-short-boots','k-safety-shoes','k-vest','k-firstaid','k-headlamp','k-sun-hat','k-wrist','g-tray','g-soil','g-stake','g-twine','g-clip','g-pruner','g-thinning','g-pot','g-sprayer','g-hand-spray','g-trowel','g-label','g-compost','g-perlite','g-runner-pin','g-ring','g-basket','g-harvest-snip','g-mulch','g-saucer']);
   const products={};
   for(const [id,store,name,price,unit,description,art] of rows){
-    products[id]={name,price,unit,description,art,store,virtual:true,image:photos.has(id)?'assets/mall/'+id+'.webp':''};
+    products[id]={name,price,unit,description,art,store,virtual:true,image:photos.has(id)?'assets/mall/'+id+'.webp?v=261127c':''};
   }
   window.FarmCatalog=Object.freeze({stores,products});
 })();

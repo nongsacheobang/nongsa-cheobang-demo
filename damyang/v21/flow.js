@@ -4,13 +4,13 @@
   const params = new URLSearchParams(location.search);
   const branchKey=params.get('branch');
   const preview = branchKey ? 'branch-' + branchKey : params.get('atlas');
-  const prefix = 'damyang-public-v21-flow-' + (preview ? 'preview-' + preview + '-' : '');
+  const prefix = (window.FarmTrial?.ns||'damyang-public-v21-')+'flow-' + (preview ? 'preview-' + preview + '-' : '');
   const mallPreview=params.get('mallPreview')||'';
 
   // season('작기 미확인')은 기록을 찾는 내부 열쇠라 그대로 두고, 화면에는 seasonLabel(작물·정식일)을 보여준다.
   // 보험 화면(estimate/timeline.js)도 같은 저장 키를 읽어 작물 이름과 정식일을 맞춘다.
-  const houseKey = 'damyang-public-v21-houses-' + (preview ? 'preview-' + preview + '-' : '');
-  const seasonKey = id => 'damyang-public-v21-season-' + (preview ? 'preview-' + preview + '-' : '') + id + '-unconfirmed';
+  const houseKey = (window.FarmTrial?.ns||'damyang-public-v21-')+'houses-' + (preview ? 'preview-' + preview + '-' : '');
+  const seasonKey = id => (window.FarmTrial?.ns||'damyang-public-v21-')+'season-' + (preview ? 'preview-' + preview + '-' : '') + id + '-unconfirmed';
   const CROPS = ['토마토', '방울토마토', '딸기'];
   const DEFAULT_CROPS = {'1': {crop: '딸기', plant: '2026-10-20'}, '2': {crop: '딸기', plant: ''}};
   const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s + 'T00:00:00Z'));
@@ -39,8 +39,8 @@
   }
   buildHouses();
   const pictures = [
-    {key: 'aisle', name: '통로 전체 물 고임', path: 'flow-assets/aisle.webp'},
-    {key: 'film', name: '비닐 하단 물자국', path: 'flow-assets/film.webp'}
+    {key: 'aisle', name: '통로 전체 물 고임', path: 'flow-assets/aisle.webp?v=261127d'},
+    {key: 'film', name: '비닐 하단 물자국', path: 'flow-assets/film.webp?v=261127d'}
   ];
   const seeds = [
     {id:'example-2',houseId:'2',memo:'통로 가운데 물이 고였어요.',date:'2026-11-22',time:'16:40',photo:'aisle'},
@@ -175,6 +175,35 @@
     return rows.sort((a,b)=>(b.date+b.time+(b.created||'')).localeCompare(a.date+a.time+(a.created||'')));
   }
   function getRecord(id) {return records().find(r => r.id === id);}
+  // 261126 기능 데모(PRD F03): 체험본(?trial=1)에서만. 고정 예시 질문 한 가지와 다음 날 일정 한 건.
+  // 참가자 메모를 분석하지 않고 밖으로 보내지 않는다. 일정은 일지와 다른 자료라 records()·준비도에 넣지 않는다.
+  const trial = window.FarmTrial?.on ? window.FarmTrial : null;
+  const NEXT = {kind:'aisle-water', houseId:'2', crop:'딸기', title:'가운데 통로 물 빠짐 확인', question:'다음에 뭘 확인할까요?',
+    answer:'다음 점검 때 가운데 통로에 물이 남아 있는지 확인해 보세요.', label:'AI 일정 제안 예시: 미리 준비한 기록과 답변입니다',
+    basis:['2026-11-17','2026-11-18','2026-11-19','2026-11-20','2026-11-21','2026-11-22','2026-11-23']};
+  // 같은 제안 판별: 회차(저장 구역) + 2동 + 작기 + 제안 종류 + 예정일(회차 시작 한국 날짜 D의 다음 날, 다시 열어도 밀리지 않음)
+  // 작물·정식일은 다른 탭에서 바뀔 수 있어 저장소에서 바로 읽는다. 정식일(작기)이 바뀌면 다른 일정으로 본다.
+  const season2 = () => { const c=loadHouses().crops[NEXT.houseId]; return {crop:c?.crop||'', plant:c?.plant||''}; };
+  const planKey = (due,plant) => prefix+'plans-'+NEXT.houseId+'-unconfirmed/'+NEXT.kind+'-'+due+'-'+(plant||'noplant');
+  function readPlan() {
+    if(!trial) return null;
+    const due=trial.planDay(), s=season2();
+    if(s.crop!==NEXT.crop) return null;
+    try { const p=JSON.parse(localStorage.getItem(planKey(due,s.plant))||'null'); if(p?.kind===NEXT.kind && p.due===due && p.houseId===NEXT.houseId && p.crop===NEXT.crop && (p.plant||'')===s.plant) return p; } catch (_) {}
+    return null;
+  }
+  const nextHere = () => active===NEXT.houseId && season2().crop===NEXT.crop;
+  function plansFor(date) { const p=nextHere()?readPlan():null; return p && (!date || p.due===date) ? [p] : []; }
+  function ensurePlan() {
+    const had=readPlan(); if(had) return had;
+    const due=trial.planDay(), s=season2();
+    if(s.crop!==NEXT.crop) throw Error('not strawberry');
+    const p={id:'plan-'+trial.round.id+'-'+NEXT.houseId+'-'+NEXT.kind+'-'+due+'-'+(s.plant||'noplant'),kind:NEXT.kind,houseId:NEXT.houseId,crop:NEXT.crop,plant:s.plant,season:'작기 미확인',due,title:NEXT.title,source:'fixed-example',created:new Date().toISOString()};
+    localStorage.setItem(planKey(due,s.plant),JSON.stringify(p));
+    const saved=readPlan(); if(!saved) throw Error('plan not saved');
+    return saved;
+  }
+  const ownCount = () => records().filter(r=>!r.sample).length;
   const canRepair=r=>r?.kind==='damage' && r.cause!=='화재' && r.cause!=='병해충';
   function readinessLabel(score,coverage) {
     if (coverage === false || ['미가입','uninsured','unsubscribed'].includes(coverage)) return '가입이 먼저예요';
@@ -215,10 +244,10 @@
   function photoFigure(r) {
     const many=diaryPhotos(r);
     if(many.length&&!FarmPhoto.localImage(r)&&!pictures.some(p=>p.key===r.photo)){
-      return '<section class="ff-gallery" aria-label="사진 '+many.length+'장"><div class="ff-gallery-row">'+many.map((p,i)=>'<figure class="ff-gallery-item"><img src="'+esc(p.path)+'" alt="'+esc(p.name)+'" loading="lazy"><figcaption>'+(i+1)+'/'+many.length+' · '+esc(p.name)+'</figcaption></figure>').join('')+'</div><p class="ff-note">시연용으로 만든 사진이에요.</p></section>';
+      return '<section class="ff-gallery" aria-label="사진 '+many.length+'장"><div class="ff-gallery-row">'+many.map((p,i)=>'<figure class="ff-gallery-item"><img src="'+esc(p.path)+'" alt="'+esc(p.name)+'" loading="lazy"><figcaption>'+(i+1)+'/'+many.length+' · '+esc(p.name)+'</figcaption></figure>').join('')+'</div>'+(window.FarmTrial?.on?'<button type="button" class="ff-gal-nav ff-gal-prev" data-gal="-1" aria-label="이전 사진" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><button type="button" class="ff-gal-nav ff-gal-next" data-gal="1" aria-label="다음 사진" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>':'')+'<p class="ff-note">시연용으로 만든 사진이에요.</p></section>';
     }
     const p=getPhoto(r);
-    return p?'<figure class="ff-figure"><img src="'+esc(p.path)+'" alt="'+esc(p.name)+'"><figcaption>'+esc(p.name)+(r.photo==='local'?'':' · 가상 현장 도해')+'</figcaption></figure>':'';
+    return p?'<figure class="ff-figure"><img src="'+esc(p.path)+'" alt="'+esc(p.name)+'"><figcaption>'+esc(p.name)+(r.photo==='local'?'':' · 시연 사진')+'</figcaption></figure>':'';
   }
   const kinds = ['강풍/태풍','눈(대설)','우박','비(호우)','추위(한파/서리)','더위(폭염)','새/짐승','화재','그 밖'];
   function draft() {
@@ -292,6 +321,8 @@
     const memo=q('#ff-memo')?.value??d.memo, cause=q('input[name="cause"]:checked')?.value??d.cause, fire=q('input[name="fire"]:checked')?.value??d.fire;
     const photo=d.photo||q('input[name="photoSample"]:checked')?.value;
     const memoOpen=!memo.trim()&&!photo, fireOpen=d.entryType==='damage'&&cause==='화재'&&!fire;
+    // 261126(T12): 저장 실패 같은 다른 안내는 다음 저장 시도 전까지 남긴다(메모 칸을 떠나는 순간 지워지던 문제)
+    if(window.FarmTrial?.on&&!el.textContent.startsWith('관찰한')&&!el.textContent.startsWith('화재 특약'))return;
     if((el.textContent.startsWith('관찰한')&&memoOpen)||(el.textContent.startsWith('화재 특약')&&fireOpen))return;
     showError('');
   }
@@ -386,7 +417,7 @@
       (p?'<img class="je-thumb" src="'+esc(p.path)+'" alt="첨부 사진">':'')+'</div>'+
       cta(btn('방금 쓴 기록 보기','open-saved',true))+'</header>'+
       (type!=='work'?'<section class="ff-block"><h2>직접 적은 접수 정보</h2>'+receiptInfo(r)+'</section>':'')+
-      '<div class="je-saved-links">'+(canRepair(r)?btn('비닐 수리비 확인','begin-repair'):'')+btn('일지 목록 보기','journal')+btn('홈으로','home')+'</div>');
+      nextPrompt('saved')+'<div class="je-saved-links">'+(canRepair(r)?btn('비닐 수리비 확인','begin-repair'):'')+btn('일지 목록 보기','journal')+btn('홈으로','home')+'</div>');
   }
   function savedCaption(r){
     if(r.sample)return esc(r.time)+' · 시연 기록';
@@ -401,6 +432,31 @@
     '<span class="ff-entry-text"><span>'+esc(r.memo||'사진 기록')+'</span><small>'+savedCaption(r)+(FarmJournalEdit.typeOf(r)==='pest'?' · 병·벌레 기록':'')+'</small></span><b aria-hidden="true">›</b></button>';
   }
 
+  function nextPrompt(where) {
+    if(!trial || !nextHere()) return '';
+    if(where==='journal' && !ownCount() && !readPlan()) return '';
+    return '<section class="ff-block ff-next" aria-labelledby="ff-next-'+where+'"><p class="ff-next-tag">AI 일정 제안 예시</p><h2 id="ff-next-'+where+'">다음 작업 확인</h2>'+
+      '<p class="ff-note">미리 준비한 기록과 답변이에요. 직접 쓴 메모는 분석하지 않아요.</p>'+btn(NEXT.question,'ask-next')+'<p class="ff-error" data-next-error role="alert" hidden></p></section>';
+  }
+  function nextView() {
+    if(!trial) return emptyState('체험본에서 여는 예시예요','농장 일지로 돌아가 주세요.');
+    if(!nextHere()) return emptyState('딸기 하우스 2동 예시예요','동을 딸기 하우스 2동으로 바꾸면 이 예시를 볼 수 있어요.');
+    // 근거: 11월 17~23일 2동 시연 일지(11월 22일 물 고임 기록 example-2 포함)
+    const p=readPlan(), basis=records().filter(r=>r.sample && NEXT.basis.includes(r.date));
+    const latest=basis[0], rest=basis.slice(1);
+    const failText=ownCount()?'일지는 저장됐고 일정은 추가되지 않았어요.':'일정은 추가되지 않았어요.';
+    return wrap('<header class="ff-heading">'+tag()+'<h1>'+NEXT.question+'</h1><p class="ff-next-tag">'+NEXT.label+'</p></header>'+
+      '<section class="ff-block"><h2>답변</h2><p class="ff-memo">'+NEXT.answer+'</p><p class="ff-note">병해충 진단, 약량 처방이나 보험 판단이 아니에요. 직접 쓴 메모를 바꿔도 이 답변은 같아요.</p></section>'+
+      (p?'<section class="ff-block" id="ff-plan"><h2>추가한 일정</h2><dl class="ff-rows">'+line('할 일',esc(p.title))+line('예정일',dateLabel(p.due))+line('동',context().house)+line('출처','고정 예시 답변')+'</dl>'+
+          '<p class="ff-note">이미 한 일을 적는 일지와 다른 자료예요. 일지 건수와 기록 준비도에 더하지 않아요.</p></section>'
+        :ownCount()?'<section class="ff-block" id="ff-plan"><h2>추가한 일정</h2><p class="ff-error" role="alert">'+failText+'</p>'+btn('일정만 다시 추가','ask-next')+'<p class="ff-error" data-next-error role="alert" hidden></p></section>'
+        :'<section class="ff-block" id="ff-plan"><h2>추가한 일정</h2><p class="ff-note">오늘 일지를 먼저 저장하면 예시 질문을 고를 수 있어요.</p>'+btn('새 기록 남기기','record')+'</section>')+
+      '<section class="ff-block"><h2>답변 근거</h2><p class="ff-note">11월 17~23일 하우스 2동 시연 일지예요. 참가자가 쓴 메모가 아니에요.</p>'+(latest?journalRow(latest):'')+
+      (rest.length?'<details class="ff-fold"><summary>11월 17~22일 기록 '+rest.length+'건 더 보기</summary>'+rest.map(journalRow).join('')+'</details>':'')+'</section>'+
+      cta(p?btn('달력에서 일정 보기','plan-calendar',true):'',btn('일지 목록 보기','journal')));
+  }
+  const planRow = p => '<button type="button" class="ff-entry ff-plan-entry" data-ff-action="open-plan"><span class="ff-entry-mark" aria-hidden="true">◷</span><span class="ff-entry-text"><span>'+esc(p.title)+'</span><small>예정 일정 · AI 일정 제안 예시(고정 답변)</small></span><b aria-hidden="true">›</b></button>';
+
   const JOURNAL_OPEN_DAYS=5;
 
   const journalFilter=mineOnly=>'<div class="ff-filter" role="group" aria-label="기록 보기">'+
@@ -413,7 +469,7 @@
     const groups=[...grouped].map(([d,items])=>'<section class="ff-block"><h2>'+dateLabel(d)+'</h2>'+items.map(journalRow).join('')+'</section>');
     const older=groups.slice(JOURNAL_OPEN_DAYS), olderCount=[...grouped].slice(JOURNAL_OPEN_DAYS).reduce((n,[,items])=>n+items.length,0);
     return wrap(heading('농장 일지')+'<div class="ff-jtabs"><strong>목록</strong>'+btn('달력','calendar')+'</div>'+journalFilter(mineOnly)+
-      cta(btn('새 기록 남기기','record',true))+
+      cta(btn('새 기록 남기기','record',true))+nextPrompt('journal')+
       (rows.length?'':'<p class="ff-note">이 동에 직접 쓴 기록이 없어요.</p>')+
       groups.slice(0,JOURNAL_OPEN_DAYS).join('')+
       (older.length?'<details class="ff-fold ff-older"'+(session('journalOlderOpen')==='yes'?' open':'')+'><summary>지난 기록 '+olderCount+'건 더 보기</summary>'+older.join('')+'</details>':''));
@@ -424,11 +480,24 @@
   function setDate(value) {selectedDate=value;session('calendarDate',value);}
   // v21(C4): 달 이동은 제목 양옆의 화살표 버튼. 버튼 이름은 화면 읽기 프로그램용으로 남긴다.
   const monthNav=(label,key,mark)=>'<button type="button" class="ff-btn ff-secondary ff-month-nav" data-ff-action="'+key+'" aria-label="'+label+'"><span aria-hidden="true">'+mark+'</span></button>';
+  // 261127 효신 요청: 체험본 달력에 24절기 표시
+  const termOf=key=>trial&&window.FarmJeolgi?FarmJeolgi.at(key):'';
+  // 261127 허간: 달력 제목(2026년 11월)을 누르면 아래로 말풍선이 열리고 지난 달들로 바로 이동(체험본)
+  function monthPicker(year,month,rows){
+    const pad=n=>String(n).padStart(2,'0'), today=stamp(new Date()).date, [ty,tm]=today.split('-').map(Number);
+    const count=new Map();for(const r of rows){const k=String(r.date).slice(0,7);count.set(k,(count.get(k)||0)+1);}
+    const items=[];for(let i=-11;i<=2;i++){const d=new Date(Date.UTC(ty,tm-1+i,1)),y=d.getUTCFullYear(),m=d.getUTCMonth()+1,k=y+'-'+pad(m);items.push({y,m,k,n:count.get(k)||0,now:i===0,sel:y===year&&m===month});}
+    return '<div class="ff-month-pick"><button type="button" class="ff-month-btn" data-ff-action="month-open" aria-haspopup="true" aria-expanded="false" aria-controls="ff-month-pop"><h2>'+year+'년 '+month+'월</h2><span class="ff-month-caret" aria-hidden="true"></span></button>'+
+      '<div class="ff-month-pop" id="ff-month-pop" role="menu" aria-label="달 고르기" hidden>'+items.reverse().map(it=>'<button type="button" role="menuitemradio" aria-checked="'+it.sel+'" class="ff-month-item'+(it.sel?' is-sel':'')+'" data-ff-action="month-go" data-month="'+it.k+'"><span>'+it.y+'년 '+it.m+'월'+(it.now?' <em>이번 달</em>':'')+'</span><small>'+(it.n?it.n+'건':'기록 없음')+'</small></button>').join('')+'</div></div>';
+  }
   function calendarView() {
     ensureDate();
     const mineOnly=session('journalFilter')==='mine';
     const [year,month]=selectedDate.split('-').map(Number),rows=mineOnly?records().filter(r=>!r.sample):records(),counts=new Map(),mine=new Set(),today=stamp(new Date()).date;
     for(const row of rows){counts.set(row.date,(counts.get(row.date)||0)+1);if(!row.sample)mine.add(row.date);}
+    const planDays=new Set(plansFor().map(p=>p.due));
+    const sc=trial&&window.FarmSaecham?FarmSaecham.calendarBits(context(),records()):null;   // 261127 구르미 달력 제안(체험본)
+    const scCell=key=>{const l=sc?.byDay.get(key);if(!l)return '';const ok=l.every(p=>p.accepted);return '<span class="ff-cal-sug'+(ok?' is-accepted':'')+'" aria-hidden="true">'+(ok?'할 일':'제안')+'</span>';};
     const first=new Date(Date.UTC(year,month-1,1)).getUTCDay(),num=new Date(Date.UTC(year,month,0)).getUTCDate();
     const pad=n=>String(n).padStart(2,'0');
     let days='<span aria-hidden="true"></span>'.repeat(first);
@@ -437,13 +506,13 @@
       const count=counts.get(key)||0;
 
       const isToday=key===today, hasMine=mine.has(key);
-      const name=dateLabel(key)+', 기록 '+count+'건'+(hasMine?', 직접 쓴 기록 있음':'')+(isToday?', 오늘':'');
-      days+='<button type="button" data-ff-date="'+key+'" aria-label="'+name+'" aria-pressed="'+(selectedDate===key)+'"'+(isToday?' aria-current="date"':'')+'><span class="ff-cal-day">'+i+'</span>'+(count?'<span class="ff-cal-count">'+count+'건</span>':'')+(hasMine?'<i class="ff-cal-mine" aria-hidden="true"></i>':'')+'</button>';
+      const name=dateLabel(key)+(termOf(key)?', 절기 '+termOf(key):'')+', 기록 '+count+'건'+(hasMine?', 직접 쓴 기록 있음':'')+(planDays.has(key)?', 예정 일정 1건':'')+(sc?.byDay.has(key)?', 구르미 제안 '+sc.byDay.get(key).length+'건':'')+(isToday?', 오늘':'');
+      days+='<button type="button" data-ff-date="'+key+'" aria-label="'+name+'" aria-pressed="'+(selectedDate===key)+'"'+(isToday?' aria-current="date"':'')+'><span class="ff-cal-day">'+i+'</span>'+(count?'<span class="ff-cal-count">'+count+'건</span>':'')+(hasMine?'<i class="ff-cal-mine" aria-hidden="true"></i>':'')+(planDays.has(key)?'<span class="ff-cal-plan" aria-hidden="true">일정</span>':'')+(termOf(key)?'<span class="ff-cal-term" aria-hidden="true">'+termOf(key)+'</span>':'')+scCell(key)+'</button>';
     }
     const items=rows.filter(r=>r.date===selectedDate);
-    return wrap(heading('농장 일지')+'<div class="ff-jtabs">'+btn('목록','journal')+'<strong>달력</strong></div>'+journalFilter(mineOnly)+
-      '<section class="ff-block"><div class="ff-month">'+monthNav('이전 달','prev-month','‹')+'<h2>'+year+'년 '+month+'월</h2>'+monthNav('다음 달','next-month','›')+'</div><div class="ff-calendar">'+[...'일월화수목금토'].map(x=>'<b>'+x+'</b>').join('')+days+'</div><p class="ff-cal-legend"><i class="ff-cal-mine" aria-hidden="true"></i>직접 쓴 기록이 있는 날</p></section>'+
-      '<section class="ff-block"><h2>'+dateLabel(selectedDate)+'</h2>'+(items.length?items.map(journalRow).join(''):'<p class="ff-note">이날 저장한 기록이 없어요.</p>')+'</section>');
+    return wrap(heading('농장 일지')+'<div class="ff-jtabs">'+btn('목록','journal')+'<strong>달력</strong></div>'+journalFilter(mineOnly)+(sc?FarmSaecham.calendarBanner(context(),records()):'')+
+      '<section class="ff-block"><div class="ff-month">'+monthNav('이전 달','prev-month','‹')+(trial?monthPicker(year,month,rows):'<h2>'+year+'년 '+month+'월</h2>')+monthNav('다음 달','next-month','›')+'</div><div class="ff-calendar">'+[...'일월화수목금토'].map(x=>'<b>'+x+'</b>').join('')+days+'</div><p class="ff-cal-legend"><i class="ff-cal-mine" aria-hidden="true"></i>직접 쓴 기록이 있는 날'+(planDays.size?'<span class="ff-cal-plan-legend">일정 = AI 일정 제안 예시로 추가한 예정 일정</span>':'')+(trial?'<span class="ff-cal-term-legend">절기 이름 = 24절기(시연용 계산값)</span>':'')+(sc?'<span class="ff-cal-sug-legend">제안·할 일 = 구르미(AI 비서)가 정리한 일정</span>':'')+'</p></section>'+
+      '<section class="ff-block"><h2>'+dateLabel(selectedDate)+(termOf(selectedDate)?' <span class="ff-day-term">'+termOf(selectedDate)+' · '+FarmJeolgi.meaning(termOf(selectedDate))+'</span>':'')+'</h2>'+(items.length?items.map(journalRow).join(''):'<p class="ff-note">이날 저장한 기록이 없어요.</p>')+(plansFor(selectedDate).length?'<h3 class="ff-plan-head">예정 일정</h3>'+plansFor(selectedDate).map(planRow).join(''):'')+(sc?FarmSaecham.dayList(context(),records(),selectedDate):'')+'</section>');
   }
   function detailView(r) {
     if(!r) return missingRecord();
@@ -457,7 +526,7 @@
       '<section class="ff-block je-detail-note"><div class="je-note-head"><h2>관찰 메모</h2>'+
       '</div><p class="ff-memo">'+esc(r.memo?.trim()?r.memo:'메모 없음')+'</p>'+photoFigure(r)+'</section>'+
       (authored?FarmJournalEdit.history(r):'')+
-      (type!=='work'?'<section class="ff-block"><h2>직접 적은 접수 정보</h2>'+receiptInfo(r)+'<p class="ff-note">'+notice+'</p>'+receiptEditor(r)+'</section>':'')+
+      (type!=='work'?'<section class="ff-block"><h2>직접 적은 접수 정보</h2>'+receiptInfo(r)+'<p class="ff-note">'+notice+'</p>'+(trial&&r.sample?'<p class="ff-note">시연 예시 기록은 체험에서 고칠 수 없어요.</p>':receiptEditor(r))+'</section>':'')+
       '<section class="ff-block"><h2>기록 정보</h2>'+facts(r)+(r.fire?'<p class="ff-note">'+fireHint(r.fire)+'</p>':'')+'</section>'+
       cta(canRepair(r)?btn('비닐 수리비 확인','begin-repair'):'',btn(backLabel,'detail-back')));
   }
@@ -564,6 +633,7 @@
       case 'detail': return detailView(getRecord(id || lastOpened));
       case 'edit-record':case 'delete-record':return editView(id,key==='delete-record');
       case 'calendar': return calendarView();
+      case 'next-check': return trial?nextView():'';
       case 'readiness': return readView();
       case 'repair': return repairView(id);
       case 'repair-result': return repairResult(id);
@@ -573,8 +643,11 @@
   function refresh(route,focus='') {
     const host=document.querySelector('.ff-screen');
     if(!host) return;
+    // 261127 허간: 다시 그려도 보던 위치 유지(달력 달 바꾸기 등에서 화면이 튀지 않게)
+    const sc=document.getElementById('main-area'),y=sc?.scrollTop,wy=scrollY;
     host.outerHTML=view(route);bind(route);
-    if(focus)document.querySelector(focus)?.focus();
+    if(sc)sc.scrollTop=y;if(scrollY!==wy)scrollTo(0,wy);
+    if(focus)document.querySelector(focus)?.focus({preventScroll:true});
   }
   function refreshMissingRecord(route) {
     refresh(route,'[data-ff-action="journal"]');
@@ -597,6 +670,7 @@
       case 'repair':return repairBack;
       case 'repair-result':return repairBack;
       case 'calendar':return 'journal';
+      case 'next-check':return trial?'journal':'home';
       default:return 'home';
     }
   }
@@ -715,7 +789,35 @@
         case 'prev-month':case 'next-month':{
           const [year,month]=selectedDate.split('-').map(Number),date=new Date(Date.UTC(year,month-1+(key==='prev-month'?-1:1),1));setDate(date.toISOString().slice(0,10));refresh('calendar','[data-ff-action="'+key+'"]');window.announceFarmStatus?.(date.getUTCFullYear()+'년 '+(date.getUTCMonth()+1)+'월');break;
         }
+        case 'month-open':{
+          const pop=host.querySelector('#ff-month-pop'),open=pop.hidden;pop.hidden=!open;a.setAttribute('aria-expanded',String(open));a.parentElement.classList.toggle('is-open',open);
+          if(open){const sel=pop.querySelector('.is-sel')||pop.querySelector('button');if(sel){pop.scrollTop=Math.max(0,sel.offsetTop-(pop.clientHeight-sel.offsetHeight)/2);sel.focus({preventScroll:true});}} // 261127 허간: 바깥 화면은 움직이지 않고 목록 안에서만 맞춤
+          break;
+        }
+        case 'month-go':{
+          const k=a.dataset.month;if(!/^\d{4}-\d{2}$/.test(k||''))break;setDate(k+'-01');refresh('calendar','.ff-month-btn');window.announceFarmStatus?.(Number(k.slice(0,4))+'년 '+Number(k.slice(5))+'월');break;
+        }
         case 'detail-back':go(sourceRoute);break;
+        case 'ask-next':{
+          if(!trial||a.dataset.busy)break;
+          if(!ownCount()&&!readPlan()){refresh(route);window.announceFarmStatus?.('오늘 일지를 먼저 저장해 주세요.');break;}
+          {const now=season2();if(now.crop!==context().crop||now.plant!==context().plant){location.reload();break;}} // 다른 탭에서 작물·정식일이 바뀌면 새 작기로 다시 그린다
+          a.dataset.busy='1';
+          try{ensurePlan();}
+          catch(_){
+            delete a.dataset.busy;
+            const e=a.parentElement.querySelector('[data-next-error]');
+            const text=(ownCount()?'일지는 저장됐고 일정은 추가되지 않았어요.':'일정은 추가되지 않았어요.')+' 잠시 뒤 다시 눌러 주세요.';
+            if(e){e.hidden=false;e.textContent=text;}
+            window.announceFarmStatus?.(text);break;
+          }
+          delete a.dataset.busy;
+          if(String(route)==='next-check'){refresh(route,'[data-ff-action="plan-calendar"]');window.announceFarmStatus?.('다음 날 일정 한 건을 추가했어요.');}
+          else go('next-check');
+          break;
+        }
+        case 'open-plan':go('next-check');break;
+        case 'plan-calendar':{const p=readPlan();if(p)setDate(p.due);go('calendar');break;}
         case 'begin-repair':{
           const record=getRecord(route==='saved'?lastSaved:lastOpened);
           if(!record){refreshMissingRecord(route);break;}
@@ -747,7 +849,42 @@
     else {sourceRoute='home';session('detailBack',sourceRoute);}
     go('detail/'+id);
   }
-  window.FarmFlow={view,bind,backTarget,previewBranch,previewAtlas,context,contexts:()=>[...houses],selectContext,
+  // 261127 구르미 '일지로 남기기'(체험본): 선택한 동의 작성 중 메모에 문장을 채운다. 저장은 농가가 직접 한다.
+  function prefillMemo(text){
+    if(!trial||typeof text!=='string'||!text.trim())return false;
+    const d=draft();d.memo=d.memo.trim()?d.memo.trim()+' '+text:text;keepDraft(active,d);return true;
+  }
+  // 261127 허간: 일지 사진 넘김 버튼(체험본). 다음 사진이 있으면 오른쪽, 이전 사진이 있으면 왼쪽만 보인다
+  if(window.FarmTrial?.on){
+    const galSync=row=>{const g=row.closest('.ff-gallery');if(!g)return;const max=row.scrollWidth-row.clientWidth-2;
+      const pv=g.querySelector('.ff-gal-prev'),nx=g.querySelector('.ff-gal-next');if(pv)pv.hidden=row.scrollLeft<=2;if(nx)nx.hidden=row.scrollLeft>=max;};
+    const galAll=()=>document.querySelectorAll('.ff-gallery-row').forEach(galSync);
+    document.addEventListener('scroll',e=>{if(e.target.classList?.contains('ff-gallery-row'))galSync(e.target);},true);
+    document.addEventListener('load',e=>{if(e.target.closest?.('.ff-gallery-row'))galAll();},true);
+    document.addEventListener('click',e=>{const b=e.target.closest?.('.ff-gal-nav');if(!b||b.dataset.zoom)return;const row=b.closest('.ff-gallery').querySelector('.ff-gallery-row');
+      const items=[...row.children],step=items.length>1?items[1].offsetLeft-items[0].offsetLeft:row.clientWidth,max=row.scrollWidth-row.clientWidth;
+      const cur=row.scrollLeft>=max-2?items.length-1:Math.round(row.scrollLeft/step),to=Math.max(0,Math.min(items.length-1,cur+(+b.dataset.gal)));
+      row.scrollTo({left:to>=items.length-1?max:Math.min(to*step,max),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});[120,400,800].forEach(ms=>setTimeout(()=>galSync(row),ms));});
+    document.addEventListener('scrollend',e=>{if(e.target.classList?.contains('ff-gallery-row'))galSync(e.target);},true);
+    // 사진을 누르면 크게(폰 화면 안 전체 보기). 안에서도 좌우로 넘긴다
+    let zoomList=[],zoomAt=0;
+    const zoomPaint=dlg=>{const it=zoomList[zoomAt];dlg.querySelector('img').src=it.src;dlg.querySelector('img').alt=it.alt;dlg.querySelector('p').textContent=it.cap;
+      dlg.querySelector('.ff-gal-prev').hidden=zoomAt<=0;dlg.querySelector('.ff-gal-next').hidden=zoomAt>=zoomList.length-1;};
+    document.addEventListener('click',e=>{const img=e.target.closest?.('.ff-gallery-item img');if(!img)return;
+      const g=img.closest('.ff-gallery');zoomList=[...g.querySelectorAll('.ff-gallery-item')].map(f=>({src:f.querySelector('img').src,alt:f.querySelector('img').alt,cap:f.querySelector('figcaption')?.textContent||''}));
+      zoomAt=[...g.querySelectorAll('.ff-gallery-item img')].indexOf(img);
+      let dlg=document.getElementById('ff-zoom');
+      if(!dlg){dlg=document.createElement('dialog');dlg.id='ff-zoom';dlg.className='ff-zoom';dlg.setAttribute('aria-label','사진 크게 보기');
+        dlg.innerHTML='<div class="ff-zoom-body"><img alt=""><p></p><button type="button" class="ff-gal-nav ff-gal-prev" data-zoom="-1" aria-label="이전 사진"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><button type="button" class="ff-gal-nav ff-gal-next" data-zoom="1" aria-label="다음 사진"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button><button type="button" class="ff-zoom-close" aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>';
+        document.body.appendChild(dlg);
+        dlg.addEventListener('click',ev=>{const z=ev.target.closest('[data-zoom]');if(z){ev.stopPropagation();zoomAt=Math.max(0,Math.min(zoomList.length-1,zoomAt+(+z.dataset.zoom)));zoomPaint(dlg);return;}
+          if(ev.target.closest('.ff-zoom-close')||ev.target===dlg||ev.target.classList.contains('ff-zoom-body'))dlg.close();});
+        addEventListener('hashchange',()=>{if(dlg.open)dlg.close();});}
+      zoomPaint(dlg);dlg.showModal();},true);
+    new MutationObserver(()=>{requestAnimationFrame(galAll);setTimeout(galAll,300);}).observe(document.documentElement,{childList:true,subtree:true});
+    addEventListener('resize',galAll);
+  }
+  window.FarmFlow={prefillMemo,view,bind,backTarget,previewBranch,previewAtlas,context,contexts:()=>[...houses],selectContext,
     crops:CROPS,addHouse,setHouseCrop,removeHouse,houseRecordCount:id=>houseRecordKeys(String(id)).length,records,openRecent,readinessLabel,readinessSummary,stamp};
 })();
 

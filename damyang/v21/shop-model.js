@@ -5,7 +5,7 @@
   const {products,stores}=window.FarmCatalog;
   const price=n=>n.toLocaleString('ko-KR')+'원';
   const newId=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
-  const key=scope=>'damyang-public-v21-mall/'+scope;
+  const key=scope=>(window.FarmTrial?.ns||'damyang-public-v21-')+'mall/'+scope;
   const storage=scope=>scope.startsWith('preview-')?sessionStorage:localStorage;
   const validQty=n=>Number.isInteger(n)&&n>=1&&n<=99;
   const imageItems=()=>[{product:'hose',qty:2},{product:'gloves',qty:1}];
@@ -55,13 +55,14 @@
       state.drafts[draft.id]=draft;return draft.id;
     });
   }
-  function pay(id,scope='farm'){
+  function pay(id,scope='farm',method){
     return change(scope,state=>{
       if(Object.hasOwn(state.orders,id))return state.orders[id];
       const draft=Object.hasOwn(state.drafts,id)&&state.drafts[id];
       if(!draft)throw Error('주문서를 다시 열어 주세요.');
       if(draft.mode==='cart'&&draft.revision!==state.revision)throw Error('장바구니가 바뀌었어요. 장바구니에서 다시 주문해 주세요.');
       const order={id,items:draft.items,total:draft.total,createdAt:new Date().toISOString()};
+      if(typeof method==='string'&&method)order.method=method;   // 261127 체험본: 등록한 가상 카드 이름
       state.orders[id]=order;delete state.drafts[id];
       if(draft.mode==='cart'){state.cart=[];state.revision=newId();}
       return order;
