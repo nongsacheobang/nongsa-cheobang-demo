@@ -10,6 +10,7 @@ const icons = {
  pen:'<path d="m15 4 5 5M3 21l1.2-6L16 3.2a2 2 0 0 1 2.8 0l2 2a2 2 0 0 1 0 2.8L9 19.8Z"/>',
  sound:'<path d="M3 9h4l5-4v14l-5-4H3zM16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9v1"/>',
+ restart:'<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/>',
  settings:FarmNav.settingsIcon,
  alert:'<path d="M12 3.5 2.8 19.5h18.4z"/><path d="M12 10v4.5m0 2.5v.5"/>'
 };
@@ -25,7 +26,9 @@ if(branch) farm.previewBranch(branch);
 if(preview) farm.previewAtlas(preview,location.hash.slice(1));
 const prefKey = 'damyang-public-v21-typeface-'+(branch||preview||'demo');
 
-try{localStorage.removeItem(prefKey)}catch{}
+// 261126: 체험본에서는 일반 v21의 옛 글자 크기 키를 지우지 않는다(일반 저장값 보존)
+if(!window.FarmTrial?.on&&navParams.get('trial')!=='1'){try{localStorage.removeItem(prefKey)}catch{}}
+if(window.FarmTrial?.on)labels['next-check']='다음 작업 확인';
 document.documentElement.classList.remove('large-text');
 let physicalTrail=history.state?.farmTrail||[];
 let route='', settingsEntry={route:'home',scroll:0}, returnFromReadiness='home', currentSpoken=null;
@@ -95,10 +98,10 @@ function insuranceCard(){
  const origin = FarmNav.copyContext(navParams,new URLSearchParams({from:'home'}));
  origin.set('house', farm.context().id);
  return `<section class="home-card home-insurance" aria-labelledby="home-insurance-label">
-   <div class="insurance-heading"><h2 id="home-insurance-label">재해보험</h2><span>토마토 3동 · 시연용 예시</span></div>
+   <div class="insurance-heading"><h2 id="home-insurance-label">재해보험</h2><span>${window.FarmTrial?.on?'시연용 예시':'토마토 3동 · 시연용 예시'}</span></div>
    <div class="insurance-actions">
      <a class="insurance-entry" href="estimate/index.html?${escapeText(origin)}#example">${icon('insurance')}보험금 예상액 보기</a>
-     <a class="insurance-entry" href="estimate/index.html?${escapeText(origin)}#season">${icon('calendar')}${escapeText(farm.context().id)}동 작기 일정</a>
+     ${window.FarmTrial?.on?'':`<a class="insurance-entry" href="estimate/index.html?${escapeText(origin)}#season">${icon('calendar')}${escapeText(farm.context().id)}동 작기 일정</a>`}
    </div></section>`;
 }
 function fieldHome(ctx, readiness, latest, action){
@@ -155,6 +158,15 @@ function nextAction(rows){
 
 
 const todayLabel=()=>new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',weekday:'long'}).format(new Date());
+// 261127 효신 요청(체험본): 홈 날짜 옆에 지금 절기. 절기 당일은 '오늘', 3일 안이면 다음 절기까지 남은 날
+function termLabel(){
+ if(!window.FarmTrial?.on||!window.FarmJeolgi)return '';
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const cur=FarmJeolgi.current(today),nx=FarmJeolgi.next(today);
+ const gap=nx?Math.round((Date.parse(nx.date)-Date.parse(today))/864e5):99;
+ const text=cur&&cur.date===today?'오늘 '+cur.name:gap<=3?nx.name+' '+gap+'일 전':cur?cur.name:'';
+ return text?`<span class="h22-term" title="${escapeText('절기 '+cur?.name+': '+(cur?.meaning||''))}"> · ${escapeText(text)}</span>`:'';
+}
 function newsDate(date){const [,m,d]=String(date).split('-').map(Number);return `${m}월 ${d}일`;}
 
 
@@ -167,7 +179,7 @@ function greeting(){
 function homeHero(ctx,count){
  const known=Number.isFinite(ctx.score), status=farm.readinessLabel(ctx.score,ctx.coverage);
  return `<section class="h22-hero" aria-labelledby="farm-title">
-   <div class="h22-toprow"><p class="h22-date">${escapeText(todayLabel())}</p>
+   <div class="h22-toprow"><p class="h22-date">${escapeText(todayLabel())}${termLabel()}</p>
      <button type="button" class="h22-scope" id="house-switch" aria-haspopup="dialog" aria-controls="switcher" aria-label="${escapeText(ctx.house)}, ${escapeText(ctx.seasonLabel||ctx.season)}. 동 바꾸기">
        <strong>${escapeText(ctx.house)}</strong><span>${escapeText(ctx.crop||'작기 미확인')}</span>${icon('down')}</button></div>
    <h1 id="farm-title" class="h22-hello">${escapeText(greeting())}</h1>
@@ -184,7 +196,10 @@ function homeHero(ctx,count){
 }
 function homeAlert(){
  const alert=window.FarmNews?.alert();
- return alert?`<a class="h22-alert" href="#news/${escapeText(alert.id)}"><b>시연 특보</b><span>${escapeText(alert.title)}</span>${icon('arrow')}</a>`:'';
+ const line=alert?`<a class="h22-alert" href="#news/${escapeText(alert.id)}"><b>시연 특보</b><span>${escapeText(alert.title)}</span>${icon('arrow')}</a>`:'';
+ // 261127 효신 11/26 요청(체험본): 홈 첫 화면에서 스크롤 없이 보험 가입 마감 소식도 보이게
+ const due=window.FarmTrial?.on?window.FarmNews?.get?.('n-deadline'):null;
+ return line+(due?`<a class="h22-alert h22-due" href="#news/${escapeText(due.id)}"><b>보험 소식</b><span>${escapeText(due.title)}</span>${icon('arrow')}</a>`:'');
 }
 
 const seoulHour=()=>Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Seoul',hour:'2-digit',hourCycle:'h23'}).format(new Date()));
@@ -199,6 +214,13 @@ function weatherMood(text){
  if(/맑/.test(t)) return 'clear';
  return 'neutral';
 }
+// 261127 허간 A안(체험본): 홈 머리에서 풍경 일러스트를 빼고 날씨 색면 + 큰 기온 + 선 아이콘
+const wxIcon=mood=>{
+ const sun='<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>';
+ const cloud='<path d="M7 18.5h10.2a3.8 3.8 0 0 0 .4-7.6 5.6 5.6 0 0 0-10.7-1A4.3 4.3 0 0 0 7 18.5z"/>';
+ const body={clear:sun,cloudy:cloud,neutral:cloud,rain:cloud.replace('18.5h','15.5h').replace('A4.3 4.3 0 0 0 7 18.5z','A4.3 4.3 0 0 0 7 15.5z')+'<path d="M8.5 18.5l-1 2.5M12.5 18.5l-1 2.5M16.5 18.5l-1 2.5"/>',snow:cloud.replace('18.5h','15.5h').replace('A4.3 4.3 0 0 0 7 18.5z','A4.3 4.3 0 0 0 7 15.5z')+'<path d="M9 19.5h.01M12.5 20.5h.01M16 19.5h.01"/>'}[mood]||cloud;
+ return `<svg class="h24-wx-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+};
 function heroMood(text){
  const forced=navParams.get('wx');
  const mood=/^(clear|cloudy|rain|snow|neutral)$/.test(forced||'')?forced:weatherMood(text);
@@ -253,15 +275,15 @@ function homeHero(ctx,count,rows){
  // 시연 미리보기(?wx=)로 배경을 바꾸면 가상 날씨 문구도 같은 값으로 맞춘다(배경과 글이 어긋나지 않게).
  const demoCond=({clear:'맑음',cloudy:'흐림',rain:'비',snow:'눈'})[navParams.get('wx')]||'비 온 뒤 흐림';
  const {mood,night}=heroMood(demoCond);
- return `<section class="h22-hero h23-hero" data-mood="${mood}" data-time="${night?'night':'day'}" aria-labelledby="farm-title">
-   ${homeScene()}
-   <div class="h22-toprow"><p class="h22-date">${escapeText(todayLabel())}</p>
+ return `<section class="h22-hero h23-hero${window.FarmTrial?.on?' h24-hero':''}" data-mood="${mood}" data-time="${night?'night':'day'}" aria-labelledby="farm-title">
+   ${window.FarmTrial?.on?'':homeScene()}
+   <div class="h22-toprow"><p class="h22-date">${escapeText(todayLabel())}${termLabel()}</p>
      <button type="button" class="h22-scope" id="house-switch" aria-haspopup="dialog" aria-controls="switcher" aria-label="${escapeText(ctx.house)}, ${escapeText(ctx.seasonLabel||ctx.season)}. 동 바꾸기">
        <strong>${escapeText(ctx.house)}</strong><span>${escapeText(ctx.crop||'작기 미확인')}</span>${icon('down')}</button></div>
    <h1 id="farm-title" class="h22-hello">${escapeText(greeting())}</h1>
    <div class="h22-line h22-wx">
      <p class="h22-temp"><span class="sr">시연 기온 섭씨 </span>12<span aria-hidden="true">°</span><span class="sr">도</span></p>
-     <div class="h22-copy"><p class="h22-strong">${escapeText(demoCond)}</p><p class="h22-sub">담양 가상 날씨 · <span class="nowrap">최고 15°</span> <span class="nowrap">최저 7°</span></p></div>
+     ${window.FarmTrial?.on?wxIcon(mood):''}<div class="h22-copy"><p class="h22-strong">${escapeText(demoCond)}</p><p class="h22-sub">${window.FarmTrial?.on?'담양':'담양 가상 날씨'} · <span class="nowrap">최고 15°</span> <span class="nowrap">최저 7°</span></p></div>
    </div>
    ${homeAlert()}
    ${weekStrip(rows)}
@@ -273,6 +295,7 @@ function homeHero(ctx,count,rows){
      ${icon('arrow')}
    </a>
    <div class="h21-actions"><a class="primary-link" href="#record">${icon('pen')}기록하기</a><a class="home-damage-link" href="#damage">${icon('alert')}피해 기록</a></div>
+   <button type="button" class="h21-field" data-field-open>${icon('camera')}현장 모드<small>큰 버튼 화면으로</small></button>
    ${todoLine(ctx,rows)}
  </section>`;
 }
@@ -282,7 +305,7 @@ function todoLine(ctx,rows){
  const task=rows.find(r=>r.kind==='damage'&&!r.sample&&!r.office&&!r.receiptAt&&(r.date===today||(Number.isFinite(Date.parse(r.created))&&farm.stamp(new Date(r.created)).date===today)));
  return task
    ?`<button type="button" class="h23-todo today-task task-open is-warn" data-home-record="${escapeText(task.id)}"><b>지금 할 일</b><span>피해를 알게 되면 바로 가입한 농축협에 알리기</span>${icon('arrow')}</button>`
-   :`<p class="h23-todo today-task"><b>지금 할 일</b><span>오늘 한 일을 적어 주세요</span></p>`;
+   :window.FarmTrial?.on?'':`<p class="h23-todo today-task"><b>지금 할 일</b><span>오늘 한 일을 적어 주세요</span></p>`;   // 261127 홈 줄이기: 할 일은 구르미가 맡는다
 }
 function todayCards(ctx,rows,latest){
  const today=farm.stamp(new Date()).date;
@@ -290,8 +313,8 @@ function todayCards(ctx,rows,latest){
  const photo=latest&&FarmPhoto.localImage(latest);
  const rec=latest?`<button type="button" class="h23-tcard recent-entry${photo?' has-thumb':''}" data-home-record="${escapeText(latest.id)}">
      ${photo?`<span class="h23-thumb" aria-hidden="true"><img src="${escapeText(photo)}" alt=""></span>`:''}<strong class="record-memo">${escapeText(latest.memo?.trim()||'사진으로 남긴 기록')}</strong>
-     <span class="h23-meta">${escapeText(ctx.house)} · ${dateLabel(latest.date)} · ${escapeText(FarmJournalEdit.typeNames[FarmJournalEdit.typeOf(latest)])}${latest.sample?' · 시연 기록':''}</span>
-     <span class="h23-open">저장한 기록 확인 ${icon('arrow')}</span></button>`
+     ${window.FarmTrial?.on?`<span class="h23-meta">${escapeText(ctx.house.replace('하우스 ',''))} · ${dateLabel(latest.date).replace(/^\d+년 /,'')}${latest.sample?' · 시연':''}</span>`:`<span class="h23-meta">${escapeText(ctx.house)} · ${dateLabel(latest.date)} · ${escapeText(FarmJournalEdit.typeNames[FarmJournalEdit.typeOf(latest)])}${latest.sample?' · 시연 기록':''}</span>
+     <span class="h23-open">저장한 기록 확인 ${icon('arrow')}</span>`}</button>`
    :`<a class="h23-tcard" href="#record"><span class="h23-tag">최근 기록</span><strong>이 동에 저장한 기록이 없어요</strong><span class="h23-meta">첫 기록 남기기</span></a>`;
  return `<section class="h23-today" aria-labelledby="h23-today-title">
    <div class="h21-head"><h2 id="h23-today-title">최근 기록</h2><span class="h21-links"><a class="home-journal-calendar" href="#calendar" aria-label="농장 일지 달력 보기">${icon('calendar')}달력</a><a class="field-saved" href="#journal">일지 전체 보기 ${icon('arrow')}</a></span></div>
@@ -323,12 +346,64 @@ function home(){
  return `<article class="orchard-home home21 home22 home23" aria-labelledby="farm-title">
    ${homeHero(ctx,rows.length,rows)}
    ${todayCards(ctx,rows,preview === '2' && !latest?.created ? null : latest)}
-   ${homeNews()}
+   ${window.FarmTrial?.on?'':homeNews()}
    ${insuranceCard()}
-   <div class="h21-foot">${homeNote(ctx)}${homeDisclosure}</div>
+   <div class="h21-foot">${window.FarmTrial?.on?'<p class="h21-note">날씨와 준비도 점수는 시연값이에요. 보험금 지급을 보장하지 않으며 손해평가·손해사정이 아니에요.</p>':homeNote(ctx)+homeDisclosure}</div>
  </article>`;
 }
+// 261127 허간 요청(체험본): 소식을 브런치처럼 글 중심으로. 밑줄 분류 탭, 대표 글, 오른쪽 작은 그림, 읽는 시간, 넉넉한 본문.
+const bnIcon={insurance:'insurance',weather:'alert',pest:'alert',support:'records',farming:'journal',notice:'info'};
+const readMin=p=>Math.max(1,Math.round((p.title+p.summary+p.body.join('')).length/400));
+const bnMeta=p=>`${newsDate(p.date)} · ${readMin(p)}분 읽기`;   // 261127 디자인: '시연용 가상 글'은 머리말과 글 끝에 한 번만
+// 261127 허간(브런치처럼 사진): 사진이 실제로 열렸을 때만 has-photo를 붙인다. 없으면 숨은 img를 지워 색면·아이콘이 그대로 보인다.
+const bnStyle=p=>p.image?` style="--bn-img:url('${escapeText(p.image)}')"`:'';
+const bnProbe=p=>p.image?`<img class="bn-probe" src="${escapeText(p.image)}" alt="" hidden onload="this.parentNode.classList.add('has-photo')" onerror="this.remove()">`:'';
+// 261127 허간 피드백(인스타 감성): 사진 위에 글자를 올리지 않는다. 큰 사진만 깨끗하게, 글은 사진 아래.
+const bnPhoto=p=>`<span class="bn-photo" data-cat="${escapeText(p.cat)}"${bnStyle(p)} aria-hidden="true">${icon(bnIcon[p.cat]||'info')}${bnProbe(p)}</span>`;
+const bnItem=p=>`<li><a class="bn-item news-item${p.alert?' is-alert':''}" href="#news/${escapeText(p.id)}">
+   <span class="bn-text"><span class="bn-cat${p.alert?' is-alert':''}">${escapeText(FarmNews.label(p.cat))}${p.pinned?' · 중요':''}</span>
+   <strong>${escapeText(p.title)}</strong><span class="bn-sub">${escapeText(p.summary)}</span><span class="bn-meta">${bnMeta(p)}</span></span>
+   <span class="bn-thumb" data-cat="${escapeText(p.cat)}"${bnStyle(p)} aria-hidden="true">${icon(bnIcon[p.cat]||'info')}${bnProbe(p)}</span></a></li>`;
+function newsBrunch(route){
+ const id=route.split('/')[1];
+ if(id){
+   const p=FarmNews.get(id);
+   if(!p) return `<section class="utility-page news-page"><h1>소식을 찾을 수 없어요</h1><p>목록에서 다시 골라 주세요.</p><a class="primary-link" href="#news">소식 목록으로</a></section>`;
+   const next=p.cat==='insurance'?`<a class="primary-link" href="${escapeText(FarmNav.insuranceHref({params:navParams,visit:navParams.get('visit')}))}">${icon('insurance')}보험 탭에서 보기</a>`
+     :p.cat==='weather'?`<a class="primary-link" href="#damage">${icon('alert')}피해 기록하기</a>`:'';
+   const others=FarmNews.list('all').filter(x=>x.id!==p.id).sort((a,b)=>(b.cat===p.cat)-(a.cat===p.cat)).slice(0,3);
+   return `<article class="utility-page news-page bn-article">
+     <header class="bn-cover" data-cat="${escapeText(p.cat)}">${bnPhoto(p)}<span class="bn-cat${p.alert?' is-alert':''}">${escapeText(FarmNews.label(p.cat))}</span>
+       <h1>${escapeText(p.title)}</h1><p class="bn-sub">${escapeText(p.summary)}</p>
+       <p class="bn-byline">${escapeText(p.source)} · ${bnMeta(p)}</p></header>
+     <div class="bn-body">${p.body.map((x,i)=>`<p${i===0?' class="bn-lede"':''}>${escapeText(x)}</p>`).join('')}</div>
+     <p class="news-foot">시연용 가상 글이에요. 실제 일정과 조건은 가입한 농축협이나 기관 공고에서 확인하세요.</p>
+     <button type="button" class="primary-link bn-origin" data-news-origin aria-haspopup="dialog">원문 보러 가기 <span aria-hidden="true">↗</span></button>
+     <section class="bn-more" aria-labelledby="bn-more-title"><h2 id="bn-more-title">다른 소식</h2><ul class="bn-list">${others.map(bnItem).join('')}</ul></section>
+   </article>`;
+ }
+ const cat=newsFilter, list=FarmNews.list(cat);
+ const tab=(v,l)=>`<button type="button" class="bn-tab news-chip" data-news-cat="${v}" aria-pressed="${cat===v}">${l}</button>`;
+ const lead=cat==='all'?(list.find(p=>p.pinned)||list[0]):null, rest=list.filter(p=>p!==lead);
+ return `<section class="utility-page news-page bn-news">
+   <header class="bn-head"><p class="bn-date">${escapeText(todayLabel())}</p><h1>소식</h1><p class="news-lead">농업·보험·지원사업 소식을 모았어요.<br>모두 시연용 가상 글이에요.</p></header>
+   <div class="bn-tabs" role="group" aria-label="소식 분류">${tab('all','전체')}${FarmNews.categories.map(c=>tab(c.id,c.label)).join('')}</div>
+   ${lead?`<a class="bn-feature news-item" href="#news/${escapeText(lead.id)}" data-cat="${escapeText(lead.cat)}"${bnStyle(lead)}><span class="bn-cat bn-pill">${escapeText(FarmNews.label(lead.cat))}${lead.pinned?' · 중요':''}</span>
+     <span class="bn-caption"><strong>${escapeText(lead.title)}</strong><span class="bn-sub">${escapeText(lead.summary)}</span><span class="bn-meta">${bnMeta(lead)}</span></span>${bnProbe(lead)}</a>`:''}
+   <ul class="bn-list news-list">${rest.map(bnItem).join('')||(lead?'':'<li class="news-empty">이 분류에는 아직 소식이 없어요.</li>')}</ul>
+ </section>`;
+}
+// 261127 허간: 소식 글의 '원문 보러 가기' → 출시 전 안내 팝업(체험본)
+document.addEventListener('click',e=>{
+ if(!e.target.closest?.('[data-news-origin]'))return;
+ let d=document.getElementById('bn-origin-pop');
+ if(!d){d=document.createElement('dialog');d.id='bn-origin-pop';d.className='bn-pop';d.setAttribute('aria-labelledby','bn-origin-title');
+  d.innerHTML='<p class="bn-pop-icon" aria-hidden="true" style="margin:0 auto 12px">↗</p><h2 id="bn-origin-title">원문은 앱 출시 후에 열려요</h2><p>앱이 출시되면 실제 기사로 이동합니다. 지금은 시연용 가상 글이에요.</p><button type="button" class="primary-link" data-close>확인</button>';
+  document.body.append(d);d.querySelector('[data-close]').onclick=()=>d.close();d.addEventListener('click',ev=>{if(ev.target===d)d.close();});}
+ d.showModal();d.querySelector('[data-close]').focus();
+});
 function newsView(route){
+ if(window.FarmTrial?.on)return newsBrunch(route);
  const id=route.split('/')[1];
  if(id){
    const p=FarmNews.get(id);
@@ -356,7 +431,18 @@ function newsView(route){
 let newsFilter='all';
 // 홈 머리 배경: 날씨 줄 글(시연값 또는 API 연결본이 바꾼 값)이 바뀌면 분위기를 다시 고른다.
 let moodObserver=null;
+function cutHeroBg(){   // 261127 허간: 배경은 요일 띠 아래까지, 끝은 서서히 사라짐
+ const hero=document.querySelector('#main-area .h24-hero'), week=hero?.querySelector('.h23-week');
+ if(hero&&week)hero.style.setProperty('--h24-cut',(week.offsetTop+week.offsetHeight+150)+'px');   // 허간: 요일 띠까지 덮고 아래로 서서히 사라지게
+ // 허간: 스크롤해도 끊기지 않게 사진은 화면 뒤 고정 한 장(.workspace::before). 그 높이 = 머리 막대 위 ~ 요일 띠 아래 150px
+ // 홈에서는 머리 막대가 본문 위에 떠 있다. 스크롤했을 때만 막대를 흐리게 해서 아래로 지나가는 글을 가린다
+ const main=document.getElementById('main-area');
+ if(main&&!main.dataset.h24Scroll){main.dataset.h24Scroll='1';main.addEventListener('scroll',()=>document.body.classList.toggle('h24-scrolled',main.scrollTop>6),{passive:true});}
+ document.body.classList.toggle('h24-scrolled',!!main&&main.scrollTop>6);
+}
+window.addEventListener('resize',()=>cutHeroBg());
 function bindHomeMood(){
+ setTimeout(cutHeroBg,0);
  moodObserver?.disconnect(); moodObserver=null;
  const hero=document.querySelector('.h23-hero');
  if(!hero){delete document.body.dataset.wxMood;delete document.body.dataset.wxTime;return}
@@ -423,9 +509,11 @@ function showHouses(view='list',target=''){
  (d.querySelector('[data-house].active')||d.querySelector(view==='delete'?'#house-cancel':'select, .dialog-head button'))?.focus();
 }
 function settings(){
- return `<section class="utility-page"><h1>설정</h1><h2>현장 모드</h2><div class="field-setting">${FarmField.switchMarkup()}<p>글씨와 누르는 곳을 크게 키우고, 현장 홈에서 큰 버튼으로 사진과 메모를 남겨요.</p></div><h2>읽어주기</h2><p>버튼을 누르면 직전에 보던 화면의 본문을 읽어줘요.</p><div class="access-panel"><button type="button" id="read-aloud">${icon('sound')}화면 읽어주기</button><p class="access-status" role="status" id="speech-status"></p></div><a class="setting-row" href="#readiness"><span class="label">${icon('journal')}기록 준비도 안내</span>${icon('arrow')}</a><a class="setting-row" href="#welcome"><span class="label">${icon('info')}체험 안내 다시 보기</span>${icon('arrow')}</a></section>`;
+ if(window.FarmTrial?.on) return trialSettingsPage(); // 261127 허간: 체험본 설정은 그룹 카드형, '화면 읽어주기'는 체험본에서 뺀다
+ return `<section class="utility-page"><h1>설정</h1><h2>현장 모드</h2><p>홈의 '현장 모드'를 누르면 홈 화면 전체가 사진·메모 큰 버튼 화면으로 바뀌어요. 끄기는 현장 화면 위쪽에 있어요.</p><h2>읽어주기</h2><p>버튼을 누르면 직전에 보던 화면의 본문을 읽어줘요.</p><div class="access-panel"><button type="button" id="read-aloud">${icon('sound')}화면 읽어주기</button><p class="access-status" role="status" id="speech-status"></p></div><a class="setting-row" href="#readiness"><span class="label">${icon('journal')}기록 준비도 안내</span>${icon('arrow')}</a><a class="setting-row" href="#welcome"><span class="label">${icon('info')}체험 안내 다시 보기</span>${icon('arrow')}</a>${trialSettings()}</section>`;
 }
 function welcome(){
+ if(window.FarmTrial?.on) return trialWelcome();
  return `<section class="utility-page"><p class="eyebrow">전남 담양 / 시설 딸기</p><h1>비가 그친 아침</h1><figure class="scene"><img src="assets/house.png" alt="가상 농장의 비닐하우스"></figure><h2>김민수의 딸기 농장</h2><p>밤새 내린 비로 통로에 물이 찼어요.<br>응급조치를 먼저 하고, 안전할 때 오늘 현장을 남겨 보세요.</p><p class="disclaimer">가상 농장 체험입니다. 실제 결제나 보험 접수는 하지 않아요.</p><a class="primary-link" href="#home">농장 홈 열기</a></section>`;
 }
 let textToRead='';
@@ -440,6 +528,69 @@ function readText(){
  read.onerror=()=>{if(currentSpoken!==read)return;currentSpoken=null;button.innerHTML=icon('sound')+'화면 읽어주기';status.textContent='음성을 재생할 수 없어요. 기기의 한국어 음성 설정을 확인해 주세요.'};
  status.textContent='기기 음성을 준비하고 있어요.';window.speechSynthesis.cancel();window.speechSynthesis.speak(read);
 }
+// 261126 기능 데모(PRD F01·F06): 체험본(?trial=1)에서만 보이는 안내와 '체험 다시 시작'. 일반 모드 화면은 그대로.
+function trialWelcome(){
+ return `<section class="utility-page"><p class="eyebrow">1단계 개발 앱 · 체험</p><h1>김민수 씨의 하루</h1><figure class="scene"><img src="assets/house.png" alt="가상 농장의 비닐하우스"></figure><h2>김민수의 딸기 농장</h2><p>담양에서 하우스 농사를 짓는 김민수 씨의 하루입니다. 오늘 한 일을 적고 다음 작업을 확인해 보세요. 필요한 자재를 구매하고 영수증을 찾거나, 별도 피해 사례의 보험 자료를 먼저 살펴봐도 됩니다. 실제 결제나 신고는 하지 않습니다.</p><p class="disclaimer">가상 농장 체험이에요. 입력한 내용은 이 브라우저에만 남고 밖으로 보내지 않아요. 함께 쓰는 기기라면 체험을 마친 뒤 설정의 ‘체험 다시 시작’으로 이 회차 자료를 지울 수 있어요.</p><a class="primary-link" href="#home">농장 홈 열기</a></section>`;
+}
+function trialSettings(){
+ const t=window.FarmTrial;
+ if(!t?.on) return '';
+ const day=t.round?.day?Number(t.round.day.slice(5,7))+'월 '+Number(t.round.day.slice(8,10))+'일':'';
+ if(t.state==='unavailable') return `<h2>체험 회차</h2><p>이 브라우저에서 체험 회차를 확인하지 못해 체험 자료를 저장하지 않고 있어요. 개인 정보 보호 모드나 저장 공간 설정을 확인해 주세요.</p>`;
+ return `<h2>체험 회차</h2><p>${day?escapeText(day)+'에 시작한 회차예요. ':''}이 회차에서 쓴 일지, 일정, 장바구니와 모의 주문은 이 브라우저에만 있어요.</p><div class="access-panel trial-reset"><button type="button" id="trial-reset" aria-expanded="false" aria-controls="trial-confirm">${icon('info')}체험 다시 시작</button><div id="trial-confirm" class="trial-confirm" hidden><p>이 회차의 일지, 일정, 장바구니와 모의 주문을 지우고 처음부터 시작할까요? 기본 예시 자료와 일반 시연 기록은 그대로예요.</p><div class="trial-confirm-actions"><button type="button" id="trial-cancel">취소</button><button type="button" id="trial-yes" class="trial-danger">지우고 다시 시작</button></div></div><p class="access-status" role="status" id="trial-status"></p></div>`;
+}
+// 261127 허간 "설정도 조금 더 설정 답게": 회색 바탕 위 흰 그룹 카드, 행 = 아이콘 타일 + 제목 + 보조 1줄 + 토글/›.
+// 현장 모드 토글은 FarmField.switchMarkup(기존 data-field-open 스위치)을 그대로 쓴다. 체험 다시 시작의 id·확인 흐름(bindTrialSettings)은 그대로.
+function trialSettingsPage(){
+ const t=window.FarmTrial;
+ const tile=(name,tone)=>`<span class="st-tile st-${tone}" aria-hidden="true">${icon(name)}</span>`;
+ const text=(title,sub)=>`<span class="st-text"><strong>${title}</strong>${sub?`<small>${sub}</small>`:''}</span>`;
+ const day=t.round?.day?Number(t.round.day.slice(5,7))+'월 '+Number(t.round.day.slice(8,10))+'일':'';
+ const round=t.state==='unavailable'
+  ?`<div class="st-row st-info">${tile('info','gray')}${text('체험 자료를 저장하지 않고 있어요','개인 정보 보호 모드나 저장 공간 설정을 확인해 주세요.')}</div>`
+  :`<div class="st-row st-info">${tile('calendar','gray')}${text('이번 회차',day?escapeText(day)+' 시작 · 이 브라우저에만 있어요':'이 브라우저에만 있어요')}</div>`
+   +`<div class="access-panel trial-reset st-reset"><button type="button" id="trial-reset" class="st-row st-danger" aria-expanded="false" aria-controls="trial-confirm">${tile('restart','red')}${text('체험 다시 시작','일지·일정·장바구니·모의 주문을 지워요')}</button><div id="trial-confirm" class="trial-confirm" hidden><p>이 회차의 일지, 일정, 장바구니와 모의 주문을 지우고 처음부터 시작할까요? 기본 예시 자료와 일반 시연 기록은 그대로예요.</p><div class="trial-confirm-actions"><button type="button" id="trial-cancel">취소</button><button type="button" id="trial-yes" class="trial-danger">지우고 다시 시작</button></div></div><p class="access-status" role="status" id="trial-status"></p></div>`;
+ return `<section class="utility-page st-page"><h1>설정</h1>`
+  +`<h2 class="st-label">화면</h2><div class="st-group"><div class="st-row st-switch-row">${tile('camera','green')}${text('현장 모드','홈을 사진·메모 큰 버튼으로')}${FarmField.switchMarkup()}</div></div>`
+  +`<h2 class="st-label">도움말</h2><div class="st-group"><a class="setting-row st-row" href="#readiness">${tile('journal','olive')}${text('기록 준비도 안내','점수와 채울 기록 보는 법')}${icon('arrow','st-chev')}</a><a class="setting-row st-row" href="#welcome">${tile('info','blue')}${text('체험 안내 다시 보기','처음 안내 화면 다시 열기')}${icon('arrow','st-chev')}</a></div>`
+  +`<h2 class="st-label">체험 회차</h2><div class="st-group">${round}</div>`
+  +`<p class="st-foot">가상 농장 체험이에요. 입력한 내용은 밖으로 보내지 않아요.</p></section>`;
+}
+function bindTrialSettings(){
+ const open=el('trial-reset'),box=el('trial-confirm');
+ if(!open||!box) return;
+ open.onclick=()=>{box.hidden=false;open.setAttribute('aria-expanded','true');el('trial-cancel').focus()};
+ el('trial-cancel').onclick=()=>{box.hidden=true;open.setAttribute('aria-expanded','false');el('trial-status').textContent='체험 자료를 그대로 두었어요.';open.focus()};
+ el('trial-yes').onclick=async e=>{
+  const button=e.currentTarget;
+  // 확정한 뒤에는 취소·다시 열기를 막는다(이미 지운 뒤 '그대로 두었어요'가 뜨지 않게)
+  for(const id of ['trial-yes','trial-cancel','trial-reset'])el(id).disabled=true;
+  const result=await window.FarmTrial.restart();
+  if(result.ok){history.replaceState(null,'',location.pathname+location.search+'#welcome');location.reload();return}
+  if(result.reason==='stale'){el('trial-status').textContent='다른 화면에서 이미 다시 시작했어요. 새 회차로 다시 불러올게요.';return}
+  if(result.reason==='partial'){
+   el('trial-status').textContent='새 회차는 시작했지만 이전 자료 '+result.left+'개를 지우지 못했어요. 아래 버튼으로 남은 자료만 다시 지워 주세요.';
+   button.textContent='남은 이전 자료 지우기';button.disabled=false;
+   button.onclick=()=>{const again=window.FarmTrial.cleanup();
+    if(again.ok){history.replaceState(null,'',location.pathname+location.search+'#welcome');location.reload()}
+    else el('trial-status').textContent='이전 자료 '+again.left+'개를 아직 지우지 못했어요. 브라우저 저장 공간이나 권한을 확인해 주세요.'};
+   return}
+  for(const id of ['trial-yes','trial-cancel','trial-reset'])el(id).disabled=false;
+  el('trial-status').textContent='다시 시작하지 못했어요. 이 회차 자료는 그대로 두었어요. 브라우저 저장 공간을 확인한 뒤 다시 눌러 주세요.';
+ };
+}
+function trialFirstEntry(){
+ const t=window.FarmTrial;
+ if(!t?.on) return;
+ try{
+  const k=t.ns+'intro-seen';
+  if(localStorage.getItem(k)) return;
+  localStorage.setItem(k,'1');
+  // 첫 진입은 어느 주소로 들어와도 안내부터 보여 준다(안내를 건너뛰어도 세 과제는 모두 열려 있음)
+  history.replaceState(history.state,'',location.pathname+location.search+'#welcome');
+ }catch{}
+}
+trialFirstEntry();
 function render(){
  if(location.hash==='#main-area'){el('main-area').focus();return}
  if(location.hash==='#insurance'){
@@ -500,7 +651,8 @@ function render(){
  el('house-switch')?.addEventListener('click',()=>showHouses());
  bindHomeMood();
  if(base==='settings'){
-  el('read-aloud').onclick=readText;
+  if(el('read-aloud'))el('read-aloud').onclick=readText;
+  bindTrialSettings();
  } else if(base==='news'){
   el('main-area').querySelectorAll('[data-news-cat]').forEach(b=>b.onclick=()=>{newsFilter=b.dataset.newsCat;render();el('main-area').querySelector(`[data-news-cat="${newsFilter}"]`)?.focus();window.announceFarmStatus(`${b.textContent} 소식 ${FarmNews.list(newsFilter).length}건`)});
  } else if(!['home','welcome'].includes(base)){farm.bind(route)}

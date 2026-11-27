@@ -1,0 +1,103 @@
+/* 261127 허간 "이 버튼들 이제 업그레이드 진행" + "설정도 조금 더 설정 답게, 버튼 디자인 잘 잡고"
+   체험본(html.trial)에서만 적용한다. 일반 모드 화면은 그대로.
+   1) 쇼핑 '입점 매장' 4개 버튼: 원 → 둥근 사각 타일, 아이콘 24px·선 2px, 눌림·포커스 상태
+   2) 쇼핑 머리 장바구니: 회색 알약 → 48px 아이콘 버튼 + 개수 배지(0이면 숨김)
+   3) 설정: 회색 바탕 위 흰 그룹 카드, 행 = 아이콘 타일 + 제목 + 보조 1줄 + 토글/› */
+
+/* ── 1. 입점 매장 타일 ── */
+html.trial .mall-logo { border-radius: 18px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); transition: transform .12s ease, filter .12s ease; }
+html.trial .mall-logo svg { width: 24px; height: 24px; stroke-width: 2; }
+html.trial .mall-logo svg * { vector-effect: non-scaling-stroke; }
+html.trial .mall-logo-lg { border-radius: 18px; }
+html.trial .mall-logo-lg svg { width: 28px; height: 28px; }
+html.trial .mall-logo-sm { border-radius: 12px; }
+html.trial .mall-logo-sm svg { width: 20px; height: 20px; }
+html.trial .mall-screen .mall-store-pick { gap: 8px; min-height: 48px; padding: 6px 2px 8px; border-radius: 14px; -webkit-tap-highlight-color: transparent; }
+html.trial .mall-store-pick span:last-child { color: #252b27; font-weight: 650; }
+html.trial .mall-store-pick:active .mall-logo { transform: scale(.94); filter: brightness(.93); }
+html.trial .mall-store-pick:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+
+/* ── 2. 장바구니 아이콘 버튼 + 배지 ── */
+html.trial .mall-home-head .mall-icon { width: 24px; height: 24px; stroke-width: 2; }
+html.trial .mall-screen .mall-tool { min-height: 48px; min-width: 48px; border-radius: 14px; color: #2f3a33; -webkit-tap-highlight-color: transparent; }
+html.trial .mall-screen .mall-tool:active { background: #e6ebe7; }
+html.trial .mall-screen .mall-tool:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+html.trial .mall-screen .mall-cart-tool { width: 48px; padding: 0; background: transparent; }
+html.trial .mall-screen .mall-cart-tool:active { background: #e6ebe7; }
+html.trial .mall-cart-tool .mall-counter {
+  position: absolute; top: 3px; right: 1px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box;
+  display: grid; place-items: center; border-radius: 10px; background: #3f5747; color: #fff;
+  box-shadow: 0 0 0 2px #fff; font-size: .75rem; font-weight: 750; line-height: 1;
+}
+html.trial .mall-cart-tool .mall-counter[data-count="0"] { display: none; }
+
+/* ── 3. 설정 ── */
+html.trial body[data-screen="settings"] #main-area { background: #f2f4f3; }
+html.trial body[data-screen="settings"] #bar .field-switch { display: none; } /* 같은 스위치가 설정 행에 있어 머리 막대에서는 숨긴다 */
+html.trial .st-page { padding-bottom: 32px; }
+html.trial .st-page > h1 { margin-bottom: 4px; }
+html.trial .st-page .st-label { margin: 22px 4px 8px; color: #5b6660; font-size: .8125rem; font-weight: 650; letter-spacing: 0; line-height: 1.4; }
+html.trial .st-group { overflow: hidden; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(20,40,28,.05); }
+html.trial .st-page .st-row {
+  position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  width: 100%; min-height: 64px; margin: 0; padding: 12px 14px 12px 16px; box-sizing: border-box;
+  border: 0; border-radius: 0; background: #fff; color: #1f2722; text-align: left; text-decoration: none; font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+html.trial .st-page .st-row + .st-row::before,
+html.trial .st-page .st-group > * + * > .st-row:first-child::before { content: ''; position: absolute; top: 0; left: 64px; right: 0; height: 1px; background: #e6e9e7; }
+html.trial .st-page :is(a, button).st-row { cursor: pointer; }
+html.trial .st-page :is(a, button).st-row:active { background: #eef1ef; }
+html.trial .st-page :is(a, button).st-row:focus-visible { outline: 3px solid #4d6e59; outline-offset: -3px; border-radius: 16px; }
+html.trial .st-tile { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; color: #fff; }
+html.trial .st-tile .shell-icon { color: #fff; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html.trial .st-green { background: #4d6e59; }
+html.trial .st-olive { background: #6f7f45; }
+html.trial .st-blue { background: #4b7488; }
+html.trial .st-gray { background: #7a847e; }
+html.trial .st-red { background: #b8432f; }
+html.trial .st-text { display: grid; gap: 2px; min-width: 0; }
+html.trial .st-text strong { color: #1f2722; font-size: 1rem; font-weight: 650; line-height: 1.35; }
+html.trial .st-text small { color: #5b6660; font-size: .8125rem; font-weight: 450; line-height: 1.4; word-break: keep-all; }
+html.trial .st-row > .st-chev { width: 18px; height: 18px; color: #9aa39d; fill: none; stroke: currentColor; stroke-width: 2; }
+html.trial .st-info { cursor: default; }
+
+/* 현장 모드 토글: 기존 .field-switch(data-field-open, role=switch)를 행 오른쪽에 크게 */
+html.trial .st-switch-row .field-switch { min-height: 48px; min-width: 56px; justify-content: flex-end; padding: 0; margin-right: -2px; }
+html.trial .st-switch-row .field-switch-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+html.trial .st-switch-row .field-switch-track { width: 50px; height: 30px; border-radius: 15px; background: #cfd5d1; }
+html.trial .st-switch-row .field-switch-knob { top: 3px; left: 3px; width: 24px; height: 24px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+html.trial .st-switch-row .field-switch[aria-checked="true"] .field-switch-track { background: #3f5747; }
+html.trial .st-switch-row .field-switch[aria-checked="true"] .field-switch-knob { transform: translateX(20px); }
+html.trial .st-switch-row .field-switch:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; border-radius: 16px; }
+
+/* 체험 다시 시작: 위험 동작(빨간 제목), 확인 상자는 카드 안 */
+html.trial .st-page .st-reset { display: block; margin: 0; padding: 0; gap: 0; }
+html.trial .st-page .st-danger .st-text strong { color: #a8321f; }
+html.trial .st-page .st-reset .trial-confirm { margin: 0 14px 14px; border: 1px solid #f0d6cf; border-radius: 12px; padding: 12px 14px; background: #fdf6f4; }
+html.trial .st-page .st-reset .trial-confirm p { margin: 0 0 12px; color: #3b2a25; font-size: .9375rem; line-height: 1.55; }
+html.trial .st-page .st-reset .trial-confirm-actions { gap: 8px; }
+html.trial .st-page .st-reset .trial-confirm-actions button { flex: 1 1 120px; min-height: 48px; border: 0; border-radius: 12px; background: #eceeed; color: #2a312c; font-weight: 700; }
+html.trial .st-page .st-reset .trial-confirm-actions .trial-danger { background: #a8321f; color: #fff; }
+html.trial .st-page .st-reset .trial-confirm-actions button:active { filter: brightness(.94); }
+html.trial .st-page .st-reset .trial-confirm-actions button:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; }
+html.trial .st-page .st-reset .trial-confirm-actions button:disabled { opacity: .55; }
+html.trial .st-page .st-reset .access-status { margin: 0; padding: 0 16px 14px; color: #3b4640; }
+html.trial .st-page .st-reset .access-status:empty { display: none; }
+html.trial .st-page .st-foot { margin: 18px 4px 0; color: #5b6660; font-size: .8125rem; line-height: 1.5; text-align: center; }
+/* 마우스가 있는 기기에서만 hover(휴대폰에서 눌린 색이 남지 않게) */
+@media (hover: hover) {
+  html.trial .mall-store-pick:hover .mall-logo { filter: brightness(.97); }
+  html.trial .mall-screen .mall-tool:hover { background: #f1f3f2; }
+  html.trial .mall-screen .mall-cart-tool:hover { background: #f1f3f2; }
+  html.trial .st-page :is(a, button).st-row:hover { background: #f7f8f7; }
+  html.trial .mall-screen :is(.mall-tool, .mall-cart-tool):active { background: #e6ebe7; }
+  html.trial .st-page :is(a, button).st-row:active { background: #eef1ef; }
+}
+@media (prefers-reduced-motion: reduce) { html.trial .mall-logo { transition: none; } }
+
+/* 261127 허간: '모의' 빼고 오른쪽으로, 장바구니 아이콘 옆에 글자 */
+html.trial .mall-home-head > div { gap: 2px; margin-right: -10px; }
+html.trial .mall-screen .mall-cart-tool { width: auto; padding: 0 12px 0 8px; gap: 12px; }
+html.trial .mall-cart-tool .mall-cart-label { color: #2f3a33; font-size: .9375rem; font-weight: 600; white-space: nowrap; }
+html.trial .mall-cart-tool .mall-counter { top: 4px; right: auto; left: 21px; min-width: 18px; height: 18px; padding: 0 4px; font-size: .6875rem; }

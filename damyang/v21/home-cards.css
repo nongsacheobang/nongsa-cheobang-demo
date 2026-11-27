@@ -258,3 +258,22 @@ html:has(#ff-form) { scroll-padding-bottom: 8.5rem; }
 @media (min-width: 900px) { html:not(.phone-layout) .ff-gallery-item { flex-basis: 48%; } }
 .ff-block .ff-gallery-row { margin: 0 -4px; padding: 0 4px 4px; scroll-padding-inline: 4px; }
 .ff-block .ff-gallery-item { flex-basis: 86%; }
+
+/* 261127 허간: 일지 사진 넘김 버튼(체험본) - 흰 원 없이 화살표만, 사진 누르면 크게 */
+html.trial .ff-gallery { position: relative; }
+html.trial .ff-gal-nav { position: absolute; top: calc((100% - 2.2em) * .5 - 24px); width: 44px; height: 48px; padding: 0; border: 0; background: none; display: grid; place-items: center; cursor: pointer; z-index: 2; -webkit-tap-highlight-color: transparent; }
+html.trial .ff-gal-nav[hidden] { display: none; }
+html.trial .ff-gal-nav svg { width: 30px; height: 30px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 2px rgba(0,0,0,.55)) drop-shadow(0 0 6px rgba(0,0,0,.35)); }
+html.trial .ff-gal-prev { left: 2px; }
+html.trial .ff-gal-next { right: 2px; }
+html.trial .ff-gal-nav:active svg { transform: scale(.9); }
+html.trial .ff-gal-nav:focus-visible { outline: 3px solid #fff; outline-offset: -4px; border-radius: 10px; }
+html.trial .ff-gallery-item img { cursor: zoom-in; }
+html.trial dialog.ff-zoom { border: 0; padding: 0; margin: auto; width: 100%; max-width: 100%; height: 100%; max-height: 100%; background: #000; color: #fff; }
+html.trial dialog.ff-zoom::backdrop { background: rgba(0,0,0,.92); }
+html.trial .ff-zoom-body { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+html.trial .ff-zoom img { display: block; width: 100%; max-height: 78%; object-fit: contain; }
+html.trial .ff-zoom p { margin: 14px 20px 0; font-size: .9375rem; text-align: center; color: rgba(255,255,255,.88); }
+html.trial .ff-zoom-close { position: absolute; top: 54px; right: 10px; width: 48px; height: 48px; border: 0; background: none; color: #fff; display: grid; place-items: center; cursor: pointer; }
+html.trial .ff-zoom-close svg { width: 26px; height: 26px; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; fill: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+html.trial .ff-zoom .ff-gal-nav { top: calc(50% - 24px); }

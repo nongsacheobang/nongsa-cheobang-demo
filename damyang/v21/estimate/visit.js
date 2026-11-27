@@ -3,13 +3,17 @@
   const query = new URLSearchParams(location.search);
   const entry = query.get('from');
   const inApp = entry === 'home' || entry === 'tab';
-  const supplied = query.get('visit') || history.state?.insuranceVisit || '';
+  // 261126 체험본: 홈 카드처럼 visit 없이 다시 들어와도 이 탭의 마지막 보험 방문을 이어 간다(확인 상태·바꾼 조건 유지)
+  const lastKey = window.FarmTrial?.on ? window.FarmTrial.ns + 'example-last-visit' : '';
+  let last = ''; try { last = lastKey ? sessionStorage.getItem(lastKey) || '' : ''; } catch {}
+  const supplied = query.get('visit') || history.state?.insuranceVisit || last || '';
   const visit = /^[a-zA-Z0-9-]{5,60}$/.test(supplied) ? supplied
     : globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2);
-  const prefix = 'damyang-public-v21-example-' + visit + '-';
+  const prefix = (window.FarmTrial?.ns||'damyang-public-v21-')+'example-' + visit + '-';
   try {
     history.replaceState({...history.state, insuranceVisit: visit}, '');
   } catch {}
+  try { if (lastKey) sessionStorage.setItem(lastKey, visit); } catch {}
   document.documentElement.classList.toggle('insurance-in-app', inApp);
   function link(path) {
     const url = new URL(path, location.href);
@@ -17,6 +21,7 @@
       FarmNav.copyContext(query, url.searchParams);
       url.searchParams.set('from', entry);
     }
+    if (window.FarmTrial?.on) url.searchParams.set('trial', '1');
     url.searchParams.set('visit', visit);
     return url.href;
   }
@@ -40,7 +45,8 @@
     if (bar) {
       const tools = document.createElement('span'); tools.className = 'example-nav-tools';
       const chip = document.querySelector('.top .example'); if (chip) tools.append(chip);
-      if (window.FarmField?.switchMarkup) tools.insertAdjacentHTML('beforeend', FarmField.switchMarkup());
+      // 261127: 현장 모드는 '현장 화면' 진입 버튼(FarmField.entryMarkup, 현장 모드 세션 제공). 없으면 예전 스위치
+      if (window.FarmField?.switchMarkup) tools.insertAdjacentHTML('beforeend', FarmField.switchMarkup(FarmNav.farmHref('home', context)));   // 허간: 다른 화면과 같은 오른쪽 위 스위치
       bar.append(tools);
     }
   });

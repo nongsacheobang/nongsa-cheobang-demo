@@ -6,18 +6,18 @@
   const scope = preview ? 'preview-' + preview + '-' : '';
   // v21: 1·2동 + 농장 화면에서 추가한 동(같은 기기 저장값). 작물을 정했으면 그 이름을 쓴다.
   let farmHouses = {custom: [], crops: {}};
-  try { farmHouses = {...farmHouses, ...JSON.parse(localStorage.getItem('damyang-public-v21-houses-' + scope) || '{}')}; } catch {}
+  try { farmHouses = {...farmHouses, ...JSON.parse(localStorage.getItem((window.FarmTrial?.ns||'damyang-public-v21-')+'houses-' + scope) || '{}')}; } catch {}
   const known = ['1', '2', ...(Array.isArray(farmHouses.custom) ? farmHouses.custom.map(String).filter(id => /^[3-9]$/.test(id)) : [])];
   let house = query.get('house');
   if (!known.includes(house)) {
-    try { house = sessionStorage.getItem('damyang-public-v21-flow-' + scope + 'house'); } catch {}
+    try { house = sessionStorage.getItem((window.FarmTrial?.ns||'damyang-public-v21-')+'flow-' + scope + 'house'); } catch {}
   }
   if (!known.includes(house)) house = '2';
   const cropName = ['토마토','방울토마토','딸기'].includes(farmHouses.crops?.[house]?.crop) ? farmHouses.crops[house].crop : '딸기';
   // v21: '피해 기록하기'가 이 화면에 보이는 동의 피해 양식을 열도록 동 번호를 링크에 넘긴다.
   const damageLink = get('damage-link');
   if (damageLink) damageLink.href = InsuranceVisit.farmLink('damage', house);
-  const key = 'damyang-public-v21-season-' + scope + house + '-unconfirmed';
+  const key = (window.FarmTrial?.ns||'damyang-public-v21-')+'season-' + scope + house + '-unconfirmed';
   const dates = {plant: house === '1' ? '2026-10-20' : '', end: ''};
   const day = s => /^\d{4}-\d{2}-\d{2}$/.test(s) ? Date.parse(s + 'T00:00:00Z') / 86400000 : NaN;
   const format = s => s ? s.replaceAll('-', '.') : '미확인';
@@ -61,7 +61,7 @@
     catch { get('season-error').textContent = '이 기기에 일정을 저장할 수 없어요. 다시 시도해 주세요.'; return; }
     // v21: 작물을 정한 동이면 농장 화면의 정식일도 같은 값으로(교차검토 4번)
     try {
-      const k = 'damyang-public-v21-houses-' + scope, s = JSON.parse(localStorage.getItem(k) || '{}') || {};
+      const k = (window.FarmTrial?.ns||'damyang-public-v21-')+'houses-' + scope, s = JSON.parse(localStorage.getItem(k) || '{}') || {};
       if (s.crops?.[house]) { s.crops[house].plant = plant; localStorage.setItem(k, JSON.stringify(s)); }
     } catch {}
     Object.assign(dates, {plant, end});

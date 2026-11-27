@@ -1,61 +1,76 @@
-:is(#bar, #main-area, #content) .field-switch {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 4px 8px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: #4a554e;
-  font: 650 .875rem/1.2 "Noto Sans KR", sans-serif;
-  white-space: nowrap;
+/* 261127 현장 모드: 켜면 홈 전체가 이 화면으로 바뀐다. 흰 바탕 + 진초록·먹색 타일 두 개만. 색을 깐 배경 칸은 쓰지 않는다. */
+.field-screen {
+  position: fixed; inset: 0; z-index: 50; overflow-y: auto; overscroll-behavior: contain;
+  background: #fff; color: #141a16; font-family: "Noto Sans KR", sans-serif;
 }
-.field-state { font-weight: 500; color: #526157; }
-.field-track {
-  display: inline-flex;
-  align-items: center;
-  width: 31px;
-  height: 19px;
-  padding: 2px;
-  border: 1px solid #718278;
-  border-radius: 14px;
-  background: #e3e6e4;
+.field-screen[hidden] { display: none; }
+html.fm-on body { overflow: hidden; }
+html.fm-on .sc-fab, html.fm-on .sc-bubble { display: none !important; }
+/* 현장 화면의 '오늘 할 일'로 연 새참이 말풍선은 현장 화면 위에 띄운다. */
+html.fm-on #sc-bubble.is-open { z-index: 60; }
+.fm-inner {
+  display: flex; flex-direction: column; min-height: 100%; max-width: 480px; margin: 0 auto;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 20px calc(24px + env(safe-area-inset-bottom, 0px));
 }
-.field-track::before {
-  content: ""; width: 13px; height: 13px; border-radius: 50%; background: #55645a;
+.fm-ico { width: 24px; height: 24px; flex: none; }
+.fm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fm-top { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
+.fm-badge { display: inline-flex; align-items: center; gap: 8px; color: #2f5a41; font-size: .875rem; font-weight: 700; letter-spacing: -.01em; }
+.fm-badge i { width: 8px; height: 8px; border-radius: 50%; background: #2f9e5b; box-shadow: 0 0 0 4px rgba(47,158,91,.15); }
+.fm-off { min-width: 64px; min-height: 40px; padding: 0 16px; border: 1px solid #d9dedb; border-radius: 999px; background: #fff; color: #2b332e; font: inherit; font-size: .9375rem; font-weight: 700; cursor: pointer; }
+.fm-date { margin: 18px 0 0; color: #6b746e; font-size: .9375rem; }
+.fm-house { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 6px; margin: 2px 0 0 -2px; padding: 2px; border: 0; background: none; color: #141a16; font: inherit; text-align: left; cursor: pointer; }
+.fm-house strong { font-size: 1.875rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.25; }
+.fm-house .fm-ico { width: 26px; height: 26px; color: #7b847e; }
+.fm-house span { flex-basis: 100%; color: #6b746e; font-size: .9375rem; }
+.fm-task { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 20px; padding: 14px 0; border: 0; border-top: 1px solid #ebeeec; border-bottom: 1px solid #ebeeec; background: none; color: #141a16; font: inherit; text-align: left; cursor: pointer; }
+.fm-task span { flex: 1; min-width: 0; }
+.fm-task small { display: block; color: #2f5a41; font-size: .8125rem; font-weight: 700; }
+.fm-task strong { display: block; margin-top: 2px; font-size: 1.0625rem; font-weight: 700; line-height: 1.45; }
+.fm-task .fm-ico, .fm-links .fm-ico, .fm-damage .fm-ico:last-child { width: 20px; height: 20px; color: #9aa39d; }
+.fm-big { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+.fm-big button {
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 4px;
+  min-height: clamp(180px, 30vh, 240px); padding: 18px 16px; border: 0; border-radius: 24px;
+  color: #fff; font: inherit; text-align: left; cursor: pointer; transition: transform .12s ease;
 }
-[data-field-mode][aria-checked=true] .field-track { justify-content: flex-end; background: #446751; border-color: #446751; }
-[data-field-mode][aria-checked=true] .field-track::before { background: #fff; }
-:is(#main-area, #content) .field-setting {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px;
-  padding: 8px 0; border-bottom: 1px solid #e1e3e2;
-}
-.field-setting p { margin: 0; font-size: .875rem; color: #5f6962; }
-.field-setting .field-switch { padding-inline-start: 0; }
+.fm-big button:active { transform: scale(.98); }
+.fm-big .fm-ico { width: 40px; height: 40px; margin-bottom: auto; }
+.fm-big strong { font-size: 1.375rem; font-weight: 800; letter-spacing: -.02em; }
+.fm-big small { color: rgba(255,255,255,.72); font-size: .8125rem; line-height: 1.4; word-break: keep-all; }
+.fm-camera { background: #2f5a41; }
+.fm-memo { background: #1c2420; }
+.fm-damage { display: flex; align-items: center; gap: 12px; min-height: 60px; margin-top: 12px; padding: 0 16px; border: 1px solid #e3e7e4; border-radius: 18px; background: #fff; color: #141a16; font-size: 1.0625rem; font-weight: 700; text-decoration: none; }
+.fm-damage .fm-ico:first-child { color: #c2412d; }
+.fm-damage span { flex: 1; }
+.fm-safety { margin: 12px 2px 0; color: #6b746e; font-size: .875rem; line-height: 1.55; }
+.fm-links { margin-top: auto; padding-top: 20px; }
+.fm-links a { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 0; border-top: 1px solid #ebeeec; color: #141a16; text-decoration: none; }
+.fm-links span { flex: 1; min-width: 0; }
+.fm-links small { display: block; color: #6b746e; font-size: .8125rem; }
+.fm-links strong { display: block; font-size: 1rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.field-screen :is(button, a):focus-visible { outline: 3px solid #2f5a41; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .fm-big button { transition: none; } }
+@media (forced-colors: active) { .fm-big button, .fm-damage, .fm-off { border: 2px solid ButtonText; } }
 
-/* A separate preference. Using the same root size avoids doubling large text. */
-html.field-mode {
-  font-size: 125%;
-  --green: #40644c; --farm-green: #40644c; --farm-edge: #879d8d; --muted: #5f6962;
-}
-.field-mode :is(#main-area,#content) :is(.ff-note,.required-notice,.ff-muted,.record-meta,.caption,.mall-fiction,.mall-footnote,.mall-date,.access-status) {
-  color: #59645d;
-}
-.field-mode :is(#main-area,#content) :is(.primary-link,.ff-primary,.mall-primary,.solid) {
-  background-color: #3e604a; color: white; font-weight: 700;
-}
-.field-mode :is(#main-area,#content) :is(button:not(.field-switch), .primary-link, .home-save-link, .home-journal-calendar, .insurance-entry, .mall-primary, .mall-soft, .setting-row, .mall-history-row, .ff-choice) {
-  min-height: 54px;
-}
-.field-mode :is(#main-area,#content) :is(input:not([type=checkbox],[type=radio],[type=file]),select,textarea) { min-height: 52px; }
-.field-mode :is(#main-area,#content) :is(.ff-choice, .setting-row, .ff-block, .mall-search, .mall-chip, .mall-stepper) { border-color: #83998a; }
-.field-mode #mobile-nav a[aria-current] .n-icon { background: #e3e9e5; color: #395844; }
-.field-mode .farm-readiness .repair-note { color: #f1f4f2; }
-.field-mode :focus-visible { outline: 3px solid #a95100; outline-offset: 2px; }
-@media (forced-colors:active) {
-  .field-track { border-color: ButtonText; }
-  .field-track::before { background: ButtonText; }
-  [data-field-mode][aria-checked=true] .field-track::before { background: HighlightText; }
-}
+/* 홈 진입 버튼(shell.js homeHero) */
+.h21-field { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 48px; margin-top: 8px; padding: 0 14px; border: 1px solid #dfe3e0; border-radius: 12px; background: #fff; color: #141a16; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; }
+.h21-field .shell-icon { width: 20px; height: 20px; color: #2f5a41; }
+.h21-field small { color: #6b746e; font-size: .8125rem; font-weight: 500; }
+.h21-field:focus-visible { outline: 3px solid #2f5a41; outline-offset: 2px; }
+
+/* 261127 허간: 머리 막대 오른쪽 위 '현장 모드 꺼짐/켜짐' 스위치(예전 위치·모양) */
+.field-switch { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 2px; border: 0; background: none; color: inherit; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.field-switch-label b { font-weight: 650; opacity: .75; }
+.field-switch-track { position: relative; width: 34px; height: 20px; border-radius: 10px; background: #cfd6d1; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); transition: background .2s; }
+.field-switch-knob { position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #4f5a52; transition: transform .2s, background .2s; }
+.field-switch[aria-checked="true"] .field-switch-track { background: #3f6a4c; }
+.field-switch[aria-checked="true"] .field-switch-knob { transform: translateX(14px); background: #fff; }
+.field-switch:focus-visible { outline: 3px solid #4d6e59; outline-offset: 2px; border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) { .field-switch-track, .field-switch-knob { transition: none; } }
+body[data-screen="home"] #bar .field-switch-track { background: rgba(255,255,255,.35); }
+body[data-screen="home"] #bar .field-switch-knob { background: #fff; }
+html:not(.field-mode) body[data-screen="home"] #bar .field-switch { color: #fff; }
+/* 홈 머리 막대: '농사처방'과 같은 흰 글자, 상자 없이(허간) */
+html:not(.field-mode) body[data-screen="home"] #bar .field-switch, html:not(.field-mode) body[data-screen="home"] #bar .field-switch:hover { background: transparent !important; box-shadow: none !important; border: 0 !important; color: #fff !important; }
+html:not(.field-mode) body[data-screen="home"] #bar .field-switch-label { color: #fff; font-weight: 700; }

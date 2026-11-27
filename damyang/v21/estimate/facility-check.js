@@ -229,6 +229,7 @@ async function stepCalc(){
   await wait(2600);if(me!==run)return;
   setDone(true);
   const d=dlg();d.close();
+  document.dispatchEvent(new Event('facility-check-done'));   // 261127 체험본 결과 화면 전환용(일반 모드는 듣는 곳 없음)
   window.drawEstimate?.();
   const card=document.querySelector('#result .result-card');
   document.getElementById('example')?.scrollIntoView({block:'start',behavior:reduce()?'auto':'smooth'});

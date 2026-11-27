@@ -5,23 +5,29 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'none'; form-action 'none'; object-src 'none'; base-uri 'self'; worker-src 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="preload" href="../assets/NotoSansKR-VF.ttf" as="font" type="font/ttf" crossorigin>
   <meta name="theme-color" content="#4d6e59">
   <title>보험금 예상 범위 · 농사처방</title>
   <link rel="icon" href="../assets/mark.svg" type="image/svg+xml"><link rel="alternate icon" href="../assets/mark.png">
-  <script src="../farm-nav.js"></script>
-  <script src="visit.js"></script>
-  <link rel="stylesheet" href="insurance.css">
-  <script src="../field-mode.js"></script>
-  <link rel="stylesheet" href="../field-mode.css">
-  <link rel="stylesheet" href="../farm-nav.css">
-  <link rel="stylesheet" href="app-dock.css">
-  <script defer src="amount-model.js"></script>
-  <script defer src="estimate.js"></script>
-  <script defer src="timeline.js"></script>
-  <script defer src="facility-check.js"></script>
-  <script defer src="result.js"></script>
-  <link rel="stylesheet" href="facility-check.css">
-<script src="../example-type.js"></script>
+  <script src="../trial.js?v=261127c"></script>
+  <link rel="stylesheet" href="../trial.css?v=261127c">
+  <script src="../farm-nav.js?v=261127c"></script>
+  <script src="visit.js?v=261127c"></script>
+  <link rel="stylesheet" href="insurance.css?v=261127c">
+  <script src="../field-mode.js?v=261127c"></script>
+  <link rel="stylesheet" href="../field-mode.css?v=261127c">
+  <link rel="stylesheet" href="../farm-nav.css?v=261127c">
+  <link rel="stylesheet" href="app-dock.css?v=261127c">
+  <script defer src="amount-model.js?v=261127c"></script>
+  <script defer src="estimate.js?v=261127c"></script>
+  <script defer src="timeline.js?v=261127c"></script>
+  <script defer src="facility-check.js?v=261127c"></script>
+  <script defer src="result.js?v=261127c"></script>
+  <script defer src="../news-data.js?v=261127c"></script>
+  <script defer src="../saecham.js?v=261127c"></script>
+  <link rel="stylesheet" href="facility-check.css?v=261127c">
+  <link rel="stylesheet" href="insurance-trial.css?v=261127c">
+<script src="../example-type.js?v=261127c"></script>
 </head>
 <body>
   <div class="insurance-viewport">
@@ -43,7 +49,7 @@
       <h2 class="fc-gate-title" id="fc-gate-title">보험금 확인하기</h2>
       <p class="fc-gate-copy">시연용 간편인증 뒤 가상 보험증권, 영농일지, 피해 기록과 수리 견적을 불러와요. 내용을 확인하면 작물 보험금과 시설물 보험금 범위를 보여드려요.</p>
       <ol class="fc-steps" aria-label="확인 순서"><li>간편인증</li><li>기록 불러오기</li><li>내용 확인</li><li>범위 보기</li></ol>
-      <p class="fc-bubble">산식 계산이에요 · 손해평가 아님</p>
+      <p class="fc-bubble">내 보험금 1분 만에 확인하기</p>
       <button type="button" class="primary" id="facility-start">보험금 확인 시작하기</button>
     </section>
     <section class="season" id="season" aria-labelledby="season-title">
@@ -92,6 +98,7 @@
           <p id="summary-line"></p>
           <p>실제 농가 기록과 연결되지 않은 화면안입니다.</p>
           <p class="notice">보험금 지급을 보장하지 않으며, 손해평가, 손해사정이 아닙니다.</p>
+          <p class="notice" data-trial-only hidden>참고용 계산값이에요. 실제 지급 여부와 금액은 손해평가 뒤 보험사가 정해요.</p>
         </div>
         <p id="change-note" class="change-note" role="status"></p>
       </div>

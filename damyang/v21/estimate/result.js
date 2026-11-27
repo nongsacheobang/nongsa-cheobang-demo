@@ -167,6 +167,103 @@ function drawEstimate(){
  for(const node of [$('example'),document.querySelector('.tabs'),$('result')])node.hidden=gated;
  $('facility-restart').hidden=gated;
  paintCosts(!crop&&ready?r:null);
+ if(window.FarmTrial?.on)resultView(gated);
+}
+// 261127 체험본(허간 요청): 보험 탭에 들어오면 항상 첫 화면이다. 보험금 범위는 '보험금 확인'을 끝까지 돌려야 결과 화면(#result)에 보인다.
+// 한 번 돌린 뒤에는 첫 화면 아래 '지난 조회' 상자의 '지난 조회 보기'로 인증 없이 결과 화면을 다시 연다. 계산·저장 값은 그대로다.
+let justDone=false;
+const homeUrl=()=>location.pathname+location.search;
+function openResult(){
+ history.pushState(null,'',homeUrl()+'#result');drawEstimate();scrollTo(0,0);
+ const t=$('estimate-title');t?.setAttribute('tabindex','-1');t?.focus({preventScroll:true});
+}
+function resultView(gated){
+ const done=!gated;
+ if(done&&justDone&&location.hash!=='#result')history.pushState(null,'',homeUrl()+'#result');   // 방금 계산이 끝남(새로 돌린 조회 포함)
+ justDone=false;
+ const show=done&&location.hash==='#result';
+ document.documentElement.classList.toggle('ins-result-view',show);
+ $('season').hidden=show;
+ const damage=document.querySelector('.damage-first');if(damage)damage.hidden=show;
+ $('facility-gate').hidden=show;
+ for(const node of [$('example'),document.querySelector('.tabs'),$('result')])node.hidden=!show;
+ $('facility-restart').hidden=!show;
+ $('example').querySelector('strong').textContent=show?'보험금 확인 결과':'보험금 계산 예시';
+ if(show)polishResult();
+ let last=$('last-check');
+ if(!last){
+  last=document.createElement('section');last.id='last-check';last.className='last-check';last.setAttribute('aria-labelledby','last-check-title');
+  last.innerHTML='<p><span class="last-check-kicker" id="last-check-title">지난 조회</span><strong id="last-check-scope"></strong></p><button type="button" class="last-check-open" id="last-check-open">지난 조회 보기</button>';
+  $('facility-gate').after(last);
+  $('last-check-open').addEventListener('click',openResult);
+ }
+ last.hidden=!(done&&!show);
+ const [who,what]=$('example-scope').textContent.split(' · ');
+ $('last-check-title').textContent='지난 조회 · '+who;$('last-check-scope').textContent=what||who;
+ let back=$('result-back');
+ if(!back){
+  back=document.createElement('button');back.type='button';back.id='result-back';back.className='fc-restart result-back';
+  back.textContent='보험 첫 화면으로';
+  back.addEventListener('click',()=>{history.pushState(null,'',homeUrl());drawEstimate();scrollTo(0,0);});
+  $('facility-restart').before(back);
+ }
+ back.hidden=!show;
+}
+// 261127 허간 결과 화면 개선(체험본): 설명 문장 삭제, 조건 바꾸기는 금액 카드 오른쪽 위 '수정', 아래 버튼은 같은 모양 둘. 숫자 올라가는 연출은 그대로
+function polishResult(){
+ // 허간: 금액 카드의 '수정'은 삭제. 조건 바꾸기는 '계산에 쓴 조건' 제목 오른쪽 작은 글자 버튼(F05·T09 기능 유지)
+ const edit=$('edit'), condTitle=$('facts-title');
+ if(edit&&condTitle){
+  let head=condTitle.parentElement.classList.contains('rv-cond-head')?condTitle.parentElement:null;
+  if(!head){head=document.createElement('div');head.className='rv-cond-head';condTitle.before(head);head.append(condTitle);}
+  if(edit.parentElement!==head)head.append(edit);
+  edit.textContent='조건 바꾸기';edit.setAttribute('aria-label','계산 조건 바꾸기');edit.className='rv-edit-link';
+ }
+ // 261127 허간: 카드 윗부분을 큰 사진 표지로(작물 crop.webp, 시설물 facility.webp, 못 읽으면 gate-tomato.webp). 진한 초록 상자 없이 사진 위 흰 글씨로 범위를 올린다
+ const obj=$('object'), tab=api.state().tab, head=document.querySelector('#result .result-heading');
+ if(obj){const want='../assets/insurance/'+(tab==='crop'?'crop':'facility')+'.webp?v=261127c', fb='../assets/insurance/gate-tomato.webp?v=261127c';
+  if(obj.dataset.want!==want){obj.dataset.want=want;obj.dataset.use=want;obj.classList.remove('rv-has-photo');
+   obj.onload=()=>obj.classList.add('rv-has-photo');
+   obj.onerror=()=>{if(obj.dataset.use!==fb){obj.dataset.use=fb;obj.src=fb;}else obj.classList.remove('rv-has-photo');};
+   obj.src=want;}
+  else if(obj.getAttribute('src')!==obj.dataset.use)obj.src=obj.dataset.use;}
+ const disc=document.querySelector('#result .result-disclosure');if(disc)disc.textContent='시연용 예시 데이터 · 산식 계산 결과, 손해평가 결과 아님';
+ // 금액(#range-card)과 고지 한 줄을 사진 표지 안 아래쪽으로 옮긴다. id·숫자 올라가는 연출은 그대로
+ if(head){head.classList.add('rv-cover');const rc=$('range-card');if(rc&&rc.parentElement!==head)head.append(rc);if(disc&&disc.parentElement!==head)head.append(disc);}
+ const note=document.querySelector('#result .notes [data-trial-only]');
+ if(note)note.textContent='참고용 계산값이에요. 보험금 지급을 보장하지 않으며, 실제 지급 여부와 금액은 손해평가 뒤 보험사가 정해요.';
+ const cond=document.querySelector('#result .conditions'), restart=$('facility-restart'), back=$('result-back');
+ if(cond&&restart&&back){
+  let row=cond.querySelector('.rv-actions');
+  if(!row){row=document.createElement('div');row.className='rv-actions';cond.append(row);}
+  if(back.parentElement!==row)row.append(back);
+  if(restart.parentElement!==row)row.append(restart);
+  back.textContent='첫 화면으로';restart.textContent='인증부터 다시';
+  back.className=restart.className='rv-ghost';
+ }
+}
+// 261127 허간: 보험 화면 위 막대를 다른 메뉴 머리 막대와 같은 모양으로(꺾쇠 아이콘 + '농장 홈으로', 같은 글자 크기·색)
+// 261127 허간: 보험 첫 화면 카드 정리(체험본). 실사 사진(assets/insurance/facility.webp)이 있으면 위에, 짧은 설명, 짧은 단계 이름, 말풍선 대신 아래 한 줄
+function polishGate(){
+ const g=$('facility-gate');if(!g||g.dataset.polished)return;g.dataset.polished='1';
+ const ph=document.createElement('div');ph.className='ig-photo';ph.setAttribute('aria-hidden','true');
+ const im=document.createElement('img');im.alt='';im.onload=()=>im.classList.add('is-ok');im.src='../assets/insurance/gate-tomato.webp?v=261127c';im.onerror=()=>{if(!im.dataset.fb){im.dataset.fb='1';im.src='../assets/insurance/crop.webp?v=261127c';}};ph.append(im);g.prepend(ph);
+ const copy=g.querySelector('.fc-gate-copy');if(copy)copy.textContent='가상 보험증권과 피해 기록을 불러와 작물·시설물 보험금 범위를 계산해요.';
+ const names=['인증','불러오기','확인','범위'];g.querySelectorAll('.fc-steps li').forEach((li,i)=>{li.textContent=names[i]||li.textContent;});
+ // 허간: 버튼 위 검은 말풍선('산식 계산이에요 · 손해평가 아님')은 그대로 살린다
+}
+function matchTopBar(){
+ polishGate();
+ const back=document.querySelector('.example-nav > a.calendar-return');
+ if(!back||back.dataset.matched)return;
+ back.dataset.matched='1';back.classList.add('back-link');back.setAttribute('aria-label','농장 홈으로 돌아가기');
+ back.innerHTML='<svg class="shell-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg>농장 홈으로';
+}
+if(window.FarmTrial?.on){
+ document.addEventListener('DOMContentLoaded',()=>setTimeout(matchTopBar,0));setTimeout(matchTopBar,0);
+ if(location.hash==='#result')history.replaceState(null,'',homeUrl());   // 탭으로 들어오거나 새로 열면 첫 화면부터
+ window.addEventListener('popstate',()=>{drawEstimate();scrollTo(0,0);});
+ document.addEventListener('facility-check-done',()=>{justDone=true;});
 }
 // 견적에서 빠지는 자기부담금: 기존 산식 결과(amounts)를 그대로 보여준다. 새 합계는 만들지 않는다.
 function paintCosts(r){
@@ -174,6 +271,13 @@ function paintCosts(r){
  box.hidden=!r;
  if(!r){box.replaceChildren();return;}
  const man=n=>{const v=Math.round(n);return v%10000===0?value(v/10000)+'만 원':won(v);};
+ if(window.FarmTrial?.on){   // 261127 허간: 견적 | 자기부담금 | 계산 금액 세 칸 표로 줄 맞춤
+  box.innerHTML='<p class="cost-head">견적에서 빠지는 자기부담금</p><table class="rv-cost"><thead><tr><th scope="col">견적</th><th scope="col">자기부담금</th><th scope="col">계산 금액</th></tr></thead><tbody>'+
+   r.amounts.map((a,i)=>{const after=Math.round(a.estimate-a.deductible),ded=a.estimate-after,capped=Math.round(a.amount)<after;
+    return '<tr><th scope="row">'+(r.amounts.length>1?'<small>견적 '+(i+1)+'</small>':'')+man(a.estimate)+'</th><td class="rv-minus">−'+man(ded)+'</td><td class="rv-out">'+man(a.amount)+(capped?'<small>가입금액 한도</small>':'')+'</td></tr>';}).join('')+
+   '</tbody></table><p class="cost-foot">자기부담금은 견적의 10%예요. 비닐만 손상되면 10만~30만 원, 골조도 손상되면 30만~100만 원 사이에서 정해지고, 시설물 가입금액을 넘으면 가입금액까지만 계산해요.</p>';
+  return;
+ }
  box.innerHTML='<p class="cost-head">견적에서 빠지는 자기부담금</p><dl>'+r.amounts.map((a,i)=>{
    const after=Math.round(a.estimate-a.deductible), ded=a.estimate-after, capped=Math.round(a.amount)<after;
     return `<div><dt>견적${r.amounts.length>1?' '+(i+1):''} ${man(a.estimate)}</dt><dd><span class="cost-minus">자기부담금 −${man(ded)}</span><span class="cost-label">계산 금액</span><b>${man(a.amount)}</b>${capped?`<span class="cost-cap">견적 − 자기부담금 ${man(after)} · 가입금액 한도 적용</span>`:''}</dd></div>`;}).join('')+

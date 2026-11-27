@@ -95,7 +95,7 @@
   }
   function routePath(route,opts){
     const scope=scopeOf(opts),key=scope+'|'+route;
-    const transit='damyang-public-v21-mall-nav/'+scope;
+    const transit=(window.FarmTrial?.ns||'damyang-public-v21-')+'mall-nav/'+scope;
     if(!pending){try{pending=JSON.parse(sessionStorage.getItem(transit)||'null');}catch{}}
     if(pending?.route===route&&pending.scope===scope){
       rememberPath(scope,pending.path);history.replaceState({...history.state,mallPath:pending.path},'');pending=null;
@@ -121,7 +121,7 @@
     const path=routePath(route,opts),already=path.indexOf(next);
     const chain=already>=0?path.slice(0,already+1):[...path,next];
     pending={route:next,path:chain,scope:scopeOf(opts)};
-    try{sessionStorage.setItem('damyang-public-v21-mall-nav/'+pending.scope,JSON.stringify(pending))}catch{}
+    try{sessionStorage.setItem((window.FarmTrial?.ns||'damyang-public-v21-')+'mall-nav/'+pending.scope,JSON.stringify(pending))}catch{}
     if(opts.go)opts.go(next);else location.hash=next;
   }
   function getFilters(route,opts){
@@ -149,7 +149,7 @@
     const top=store
       ?'<section class="mall-store-head">'+logo(f.store,'mall-logo-lg')+'<div><h2>'+esc(store.name)+'</h2><p>'+esc(store.field)+' · 상품 '+counts[f.store]+'개 · 가상 매장</p></div></section>'
       :'<section class="mall-stores" aria-labelledby="mall-stores-title"><h2 id="mall-stores-title">입점 매장</h2><div class="mall-store-row">'+Object.keys(stores).map(id=>link(logo(id)+'<span>'+esc(stores[id].name)+'</span>','shop/store/'+id+origin,'mall-store-pick')).join('')+'</div></section>';
-    return '<header class="mall-home-head"><h1>농장 용품</h1><div>'+link(icon('order')+'<span>모의 구매 내역</span>','orders'+origin,'mall-tool')+link(icon('cart')+'<span class="mall-counter">'+cartQty+'</span><span class="mall-sr">장바구니, 담은 수량 '+cartQty+'개</span>','cart'+origin,'mall-tool mall-cart-tool')+'</div></header>'+
+    return '<header class="mall-home-head"><h1>농장 용품</h1><div>'+link(icon('order')+'<span>'+(window.FarmTrial?.on?'구매 내역':'모의 구매 내역')+'</span>','orders'+origin,'mall-tool')+link(icon('cart')+(window.FarmTrial?.on?'<span class="mall-cart-label" aria-hidden="true">장바구니</span>':'')+'<span class="mall-counter" data-count="'+cartQty+'" aria-hidden="true">'+(cartQty>99?'99+':cartQty)+'</span><span class="mall-sr">장바구니, 담은 수량 '+cartQty+'개</span>','cart'+origin,'mall-tool mall-cart-tool')+'</div></header>'+
       '<label class="mall-search">'+icon('search')+'<input type="search" aria-label="상품 검색" autocomplete="off" placeholder="어떤 농장 용품을 찾으세요?" value="'+esc(f.query)+'"></label>'+top+
       (store?link('‹ 입점 매장 전체 보기','shop'+origin,'mall-text-link mall-all-stores'):'')+'<div class="mall-results">'+catalog(f,opts,origin)+'</div>';
   }
@@ -185,7 +185,7 @@
   const orderNo=id=>'SIM-'+String(id).replace(/[^a-zA-Z0-9]/g,'').slice(0,8).toUpperCase();
   function receiptText(o){
     const lines=['[농사처방 농장 용품] 모의 영수증','실제 결제·배송이 없는 시연용 영수증이에요.','',
-      '주문번호 '+orderNo(o.id),'일시 '+orderDate(o.createdAt),'배송지 '+address,'결제수단 모의 결제',''];
+      '주문번호 '+orderNo(o.id),'일시 '+orderDate(o.createdAt),'배송지 '+address,'결제수단 '+(o.method?o.method+' · ':'')+'모의 결제',''];
     // 메일 앱 링크 길이 제한(약 2,000자) 때문에 품목은 매장당 3줄까지만 적고 나머지는 개수로 줄인다.
     for(const g of byStore(o.items)){
       lines.push('■ '+g.name);
@@ -210,6 +210,33 @@
       '<div class="mall-mail-actions">'+button('다른 주소로','mail-again','mall-soft')+button('닫기','mail-close','mall-primary')+'</div></div>'+
       '</form></dialog>';
   }
+  // 261127 허간 '쇼핑에 카드 등록'(체험본만): 시연용 가상 카드만 고른다. 실제 카드 번호·유효기간·CVC 입력칸은 만들지 않는다.
+  const CARDS=[{id:'nh',label:'가상 농협카드',last4:'4821'},{id:'kb',label:'가상 국민카드',last4:'3107'}];
+  const cardKey=()=>(window.FarmTrial?.ns||'')+'mall-card';
+  function myCard(){if(!window.FarmTrial?.on)return null;try{const c=JSON.parse(localStorage.getItem(cardKey())||'null');return CARDS.find(x=>x.id===c?.id)||null;}catch{return null;}}
+  const cardName=c=>c.label+' •••• '+c.last4;
+  function payBox(){
+    if(!window.FarmTrial?.on)return '<p class="mall-method">'+icon('check')+'모의 결제</p>';
+    const c=myCard();
+    return c?'<div class="mall-card-row"><p class="mall-method">'+icon('check')+esc(cardName(c))+'</p><button type="button" class="mall-soft mall-card-change" data-mall-action="card-open">카드 바꾸기</button></div>'
+      :'<div class="mall-card-row"><p class="mall-card-none">등록한 결제 카드가 없어요</p><button type="button" class="mall-soft mall-card-change" data-mall-action="card-open">결제 카드 등록</button></div>';
+  }
+  function cardDialog(el,done){
+    let d=document.getElementById('mall-card-sheet');
+    if(!d){d=document.createElement('dialog');d.id='mall-card-sheet';d.className='mall-card-sheet';d.setAttribute('aria-labelledby','mall-card-title');document.body.append(d);}
+    const c=myCard();
+    d.innerHTML='<form method="dialog" class="mall-card-form"><h2 id="mall-card-title">결제 카드 등록</h2><p class="mall-card-note">시연용 가상 카드예요. 실제 카드 번호는 받지 않고, 실제 결제도 하지 않아요.</p>'+
+      '<fieldset><legend class="sr">카드 고르기</legend>'+CARDS.map((x,i)=>'<label class="mall-card-option"><input type="radio" name="card" value="'+x.id+'"'+((c?c.id===x.id:i===0)?' checked':'')+'><span class="mall-card-face" data-card="'+x.id+'"><b>'+esc(x.label)+'</b><small>•••• '+x.last4+'</small></span></label>').join('')+'</fieldset>'+
+      '<p class="mall-card-error" role="alert"></p><div class="mall-card-actions">'+(c?'<button type="button" class="mall-soft" data-card="remove">등록 지우기</button>':'')+'<button type="button" class="mall-soft" data-card="cancel">취소</button><button type="submit" class="mall-primary" data-card="save">'+(c?'이 카드로 바꾸기':'등록하기')+'</button></div></form>';
+    const err=m=>{d.querySelector('.mall-card-error').textContent=m;};
+    d.querySelector('[data-card="cancel"]').onclick=()=>d.close();
+    d.querySelector('[data-card="remove"]')?.addEventListener('click',()=>{try{localStorage.removeItem(cardKey());}catch{err('지우지 못했어요. 다시 눌러 주세요.');return;}d.close();done('등록한 카드를 지웠어요.');});
+    d.querySelector('form').onsubmit=e=>{e.preventDefault();const id=d.querySelector('input[name="card"]:checked')?.value;const x=CARDS.find(c=>c.id===id);if(!x)return;
+      try{localStorage.setItem(cardKey(),JSON.stringify({id:x.id,at:new Date().toISOString()}));}catch{err('이 기기에 저장하지 못했어요. 다시 눌러 주세요.');return;}
+      d.close();done(cardName(x)+'를 결제 카드로 등록했어요.');};
+    d.addEventListener('close',()=>setTimeout(()=>el.querySelector('[data-mall-action="card-open"]')?.focus({preventScroll:true}),0),{once:true});
+    d.showModal();d.querySelector('input:checked')?.focus();
+  }
   function checkout(state,id,opts,origin){
     const draft=Object.hasOwn(state.drafts,id)&&state.drafts[id];
     if(!draft){
@@ -217,7 +244,7 @@
       return '<h1>모의 주문서</h1><div class="mall-empty"><h2>'+(paid?'이미 모의 결제를 마쳤어요':'주문할 상품을 확인해 주세요')+'</h2>'+link(paid?'영수증 보기':'장바구니 보기',(paid?'receipt/'+id:'cart')+origin,'mall-primary')+'</div>';
     }
     return '<h1>모의 주문서</h1><div class="mall-columns"><div><section class="mall-info"><h2>배송지</h2><p>'+address+'</p></section><section class="mall-info"><h2>주문 상품</h2>'+orderLines(draft.items,opts)+'</section></div>'+
-      '<aside class="mall-summary"><h2>결제 수단</h2><p class="mall-method">'+icon('check')+'모의 결제</p>'+sumBlock('모의 구매 합계',draft.total)+button('모의 결제하기','pay','mall-primary mall-full','data-order="'+esc(id)+'"')+'</aside></div>';
+      '<aside class="mall-summary"><h2>결제 수단</h2>'+payBox()+sumBlock('모의 구매 합계',draft.total)+button(myCard()?'가상 카드로 모의 결제하기':'모의 결제하기','pay','mall-primary mall-full','data-order="'+esc(id)+'"')+'</aside></div>';
   }
   function completed(state,id,origin){
     const o=Object.hasOwn(state.orders,id)&&state.orders[id];
@@ -231,16 +258,26 @@
     const fact=(k,v)=>'<div><dt>'+k+'</dt><dd>'+v+'</dd></div>';
     return '<h1>모의 영수증</h1><div class="mall-receipt">'+
       '<header class="mall-receipt-head"><p class="mall-receipt-brand">농사처방 · 농장 용품</p><p class="mall-receipt-tag">모의 영수증 · 실제 거래 아님</p></header>'+
-      '<dl class="mall-receipt-facts">'+fact('주문번호',orderNo(o.id))+fact('일시',orderDate(o.createdAt))+fact('배송지',address)+fact('결제수단','모의 결제')+'</dl>'+
+      '<dl class="mall-receipt-facts">'+fact('주문번호',orderNo(o.id))+fact('일시',orderDate(o.createdAt))+fact('배송지',address)+fact('결제수단',o.method?esc(o.method)+' · 모의 결제':'모의 결제')+'</dl>'+
       byStore(o.items).map(g=>'<section class="mall-receipt-store"><h2>'+esc(g.name)+' <small>가상 매장</small></h2>'+
         g.rows.map(r=>'<div class="mall-receipt-row"><span>'+esc(r.name)+'<small>'+price(r.unitPrice)+' × '+r.qty+'개</small></span><b>'+price(r.unitPrice*r.qty)+'</b></div>').join('')+
         '<div class="mall-receipt-sub"><span>매장 소계</span><b>'+price(g.sum)+'</b></div></section>').join('')+
       '<div class="mall-receipt-total"><span>모의 구매 합계</span><strong>'+price(o.total)+'</strong></div>'+
       '<p class="mall-receipt-foot">시연용 가상 가격이에요. 실제 결제와 배송은 없어요.</p></div>'+
-      '<div class="mall-receipt-actions">'+button(icon('mail')+'메일로 영수증 보내기','mail-open','mall-primary mall-full')+link('모의 구매 내역 보기','orders'+origin,'mall-soft mall-full')+'</div>'+mailSheet(o);
+      (window.FarmTrial?.on?'<div class="mall-receipt-actions">'+link('모의 구매 내역 보기','orders'+origin,'mall-primary mall-full')+'</div>':'<div class="mall-receipt-actions">'+button(icon('mail')+'메일로 영수증 보내기','mail-open','mall-primary mall-full')+link('모의 구매 내역 보기','orders'+origin,'mall-soft mall-full')+'</div>')+(window.FarmTrial?.on?'':mailSheet(o));
   }
   function orderList(state,origin){
     const rows=Object.values(state.orders).sort((a,b)=>b.createdAt.localeCompare(a.createdAt)||b.id.localeCompare(a.id));
+    // 261127 허간: 구매 내역 카드형(체험본). 상품 사진 썸네일 · 날짜 · 모의 결제 완료 · 합계 · 영수증 보기
+    if(window.FarmTrial?.on){
+      const when=s=>new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(s));
+      const card=o=>{const thumbs=o.items.slice(0,3).map(r=>'<span class="moc-thumb">'+img(r.product,'','moc-img')+'</span>').join('')+(o.items.length>3?'<span class="moc-more">+'+(o.items.length-3)+'</span>':'');
+        return '<li>'+link('<span class="moc-top"><span class="moc-date">'+when(o.createdAt)+'</span><span class="moc-chip">모의 결제 완료</span></span>'+
+          '<span class="moc-body"><span class="moc-thumbs">'+thumbs+'</span><span class="moc-text"><strong>'+esc(o.items[0].name)+(o.items.length>1?' 외 '+(o.items.length-1)+'개':'')+'</strong><small>총 '+count(o.items)+'개'+(o.method?' · '+esc(String(o.method).replace(/ ••••.*$/,'')):'')+'</small></span></span>'+
+          '<span class="moc-foot"><b>'+price(o.total)+'</b><span>영수증 보기 <i aria-hidden="true">›</i></span></span>','receipt/'+o.id+origin,'mall-order-card')+'</li>';};
+      return '<div class="moc-head"><h1>모의 구매 내역</h1><p>'+(rows.length?'주문 '+rows.length+'건 · 실제 결제와 배송은 없어요':'실제 결제와 배송은 없어요')+'</p></div>'+
+        (rows.length?'<ul class="mall-history mall-orders">'+rows.map(card).join('')+'</ul>'+link('쇼핑 계속하기',(origin?'shop/category/film':'shop')+origin,'mall-soft mall-full moc-more-shop'):empty('아직 구매한 물품이 없어요',origin));
+    }
     return '<h1>모의 구매 내역</h1>'+(rows.length?'<div class="mall-history">'+rows.map(o=>link('<span><small>'+orderDate(o.createdAt)+'</small><strong>'+esc(o.items[0].name)+(o.items.length>1?' 외 '+(o.items.length-1)+'개 품목':'')+'</strong><small>총 '+count(o.items)+'개</small></span><b>'+price(o.total)+' ›</b>','receipt/'+o.id+origin,'mall-history-row')).join('')+'</div>':empty('아직 구매한 물품이 없어요',origin))+ (rows.length?link('쇼핑으로 돌아가기',(origin?'shop/category/film':'shop')+origin,'mall-text-link'):'');
   }
   function view(route,opts={}){
@@ -310,6 +347,7 @@
       }
       const action=a.dataset.mallAction,sku=a.dataset.sku,qkey=scope+'|'+route,q=quantities.get(qkey)||1;
       if(action.startsWith('mail-')){mail(action);return;}
+      if(action==='card-open'){cardDialog(el,msg=>{if(el.isConnected)paint('[data-mall-action="card-open"]',msg);});return;}
       if(action==='category'||action==='reset'){
         const f=getFilters(route,opts);f.category=action==='reset'?(f.store||'all'):a.dataset.category;   // 매장 화면의 '전체 보기'는 그 매장 상품으로
         if(action==='reset'){f.query='';el.querySelector('.mall-search input').value='';}
@@ -332,7 +370,7 @@
           const draft=await model.begin(action==='direct'?'direct':'cart',sku,q,scope);if(el.isConnected)navigate(route,'checkout/'+draft+origin,opts);return;
         }
         if(action==='pay'){
-          const order=await model.pay(id,scope);if(el.isConnected)navigate(route,'order-complete/'+order.id+origin,opts);
+          const c=myCard(),order=await model.pay(id,scope,c?cardName(c):undefined);if(el.isConnected)navigate(route,'order-complete/'+order.id+origin,opts);
         }
       }catch(err){info(err?.message?.includes('주세요')||err?.message?.includes('있어요')?err.message:'저장하지 못했어요. 브라우저 저장 공간을 확인하고 다시 시도해 주세요.');}
       finally{if(busy&&el.isConnected){delete el.dataset.busy;a.disabled=false;}}

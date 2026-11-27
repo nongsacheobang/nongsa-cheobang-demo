@@ -3,7 +3,8 @@
   src: url("assets/NotoSansKR-VF.ttf") format("truetype");
   font-style: normal;
   font-weight: 100 900;
-  font-display: swap;
+  /* 261127 글꼴 바뀌는 순간 없애기: swap→block(앱/보험 index.html <head>에서 같은 URL을 preload). 3초 안에 못 받으면 기본 글꼴로 보임 */
+  font-display: block;
 }
 :root {
   --brand-green: #4d6e59;

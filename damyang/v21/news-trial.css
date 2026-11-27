@@ -1,0 +1,99 @@
+/* 261127 허간 요청(체험본 소식): "여기도 이미지 좀 넣자, 뉴스나 블로그처럼. 브런치 따라해."
+   261127 허간 피드백: 유리 상자는 아니다 → 대표 글은 카드뉴스 표지처럼, 글 보기는 인스타 게시물처럼 큰 사진 아래에 글.
+   - 체험본(html.trial)에서만 적용. 일반 모드 소식 화면은 건드리지 않는다.
+   - 사진은 shell.js의 숨은 img가 실제로 열렸을 때만 .has-photo가 붙는다. 사진이 없으면 분류 색면 + 아이콘.
+   - trial.css의 기존 소식 규칙보다 우선하도록 #main-area를 붙인다. */
+
+html.trial .bn-probe { display: none !important; }
+
+/* ── 분류 탭: 화면 위에 붙어 있게 ── */
+html.trial #main-area .bn-tabs { position: sticky; top: 0; z-index: 3; background: #fff; }
+
+/* ── 사진 칸(대표 글·글 보기 공통): 사진만 깨끗하게. 없으면 분류 색면 + 아이콘 ── */
+html.trial #main-area .bn-photo {
+  position: relative; display: grid; place-items: center; overflow: hidden;
+  margin-inline: -20px; /* 소식 화면 좌우 여백 20px(trial.css 표지와 같은 값) */ background: #eef3ef; color: #4d6e59;
+}
+html.trial #main-area .bn-photo .shell-icon { width: 44px; height: 44px; }
+html.trial #main-area .bn-photo:is([data-cat="weather"], [data-cat="pest"]) { background: #fbf0e3; color: #8a4b00; }
+html.trial #main-area .bn-photo[data-cat="support"] { background: #eef0df; color: #5d6a2c; }
+html.trial #main-area .bn-photo[data-cat="notice"] { background: #e8eef2; color: #3c6273; }
+html.trial #main-area .bn-photo[data-cat="farming"] { background: #f1ebe0; color: #75592f; }
+html.trial #main-area .bn-photo.has-photo { background: #dfe4e0 var(--bn-img) center / cover no-repeat; }
+html.trial #main-area .bn-photo.has-photo .shell-icon { visibility: hidden; }
+
+/* ── 대표 글: 인스타 카드뉴스 표지(허간 정정: 카드 크기·비율·둥근 모서리 유지, 유리 상자 없이)
+   사진 전체 배경 + 아래로 진해지는 그라데이션, 왼쪽 위 알약 분류 라벨, 아래 크고 굵은 제목, 한 줄 부제·작은 메타, 오른쪽 아래 '›' ── */
+html.trial #main-area .bn-feature {
+  position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;
+  min-height: 312px; margin: 22px 0 6px; padding: 18px 20px 20px; border-radius: 18px; overflow: hidden;
+  background: #2f4a3a; color: #fff; text-decoration: none;
+}
+html.trial #main-area .bn-feature:is([data-cat="weather"], [data-cat="pest"]) { background-color: #6b3f1d; }
+html.trial #main-area .bn-feature.has-photo { background: #24372c var(--bn-img) center / cover no-repeat; }
+html.trial #main-area .bn-feature::after {
+  content: ''; display: block; position: absolute; inset: 0; z-index: -1; width: auto; height: auto; border-radius: 0;
+  background: radial-gradient(circle at 100% 0, rgba(255,255,255,.08) 0 120px, transparent 121px);
+}
+html.trial #main-area .bn-feature.has-photo::after {
+  background: linear-gradient(180deg, rgba(8,14,10,.18) 0%, rgba(8,14,10,.3) 32%, rgba(8,14,10,.72) 58%, rgba(8,14,10,.9) 100%);
+}
+html.trial #main-area .bn-feature, html.trial #main-area .bn-feature * { text-decoration: none !important; }
+html.trial #main-area .bn-feature .bn-pill {
+  align-self: flex-start; display: inline-flex; align-items: center; min-height: 28px; padding: 0 12px; border-radius: 999px;
+  background: #fff; color: #191c1a; font-size: .8125rem; font-weight: 800; letter-spacing: 0;
+}
+html.trial #main-area .bn-caption { display: grid; gap: 8px; padding-right: 30px; }
+html.trial #main-area .bn-feature strong {
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  color: #fff; font-size: 1.75rem; font-weight: 900; line-height: 1.3; letter-spacing: -.04em; word-break: keep-all;
+  text-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+html.trial #main-area .bn-feature .bn-sub {
+  display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  color: rgba(255,255,255,.94); font-size: .9375rem; line-height: 1.5;
+}
+html.trial #main-area .bn-feature .bn-meta { color: rgba(255,255,255,.9); font-size: .8125rem; }
+html.trial #main-area .bn-next {
+  position: absolute; right: 16px; bottom: 16px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(255,255,255,.22); color: #fff; font-size: 1.25rem; font-weight: 700; line-height: 1;
+}
+html.trial #main-area .bn-feature:focus-visible { outline: 3px solid #4d6e59; outline-offset: 3px; }
+
+/* ── 목록: 왼쪽 글, 오른쪽 사진 정사각 ── */
+html.trial #main-area .bn-news .bn-list { margin-top: 0; }
+html.trial #main-area .bn-list li + li { border-top: 1px solid #eceeed; }
+html.trial #main-area .bn-item { align-items: center; gap: 16px; min-height: 44px; padding: 22px 0; }
+html.trial #main-area .bn-text { gap: 6px; }
+html.trial #main-area .bn-item:hover strong { text-decoration: none; }  /* 밑줄 링크 느낌 없이(허간) */
+html.trial #main-area .bn-item strong {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  font-size: 1.0625rem; line-height: 1.45; letter-spacing: 0; word-break: keep-all;
+}
+html.trial #main-area .bn-item .bn-sub {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  color: #5b645e; font-size: .875rem; line-height: 1.6; word-break: keep-all;
+}
+html.trial #main-area .bn-item .bn-meta { overflow: hidden; color: #687069; font-size: .8125rem; white-space: nowrap; text-overflow: ellipsis; }
+html.trial #main-area .bn-thumb { position: relative; align-self: center; width: 88px; height: 88px; margin-top: 0; border-radius: 10px; overflow: hidden; }
+html.trial #main-area .bn-thumb .shell-icon { width: 28px; height: 28px; }
+html.trial #main-area .bn-thumb::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: none; }
+html.trial #main-area .bn-thumb.has-photo::after { background: var(--bn-img) center / cover no-repeat; box-shadow: inset 0 0 0 1px rgba(0,0,0,.06); }
+html.trial #main-area .bn-thumb.has-photo .shell-icon { visibility: hidden; }
+
+/* ── 글 보기 표지: 큰 사진 → 아래에 분류·제목·부제·출처(인스타 게시물 상세처럼) ── */
+html.trial #main-area .bn-article .bn-cover {
+  position: static; display: grid; gap: 10px; min-height: 0; margin: 0; padding: 0 0 24px;
+  border-bottom: 1px solid #eceeed; background: #fff; color: inherit;
+}
+html.trial #main-area .bn-article .bn-cover > * { margin: 0; }
+html.trial #main-area .bn-article .bn-cover .bn-photo { aspect-ratio: 3 / 2; margin: 0 -20px 8px; }
+html.trial #main-area .bn-article .bn-cover .bn-cat { color: #2f5a3e; font-size: .875rem; font-weight: 800; }
+html.trial #main-area .bn-article .bn-cover .bn-cat.is-alert { color: #a34a00; }
+html.trial #main-area .bn-article .bn-cover h1 { color: #191c1a; font-size: 1.625rem; line-height: 1.38; word-break: keep-all; }
+html.trial #main-area .bn-article .bn-cover .bn-sub { color: #4a524d; font-size: 1rem; line-height: 1.6; word-break: keep-all; }
+html.trial #main-area .bn-article .bn-cover .bn-byline { margin-top: 2px; color: #687069; font-size: .8125rem; }
+
+/* 본문: 넉넉한 행간 유지 */
+html.trial #main-area .bn-body { margin-top: 28px; }
+html.trial #main-area .bn-body p { line-height: 1.9; word-break: keep-all; }
