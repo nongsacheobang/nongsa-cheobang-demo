@@ -277,3 +277,16 @@ html.trial .ff-zoom p { margin: 14px 20px 0; font-size: .9375rem; text-align: ce
 html.trial .ff-zoom-close { position: absolute; top: 54px; right: 10px; width: 48px; height: 48px; border: 0; background: none; color: #fff; display: grid; place-items: center; cursor: pointer; }
 html.trial .ff-zoom-close svg { width: 26px; height: 26px; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; fill: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 html.trial .ff-zoom .ff-gal-nav { top: calc(50% - 24px); }
+
+/* 261128 허간(IMG_7258): '기록 날짜'와 '하우스 동' 테두리가 겹쳐 보이던 것.
+   iOS 날짜 칸은 글자 크기에 따라 칸보다 넓어질 수 있다. 칸이 좁으면 두 줄로 내린다(글자·터치 영역은 그대로). */
+.entry-check { container-type: inline-size; }
+@container (max-width: 420px) {
+  .entry-check > .entry-pair { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+.entry-check input[type="date"] { min-width: 0; max-width: 100%; box-sizing: border-box; }
+/* iOS(Safari·카카오 인앱 등 WebKit 터치 기기)만: 날짜 칸이 기본 폭을 고집하지 않게 하고 글자를 왼쪽·가운데 높이로 */
+@supports (-webkit-touch-callout: none) {
+  .entry-check input[type="date"] { -webkit-appearance: none; appearance: none; display: flex; align-items: center; }
+  .entry-check input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+}

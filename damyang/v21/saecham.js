@@ -492,6 +492,11 @@
       }
       else if (n.right < vw / 2 && n.height > vh / 2) r.left = Math.max(r.left, n.right + GAP);
     }
+    // 261128 허간(IMG_7258): 화면 아래 저장 막대(기록 저장·보험 계산)가 보이면 그 위까지만 쓴다. 저장 버튼을 가로채지 않게
+    for (const el of document.querySelectorAll('#ff-form > .ff-save-bar, .est-actions')) {
+      const o = el.offsetParent !== null || getComputedStyle(el).position === 'fixed' ? rel(el) : null;
+      if (o && o.height && o.top > vh / 2 && o.top < vh) r.bottom = Math.min(r.bottom, o.top - GAP);
+    }
     return r;
   }
   const spot = () => { const r = safe(), range = Math.max(0, r.bottom - SIZE - r.top); return {x: side === 'l' ? r.left : r.right - SIZE, y: r.top + yr * range}; };
@@ -639,10 +644,19 @@
   const reseat = () => { const f = document.getElementById('sc-fab'); if (f && !f.classList.contains('is-dragging')) { const t = spot(); place(f, t.x, t.y, homeReturn ? 'drift' : false); homeReturn = false; } if (bubbleOpen()) positionBubble(); };
   window.addEventListener('resize', reseat);
   // 화면이 바뀌면(일지로 남기기·달력 보기·뒤로 가기) 말풍선과 근거 시트를 닫는다
-  window.addEventListener('hashchange', () => { if (screen() === 'home' && yr !== 1) { yr = 1; savePos(); homeReturn = true; }   // 허간: 홈으로 오면 지금 옆면의 아래쪽 기본 자리로 복귀
-    closeBubble(false); const d = document.getElementById('sc-why'); if (d?.open) d.close(); setTimeout(() => { sync(); reseat(); }, 0); });
+  const onRoute = () => { if (screen() === 'home' && yr !== 1) { yr = 1; savePos(); homeReturn = true; }   // 허간: 홈으로 오면 지금 옆면의 아래쪽 기본 자리로 복귀
+    closeBubble(false); const d = document.getElementById('sc-why'); if (d?.open) d.close(); setTimeout(() => { sync(); reseat(); }, 0); };
+  window.addEventListener('hashchange', onRoute);
+  // 261128 허간(IMG_7258): 앱 안 이동(shell.js go → pushState)은 hashchange가 나지 않는다. 그려진 화면(body[data-screen])이 바뀔 때도 따라간다.
+  //  일지에서 '새 기록 남기기'로 가도 구르미가 기록 화면에 남아 저장 버튼을 덮지 않게 한다.
+  let lastScreen = '';
+  const watchScreen = () => { if (!document.body) return; lastScreen = document.body.dataset.screen || ''; new MutationObserver(() => { const now = document.body.dataset.screen || ''; if (now !== lastScreen) { lastScreen = now; onRoute(); } }).observe(document.body, {attributes: true, attributeFilter: ['data-screen']}); };
+  window.addEventListener('popstate', () => setTimeout(() => { sync(); reseat(); }, 0));
+  // 저장 막대는 스크롤 중 위치가 바뀔 수 있다(끝에 닿으면 제자리). 겹칠 때만 다시 자리를 잡는다
+  let scrollTick = 0;
+  document.addEventListener('scroll', () => { if (scrollTick) return; scrollTick = requestAnimationFrame(() => { scrollTick = 0; const f = document.getElementById('sc-fab'); if (!f || f.classList.contains('is-dragging')) return; const t = spot(), b = f.getBoundingClientRect(), fr = frame(); if (b.top - fr.t > t.y + 1 || b.top - fr.t < safe().top - 1) reseat(); }); }, {capture: true, passive: true});
   window.addEventListener('farm-field-change', () => setTimeout(() => { sync(); reseat(); }, 0));
-  document.addEventListener('DOMContentLoaded', () => setTimeout(() => { sync(); reseat(); }, 0));
+  document.addEventListener('DOMContentLoaded', () => { watchScreen(); setTimeout(() => { sync(); reseat(); }, 0); });
 
   window.FarmSaecham = Object.freeze({EXPR_COUNT, screen, openSheet, openBubble, closeBubble, sync, heroButton,face, mark, briefing, proposals, card, calendarBits, calendarBanner, dayList, act, decide});
 })();

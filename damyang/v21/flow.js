@@ -288,7 +288,9 @@
     const d=draft();
     FarmEntry.prepare(d,active,route);
     return wrap('<div class="ff-alert" id="ff-damage-alert"><span aria-hidden="true">!</span><strong>'+alertLine+'</strong></div>'+
-      '<h1 id="ff-entry-title"></h1><p class="ff-lead" id="ff-safety">안전한 곳에서 먼저 응급조치를 하세요. 사진은 나중에 남겨도 돼요.</p>'+
+      '<h1 id="ff-entry-title"></h1><p class="ff-lead" id="ff-safety">안전한 곳에서 피해가 더 커지지 않도록 먼저 조치하세요. 사진은 나중에 남겨도 돼요.</p>'+
+      // 261128 효신(손해평가사 검토): 수확 전 연락 안내. 피해 기록일 때만 보인다(필수 확인·기한·미지급 조건 없음)
+      '<p class="ff-lead" id="ff-harvest">피해를 입은 작물을 수확할 예정이라면, 수확 전에 가입한 농축협에 알려 주세요.</p>'+
       // v21 1차(검수 2순위): 이미 농축협에 알린 농가가 맨 아래 접수 칸을 바로 찾도록 위에서 이동
       '<button type="button" class="ff-jump" id="ff-jump-reception" data-ff-action="jump-reception">농축협 접수 기록 적기 <span aria-hidden="true">›</span></button>'+
       '<form id="ff-form"><div class="ff-grid"><div class="ff-col">'+entrySections(d,route)+
@@ -305,7 +307,7 @@
     if(fire && !fireInput)host.innerHTML='<fieldset class="ff-fire"><legend>화재 특약</legend><div class="ff-choices">'+['가입','미가입','모름'].map(x=>check('fire',x,x,d.fire===x)).join('')+'</div><p class="ff-note" aria-live="polite">'+fireHint(d.fire)+'</p></fieldset>';
     if(!fire)host.replaceChildren();
     document.querySelector('#ff-entry-title').textContent=damage?'피해 기록':pest?'병·벌레 기록':'농장 기록';
-    for(const id of ['ff-safety','ff-causes'])document.getElementById(id).hidden=!damage;
+    for(const id of ['ff-safety','ff-harvest','ff-causes'])document.getElementById(id).hidden=!damage;
     document.getElementById('ff-damage-alert').hidden=!(damage||pest);
     document.getElementById('ff-reception').hidden=!(damage||pest);
     document.getElementById('ff-save-notice').hidden=!(damage||pest);
