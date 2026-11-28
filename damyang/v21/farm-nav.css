@@ -162,3 +162,9 @@ html:not(.phone-layout) body:has(> .workspace) > .mobilebar.farm-tabbar { displa
 @keyframes nav-rise { from { transform: translateX(-50%) translateY(18px) scale(.7); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #mobile-nav a::before, #mobile-nav .n-icon { animation: none !important; transition: none !important; } }
 @media (forced-colors: active) { :is(.phone-layout, .insurance-in-app) #mobile-nav a[aria-current=page]::before { background: Highlight; } }
+
+/* 261128 허간(IMG_7257): 기록·피해 폼 끝에서 '기록 저장'과 하단 탭 사이가 크게 비던 것.
+   폼 화면만 맨 아래 여백을 줄여, 끝까지 내렸을 때 저장 막대가 스크롤 중(고정) 자리와 같은 곳에 오게 한다.
+   기기 하단 안전 여백(env)은 그대로 더한다. */
+.phone-layout #main-area:has(#ff-form)::after,
+:is(.large-text, .field-mode).phone-layout #main-area:has(#ff-form)::after { height: calc(72px + env(safe-area-inset-bottom, 0px)); }

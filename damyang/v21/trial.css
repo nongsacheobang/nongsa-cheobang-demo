@@ -745,3 +745,6 @@ html.trial .bn-article .bn-origin { width: 100%; margin-top: 16px; border: 0; cu
 /* 261127 허간 '텍스트 더 줄이자': 머리줄 한 줄(구르미 · AI 비서), 제목 뒤 동은 작게 */
 .sc-bubble-pop .sc-kicker { flex-wrap: nowrap; }
 .sc-h-house { margin-left: 2px; color: #687069; font-size: .8125rem; font-weight: 600; white-space: nowrap; }
+
+/* 261128 허간(IMG_7257): 체험판도 폼 화면만 맨 아래 여백을 줄인다(farm-nav.css와 같은 값, 체험판 규칙보다 우선) */
+html.trial.phone-layout #main-area:has(#ff-form)::after { height: calc(72px + env(safe-area-inset-bottom, 0px)); }
